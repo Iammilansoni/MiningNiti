@@ -190,7 +190,7 @@ function TeamDetails() {
       <div className="grid grid-cols-2 md:grid-cols-3 flex-wrap justify-center items-center mt-4 mx-4 text-gray-500 sm:justify-between">
         <StatCard
           name='Gavesh'
-          image='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTa0Mk1UasaChu-jfdvXtwjPM7d2_w7xhmO-w&usqp=CAU'
+          image='/gavesh.png'
         />
         <StatCard
           name='Milan'
