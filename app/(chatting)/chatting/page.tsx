@@ -1,6 +1,5 @@
 // page.tsx
 "use client";
-
 import React, { useState, useRef, FormEvent, useEffect, KeyboardEvent } from 'react';
 import Image from 'next/image';
 import axios from 'axios';
@@ -47,6 +46,15 @@ const Page: React.FC = () => {
   const [chatLog, setChatLog] = useState<ChatItem[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [defaultSuggestions, setDefaultSuggestions] = useState<string[]>([
+    'What are the main features of MiningNiti for managing mining data?',
+    'What are the latest trends in mining technology?',
+    'How do mining companies manage environmental impact?',
+    'What are the safety regulations in the mining industry?',
+    'Can you explain the process of ore extraction?'
+  ]);
+
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -60,15 +68,38 @@ const Page: React.FC = () => {
     handleResize();
   }, [message]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
+  const fetchSuggestions = async (input: string) => {
+    // Placeholder for fetching suggestions, replace URL and logic as needed
+    try {
+      const response = await axios.get(`http://localhost:8000/suggestions?q=${input}`);
+      setSuggestions(response.data.suggestions);
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error);
+    }
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newMessage = e.target.value;
+    setMessage(newMessage);
+    if (newMessage.trim() === '') {
+      setSuggestions([]);
+      setDefaultSuggestions([
+        'What are the main features of MiningNiti for managing mining data?',
+        'What are the latest trends in mining technology?',
+        'How do mining companies manage environmental impact?',
+        'What are the safety regulations in the mining industry?',
+        'Can you explain the process of ore extraction?'
+      ]);
+    } else {
+      fetchSuggestions(newMessage);
+      setDefaultSuggestions([]);
+    }
+  };
+
+  const handleSubmit = async (messageToSend: string) => {
     setIsSending(true);
     setError(null);
-    const data = { input_query: message };
+    const data = { input_query: messageToSend };
     try {
       const response = await axios.post(
         process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/chat',
@@ -79,8 +110,10 @@ const Page: React.FC = () => {
           },
         }
       );
-      setChatLog([...chatLog, { message: message, response: response.data.response }]);
+      setChatLog([...chatLog, { message: messageToSend, response: response.data.response }]);
       setMessage('');
+      setSuggestions([]);
+      setDefaultSuggestions([]);
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -95,24 +128,20 @@ const Page: React.FC = () => {
     }
   };
 
+  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSubmit(message);
+  };
+
+  const handleSuggestionClick = async (suggestion: string) => {
+    await handleSubmit(suggestion);
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault(); // Prevent the default newline behavior
-      handleSubmit(e as unknown as FormEvent<HTMLFormElement>); // Trigger form submission
+      handleFormSubmit(e as unknown as FormEvent<HTMLFormElement>); // Trigger form submission
     }
-  };
-
-  const renderResponse = (response: string) => {
-    const points = response.split(/\n|\d+\.\s+/).filter(point => point.trim() !== '');
-    return points.length > 1 ? (
-      <ul className='list-disc list-inside'>
-        {points.map((point, index) => (
-          <li key={index} className='text-left text-sm mt-1'>{point.trim()}</li>
-        ))}
-      </ul>
-    ) : (
-      <p className='text-left text-sm mt-1'>{response}</p>
-    );
   };
 
   return (
@@ -130,7 +159,7 @@ const Page: React.FC = () => {
         <p className='text-2xl text-pink-500 font-bold'>Chat Application</p>
       </div>
       <div className='fixed bottom-0 w-full bg-transparent pb-4'>
-        <form onSubmit={handleSubmit} className='flex items-center p-2 mx-auto w-full max-w-7xl'>
+        <form onSubmit={handleFormSubmit} className='flex items-center p-2 mx-auto w-full max-w-7xl'>
           <textarea
             id='chat'
             rows={1}
@@ -139,7 +168,7 @@ const Page: React.FC = () => {
             placeholder='Your message...'
             value={message}
             onChange={handleInputChange}
-            onKeyDown={handleKeyDown} // Add the keyDown event handler
+            onKeyDown={handleKeyDown}
             style={{ minHeight: '40px', maxHeight: '200px' }}
             aria-label="Type your message here"
           />
@@ -151,6 +180,32 @@ const Page: React.FC = () => {
             {isSending ? 'Sending...' : 'Send'}
           </button>
         </form>
+        {suggestions.length > 0 && (
+          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl bg-gray shadow-lg p-4">
+            {suggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                className="cursor-pointer hover:bg-gray-200 p-2"
+                onClick={() => handleSuggestionClick(suggestion)}
+              >
+                {suggestion}
+              </div>
+            ))}
+          </div>
+        )}
+        {defaultSuggestions.length > 0 && message.trim() === '' && (
+          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl bg-green shadow-lg p-4">
+            {defaultSuggestions.map((suggestion, index) => (
+             <div
+             key={index}
+             className="cursor-pointer hover:bg-pink-100 hover:text-black p-2 transition-colors duration-150"
+             onClick={() => handleSuggestionClick(suggestion)}
+           >
+             {suggestion}
+           </div>
+            ))}
+          </div>
+        )}
         {error && <p className="text-red-500 text-center mt-2">{error}</p>}
       </div>
       <div
@@ -164,7 +219,7 @@ const Page: React.FC = () => {
               <p className='text-left text-sm font-bold'>{item.message}</p>
             </div>
             <div className='bg-gray-100 text-gray-900 p-4 rounded-lg shadow-md my-2 w-3/4'>
-              {renderResponse(item.response)}
+              {item.response}
             </div>
           </div>
         ))}
