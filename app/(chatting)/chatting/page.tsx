@@ -48,6 +48,7 @@ const Page: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target;
@@ -55,6 +56,7 @@ const Page: React.FC = () => {
     textarea.style.height = `${textarea.scrollHeight}px`; // Set height based on scroll height
     setMessage(textarea.value);
   };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSending(true);
@@ -72,6 +74,9 @@ const Page: React.FC = () => {
       );
       setChatLog([...chatLog, { message: message, response: response.data.response }]);
       setMessage('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
       if (chatContainerRef.current) {
         chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }
@@ -115,10 +120,11 @@ const Page: React.FC = () => {
           <textarea
             id='chat'
             rows={1}
+            ref={textareaRef}
             className='flex-1 p-2.5 text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring focus:border-blue-500'
             placeholder='Your message...'
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleInputChange}
             aria-label="Type your message here"
           />
           <button
@@ -152,5 +158,3 @@ const Page: React.FC = () => {
 };
 
 export default Page;
-
-
