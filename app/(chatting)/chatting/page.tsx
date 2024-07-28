@@ -69,9 +69,14 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  } catch (error) {
-    console.error('Error details:', error.response || error.request || error.message);
-    setError('Failed to send message. Please try again.');
+  } catch (error: unknown) {
+  if (error instanceof Error) {
+    console.error('Error details:', error.message);
+  } else {
+    console.error('An unknown error occurred:', error);
+  }
+  setError('Failed to send message. Please try again.');
+}
   } finally {
     setIsSending(false);
   }
