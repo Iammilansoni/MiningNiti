@@ -56,7 +56,7 @@ const Page: React.FC = () => {
     const data = { input_query: message };
     try {
       const response = await axios.post(
-        process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000/chat',
+        process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/chat',
         data,
         {
           headers: {
