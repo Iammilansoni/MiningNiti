@@ -56,7 +56,7 @@ const Page: React.FC = () => {
     const data = { input_query: message };
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat`,
+        process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/chat',
         data,
         {
           headers: {
@@ -118,20 +118,28 @@ const Page: React.FC = () => {
           <button
             type='submit'
             disabled={isSending}
-            className='ml-2 p-2 bg-blue-500 text-white rounded-lg'
+            className='p-2 ml-4 rounded-full bg-pink-500'
           >
-            Send
+            {isSending ? 'Sending...' : 'Send'}
           </button>
         </form>
+        {error && <p className="text-red-500 text-center mt-2">{error}</p>}
       </div>
-      <div ref={chatContainerRef} className='mt-4'>
-        {chatLog.map((chatItem, index) => (
-          <div key={index} className='mb-4'>
-            <p className='text-right text-blue-500'>{chatItem.message}</p>
-            {renderResponse(chatItem.response)}
+      <div
+        className='my-4 flex flex-col items-center'
+        ref={chatContainerRef}
+        style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}
+      >
+        {chatLog.map((item, index) => (
+          <div key={index} className='flex flex-col items-center w-full'>
+            <div className='bg-pink-100 text-blue-900 p-4 rounded-lg shadow-md my-2 w-3/4'>
+              <p className='text-left text-sm font-bold'>{item.message}</p>
+            </div>
+            <div className='bg-gray-100 text-gray-900 p-4 rounded-lg shadow-md my-2 w-3/4'>
+              {renderResponse(item.response)}
+            </div>
           </div>
         ))}
-        {error && <p className='text-red-500'>{error}</p>}
       </div>
     </div>
   );
