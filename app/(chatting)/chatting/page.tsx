@@ -49,33 +49,34 @@ const Page: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSending(true);
-    setError(null);
-    const data = { input_query: message };
-    try {
-      const response = await axios.post(
-        process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/chat',
-        data,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      setChatLog([...chatLog, { message: message, response: response.data.response }]);
-      setMessage('');
-      if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setIsSending(true);
+  setError(null);
+  const data = { input_query: message };
+  try {
+    const response = await axios.post(
+      process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/chat',
+      data,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }
-    } catch (error) {
-      console.error(error);
-      setError('Failed to send message. Please try again.');
-    } finally {
-      setIsSending(false);
+    );
+    setChatLog([...chatLog, { message: message, response: response.data.response }]);
+    setMessage('');
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  };
+  } catch (error) {
+    console.error('Error details:', error.response || error.request || error.message);
+    setError('Failed to send message. Please try again.');
+  } finally {
+    setIsSending(false);
+  }
+};
+
 
   const renderResponse = (response: string) => {
     const points = response.split(/\n|\d+\.\s+/).filter(point => point.trim() !== '');
