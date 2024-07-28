@@ -49,6 +49,12 @@ const Page: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target;
+    textarea.style.height = 'auto'; // Reset height to shrink if text is deleted
+    textarea.style.height = `${textarea.scrollHeight}px`; // Set height based on scroll height
+    setMessage(textarea.value);
+  };
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSending(true);
@@ -146,3 +152,5 @@ const Page: React.FC = () => {
 };
 
 export default Page;
+
+
