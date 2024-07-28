@@ -1,7 +1,7 @@
 // page.tsx
 "use client";
 
-import React, { useState, useRef, FormEvent } from 'react';
+import React, { useState, useRef, FormEvent, useEffect, KeyboardEvent } from 'react';
 import Image from 'next/image';
 import axios from 'axios';
 
@@ -50,11 +50,18 @@ const Page: React.FC = () => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      }
+    };
+    handleResize();
+  }, [message]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const textarea = e.target;
-    textarea.style.height = 'auto'; // Reset height to shrink if text is deleted
-    textarea.style.height = `${textarea.scrollHeight}px`; // Set height based on scroll height
-    setMessage(textarea.value);
+    setMessage(e.target.value);
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -88,6 +95,13 @@ const Page: React.FC = () => {
     }
   };
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevent the default newline behavior
+      handleSubmit(e as unknown as FormEvent<HTMLFormElement>); // Trigger form submission
+    }
+  };
+
   const renderResponse = (response: string) => {
     const points = response.split(/\n|\d+\.\s+/).filter(point => point.trim() !== '');
     return points.length > 1 ? (
@@ -115,16 +129,18 @@ const Page: React.FC = () => {
         />
         <p className='text-2xl text-pink-500 font-bold'>Chat Application</p>
       </div>
-      <div className='fixed bottom-0 h-16 w-full bg-transparent'>
-        <form onSubmit={handleSubmit} className='flex items-center justify-between p-2 mx-auto w-full max-w-7xl'>
+      <div className='fixed bottom-0 w-full bg-transparent pb-4'>
+        <form onSubmit={handleSubmit} className='flex items-center p-2 mx-auto w-full max-w-7xl'>
           <textarea
             id='chat'
             rows={1}
             ref={textareaRef}
-            className='flex-1 p-2.5 text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring focus:border-blue-500'
+            className='flex-1 p-2.5 text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring focus:border-blue-500 resize-none overflow-hidden overflow-auto'
             placeholder='Your message...'
             value={message}
             onChange={handleInputChange}
+            onKeyDown={handleKeyDown} // Add the keyDown event handler
+            style={{ minHeight: '40px', maxHeight: '200px' }}
             aria-label="Type your message here"
           />
           <button
