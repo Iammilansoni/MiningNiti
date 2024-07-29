@@ -17,39 +17,6 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  const heroVariants = {
-    hidden: { opacity: 0, y: 50 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 1,
-        ease: "easeInOut",
-      },
-    },
-  };
-
-  const imageVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 1,
-        ease: "easeInOut",
-      },
-    },
-  };
-
-  const buttonVariants = {
-    hover: {
-      scale: 1.1,
-      transition: {
-        yoyo: Infinity,
-      },
-    },
-  };
-
   const sectionVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -79,7 +46,7 @@ export default function Home() {
         <NavBar />
       </motion.div>
       <section className="bg-white min-h-screen h-full dark:bg-gray-900 pt-20">
-        <motion.div className="flex justify-between items-center p-8" initial="hidden" animate="visible" variants={sectionVariants}>
+        <motion.div className="flex flex-row justify-between items-center p-8 space-x-4 flex-nowrap" initial="hidden" animate="visible" variants={sectionVariants}>
           {/* logo */}
           <motion.img
             className="h-20 w-40 rounded-full"
@@ -102,12 +69,12 @@ export default function Home() {
           <ThemeModeToggle />
         </motion.div>
 
-        <motion.div className="py-2 px-4 sm:px-8 mx-auto max-w-screen-xl text-center lg:py-16 lg:px-12" initial="hidden" animate="visible" variants={heroVariants}>
+        <motion.div className="py-2 px-4 sm:px-8 mx-auto max-w-screen-xl text-center lg:py-16 lg:px-12" initial="hidden" animate="visible" variants={sectionVariants}>
           <motion.h1
             className="mb-4 text-3xl sm:text-4xl font-extrabold tracking-tight leading-none text-gray-900 md:text-5xl lg:text-7xl dark:text-white"
             initial="hidden"
             animate="visible"
-            variants={heroVariants}
+            variants={sectionVariants}
           >
             The future of <strong className="font-extrabold text-pink-600">mining</strong> <br />
             compliance is here. <strong className="leading-1 mt-1 text-4.5xl text-purple-600 underline underline-purple-600">Talk to us.</strong>
@@ -120,7 +87,7 @@ export default function Home() {
             <motion.div
               initial="hidden"
               animate="visible"
-              variants={imageVariants}
+              variants={sectionVariants}
               className="mb-4 sm:mb-0" // Add margin-bottom for spacing
             >
              <Image
@@ -136,7 +103,7 @@ export default function Home() {
             <motion.a
               href="/chatting"
               className="inline-flex justify-center items-center py-3 px-3 text-base border border-pink-500 font-medium text-center rounded-lg text-pink-500 hover:text-white hover:bg-pink-500 bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:focus:ring-primary-900 transition-colors duration-300"
-              variants={buttonVariants}
+              variants={sectionVariants}
               whileHover="hover"
             >
               Start Chatting
