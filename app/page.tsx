@@ -62,20 +62,42 @@ export default function Home() {
     },
   };
 
+  const hoverEffect = {
+    hover: {
+      scale: 1.2, // Increased scale for more focus
+      boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.3)", // More prominent shadow
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut",
+      },
+    },
+  };
+
   return (
     <>
       <motion.div initial="hidden" animate="visible" variants={sectionVariants}>
         <NavBar />
       </motion.div>
-      <section className="bg-white min-h-screen h-full dark:bg-gray-900">
+      <section className="bg-white min-h-screen h-full dark:bg-gray-900 pt-20">
         <motion.div className="flex justify-between items-center p-8" initial="hidden" animate="visible" variants={sectionVariants}>
           {/* logo */}
-          <img className="h-20 w-40 rounded-full" src="/logo.png" alt="logo" />
+          <motion.img
+            className="h-20 w-40 rounded-full"
+            src="/logo.png"
+            alt="logo"
+            variants={hoverEffect}
+            whileHover="hover"
+          />
           
           {/* Real-time Clock */}
-          <div className="text-3xl sm:text-5xl font-extrabold tracking-widest leading-tight text-indigo-700 md:text-4xl lg:text-2xl dark:text-indigo-300" suppressHydrationWarning>
+          <motion.div
+            className="text-3xl sm:text-5xl font-extrabold tracking-widest leading-tight text-indigo-700 md:text-4xl lg:text-2xl dark:text-indigo-300"
+            suppressHydrationWarning
+            variants={hoverEffect}
+            whileHover="hover"
+          >
             {currentTime.toLocaleTimeString()}
-          </div>
+          </motion.div>
 
           <ThemeModeToggle />
         </motion.div>
@@ -160,11 +182,38 @@ export default function Home() {
 }
 
 function NavBar() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
   return (
-    <nav className="bg-purple-600 text-white p-5 flex justify-between items-center">
+    <nav className="bg-purple-600 text-white p-5 flex justify-between items-center fixed top-0 left-0 right-0 z-50 h-16">
       <a href="/"><img className="h-8 w-25 rounded-full" src="/icon.png" alt="logo" /></a> 
       
-      <div className="flex flex-col sm:flex-row">
+      <div className="hidden sm:flex flex-row space-x-4">
+        <a href="/about" className="px-4 py-2 hover:underline">About Us</a>
+        <a href="/services" className="px-4 py-2 hover:underline">Services</a>
+        <a href="/contact" className="px-4 py-2 hover:underline">Contact Us</a>
+        <a href="/chatting" className="px-4 py-2 bg-pink-500 rounded hover:bg-pink-700 transition-colors">Get Started</a>
+      </div>
+
+      <div className="flex sm:hidden">
+        <button onClick={toggleMenu} className="text-white focus:outline-none">
+          {menuOpen ? (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            </svg>
+          )}
+        </button>
+      </div>
+
+      <div className={`flex-col sm:hidden ${menuOpen ? 'flex' : 'hidden'} absolute top-16 right-0 bg-purple-600 w-full`}>
         <a href="/about" className="px-4 py-2 hover:underline">About Us</a>
         <a href="/services" className="px-4 py-2 hover:underline">Services</a>
         <a href="/contact" className="px-4 py-2 hover:underline">Contact Us</a>
