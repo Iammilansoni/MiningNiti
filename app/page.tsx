@@ -58,7 +58,7 @@ export default function Home() {
           
           {/* Real-time Clock */}
           <motion.div
-            className="text-3xl sm:text-5xl font-extrabold tracking-widest leading-tight text-indigo-700 md:text-4xl lg:text-2xl dark:text-indigo-300"
+            className="text-2xl sm:text-5xl font-extrabold tracking-widest leading-tight text-indigo-700 md:text-4xl lg:text-2xl dark:text-indigo-300"
             suppressHydrationWarning
             variants={hoverEffect}
             whileHover="hover"
