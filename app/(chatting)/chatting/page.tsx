@@ -3,6 +3,8 @@
 import React, { useState, useRef, FormEvent, useEffect, KeyboardEvent } from 'react';
 import Image from 'next/image';
 import axios from 'axios';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUpload } from '@fortawesome/free-solid-svg-icons';
 
 interface ChatItem {
   message: string;
@@ -54,6 +56,7 @@ const Page: React.FC = () => {
     'What are the safety regulations in the mining industry?',
     'Can you explain the process of ore extraction?'
   ]);
+  const [source, setSource] = useState('both');
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -99,7 +102,7 @@ const Page: React.FC = () => {
   const handleSubmit = async (messageToSend: string) => {
     setIsSending(true);
     setError(null);
-    const data = { input_query: messageToSend };
+    const data = { input_query: messageToSend, source };
     try {
       const response = await axios.post(
         process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/chat',
@@ -144,6 +147,30 @@ const Page: React.FC = () => {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const response = await axios.post(
+          process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/extract_text_from_pdf',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+        const extractedText = response.data.text;
+        setMessage(extractedText);
+      } catch (error) {
+        console.error('Error extracting text from PDF:', error);
+        setError('Failed to extract text from PDF. Please try again.');
+      }
+    }
+  };
+
   return (
     <div className='pt-0 px-4' style={{ height: '100vh', overflowY: 'auto' }}>
       {isSending && <Loader />}
@@ -172,16 +199,66 @@ const Page: React.FC = () => {
             style={{ minHeight: '40px', maxHeight: '200px' }}
             aria-label="Type your message here"
           />
+          <label className="p-2 ml-4 rounded-full bg-pink-500 text-white cursor-pointer hover:bg-pink-600 transition-colors duration-300 hidden sm:block">
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileUpload}
+              className='hidden'
+            />
+            Upload PDF
+          </label>
+          <label className="p-2 ml-4 rounded-full bg-pink-500 text-white cursor-pointer hover:bg-pink-600 transition-colors duration-300 block sm:hidden">
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileUpload}
+              className='hidden'
+            />
+            <FontAwesomeIcon icon={faUpload} />
+          </label>
           <button
             type='submit'
             disabled={isSending}
-            className='p-2 ml-4 rounded-full bg-pink-500'
+            className='p-2 ml-4 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300'
           >
             {isSending ? 'Sending...' : 'Send'}
           </button>
         </form>
+        <div className="flex justify-center mt-4">
+          <label className="mr-4">
+            <input
+              type="radio"
+              name="source"
+              value="database"
+              checked={source === "database"}
+              onChange={() => setSource("database")}
+            />
+            Database
+          </label>
+          <label className="mr-4">
+            <input
+              type="radio"
+              name="source"
+              value="internet"
+              checked={source === "internet"}
+              onChange={() => setSource("internet")}
+            />
+            Internet
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="source"
+              value="both"
+              checked={source === "both"}
+              onChange={() => setSource("both")}
+            />
+            Both
+          </label>
+        </div>
         {suggestions.length > 0 && (
-          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl bg-gray shadow-lg p-4">
+          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl bg-gray-100 shadow-lg p-4">
             {suggestions.map((suggestion, index) => (
               <div
                 key={index}
@@ -194,15 +271,15 @@ const Page: React.FC = () => {
           </div>
         )}
         {defaultSuggestions.length > 0 && message.trim() === '' && (
-          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl bg-green shadow-lg p-4">
+          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl shadow-lg p-4">
             {defaultSuggestions.map((suggestion, index) => (
-             <div
-             key={index}
-             className="cursor-pointer hover:bg-pink-100 hover:text-black p-2 transition-colors duration-150"
-             onClick={() => handleSuggestionClick(suggestion)}
-           >
-             {suggestion}
-           </div>
+              <div
+                key={index}
+                className="cursor-pointer hover:bg-pink-100 hover:text-black p-2 transition-colors duration-150"
+                onClick={() => handleSuggestionClick(suggestion)}
+              >
+                {suggestion}
+              </div>
             ))}
           </div>
         )}
