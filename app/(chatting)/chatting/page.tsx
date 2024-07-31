@@ -154,7 +154,7 @@ const Page: React.FC = () => {
       formData.append('file', file);
       try {
         const response = await axios.post(
-          process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/extract_text_from_pdf',
+          process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000/extract_text_from_pdf',
           formData,
           {
             headers: {
