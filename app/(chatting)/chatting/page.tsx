@@ -13,7 +13,7 @@ interface ChatItem {
 const Loader: React.FC = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
     <div className="loader"></div>
-    <style jsx>{
+    <style jsx>{`
       .loader {
         display: inline-block;
         width: 80px;
@@ -38,9 +38,10 @@ const Loader: React.FC = () => (
           transform: rotate(360deg);
         }
       }
-    }</style>
+    `}</style>
   </div>
 );
+
 
 const Page: React.FC = () => {
   const [message, setMessage] = useState('');
