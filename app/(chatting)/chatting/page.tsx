@@ -1,10 +1,9 @@
-// page.tsx
 "use client";
 import React, { useState, useRef, FormEvent, useEffect, KeyboardEvent } from 'react';
 import Image from 'next/image';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faPlay, faCopy } from '@fortawesome/free-solid-svg-icons';
 
 interface ChatItem {
   message: string;
@@ -14,7 +13,7 @@ interface ChatItem {
 const Loader: React.FC = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
     <div className="loader"></div>
-    <style jsx>{`
+    <style jsx>{
       .loader {
         display: inline-block;
         width: 80px;
@@ -39,7 +38,7 @@ const Loader: React.FC = () => (
           transform: rotate(360deg);
         }
       }
-    `}</style>
+    }</style>
   </div>
 );
 
@@ -171,6 +170,19 @@ const Page: React.FC = () => {
     }
   };
 
+  const handlePlayVoice = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    speechSynthesis.speak(utterance);
+  };
+
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Text copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+    });
+  };
+
   return (
     <div className='pt-0 px-4' style={{ height: '100vh', overflowY: 'auto' }}>
       {isSending && <Loader />}
@@ -295,8 +307,16 @@ const Page: React.FC = () => {
             <div className='bg-pink-100 text-blue-900 p-4 rounded-lg shadow-md my-2 w-3/4'>
               <p className='text-left text-sm font-bold'>{item.message}</p>
             </div>
-            <div className='bg-gray-100 text-gray-900 p-4 rounded-lg shadow-md my-2 w-3/4'>
+            <div className='bg-gray-100 text-gray-900 p-4 rounded-lg shadow-md my-2 w-3/4 relative'>
               {item.response}
+              <div className='absolute top-2 right-2 flex space-x-2'>
+                <button onClick={() => handlePlayVoice(item.response)} className='text-blue-500 hover:text-blue-700'>
+                  <FontAwesomeIcon icon={faPlay} />
+                </button>
+                <button onClick={() => handleCopyText(item.response)} className='text-blue-500 hover:text-blue-700'>
+                  <FontAwesomeIcon icon={faCopy} />
+                </button>
+              </div>
             </div>
           </div>
         ))}
