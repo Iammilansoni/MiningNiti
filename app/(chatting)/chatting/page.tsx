@@ -3,7 +3,7 @@ import React, { useState, useRef, FormEvent, useEffect, KeyboardEvent } from 're
 import Image from 'next/image';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faPlay, faCopy } from '@fortawesome/free-solid-svg-icons';
+import { faUpload, faPlay, faPause, faCopy } from '@fortawesome/free-solid-svg-icons';
 
 interface ChatItem {
   message: string;
@@ -42,7 +42,6 @@ const Loader: React.FC = () => (
   </div>
 );
 
-
 const Page: React.FC = () => {
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState<ChatItem[]>([]);
@@ -57,6 +56,9 @@ const Page: React.FC = () => {
     'Can you explain the process of ore extraction?'
   ]);
   const [source, setSource] = useState('both');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentUtterance, setCurrentUtterance] = useState<SpeechSynthesisUtterance | null>(null);
+  const [highlightedText, setHighlightedText] = useState<string | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -172,7 +174,28 @@ const Page: React.FC = () => {
   };
 
   const handlePlayVoice = (text: string) => {
+    if (isPlaying && currentUtterance) {
+      speechSynthesis.cancel();
+      setIsPlaying(false);
+      setHighlightedText(null);
+      return;
+    }
+
     const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onstart = () => {
+      setIsPlaying(true);
+      setHighlightedText(text);
+    };
+    utterance.onend = () => {
+      setIsPlaying(false);
+      setHighlightedText(null);
+    };
+    utterance.onboundary = (event) => {
+      const { charIndex } = event;
+      setHighlightedText(text.substring(0, charIndex));
+    };
+
+    setCurrentUtterance(utterance);
     speechSynthesis.speak(utterance);
   };
 
@@ -309,10 +332,10 @@ const Page: React.FC = () => {
               <p className='text-left text-sm font-bold'>{item.message}</p>
             </div>
             <div className='bg-gray-100 text-gray-900 p-4 rounded-lg shadow-md my-2 w-3/4 relative'>
-              {item.response}
+              <span dangerouslySetInnerHTML={{ __html: highlightedText && item.response.includes(highlightedText) ? item.response.replace(highlightedText, `<mark>${highlightedText}</mark>`) : item.response }} />
               <div className='absolute top-2 right-2 flex space-x-2'>
                 <button onClick={() => handlePlayVoice(item.response)} className='text-blue-500 hover:text-blue-700'>
-                  <FontAwesomeIcon icon={faPlay} />
+                  <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />
                 </button>
                 <button onClick={() => handleCopyText(item.response)} className='text-blue-500 hover:text-blue-700'>
                   <FontAwesomeIcon icon={faCopy} />
