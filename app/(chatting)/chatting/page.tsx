@@ -294,7 +294,7 @@ const Page: React.FC = () => {
           </label>
         </div>
         {suggestions.length > 0 && (
-          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl bg-gray-100 shadow-lg p-4">
+          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl bg-gray-100 shadow-lg p-4" style={{ marginBottom: '60px' }}>
             {suggestions.map((suggestion, index) => (
               <div
                 key={index}
@@ -307,7 +307,7 @@ const Page: React.FC = () => {
           </div>
         )}
         {defaultSuggestions.length > 0 && message.trim() === '' && (
-          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl shadow-lg p-4">
+          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl shadow-lg p-4" style={{ marginBottom: '60px' }}>
             {defaultSuggestions.map((suggestion, index) => (
               <div
                 key={index}
