@@ -2,67 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   MININGNITI DESIGN SYSTEM
+   Dark Mining Precision Theme
+   ============================================ */
+
 @layer base {
   :root {
+    /* Light Theme Variables */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 220 15% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 15% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 15% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 15% 10%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 32 100% 53%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 211 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark Mining Precision Theme */
+    --background: 240 10% 4%;
+    --foreground: 0 0% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 6% 10%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 211 100% 53%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 5% 17%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 5% 17%;
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 32 100% 53%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 240 4% 20%;
+    --input: 240 4% 20%;
+    --ring: 211 100% 53%;
   }
 }
 
@@ -70,89 +77,474 @@
   * {
     @apply border-border;
   }
+
+  html {
+    @apply scroll-smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-primary/20 text-foreground;
   }
 }
 
-.about-container {
-  max-width: 900px;
-  margin: auto;
-  padding: 20px;
-}
+/* ============================================
+   TYPOGRAPHY UTILITIES
+   ============================================ */
 
-.about-container h1, .about-container h2 {
-  color: #c9209f;
-  font-family: 'Arial', sans-serif;
-  text-justify: auto;
-}
-
-.about-container p {
-  font-family: 'Verdana', sans-serif;
-  color: #666;
-  line-height: 2;
-}
-
-/* Base styles */
-.section-faq {
-  background: linear-gradient(to right, #ffffff, #f4f4f4);
-  padding: 40px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-/* Typography */
-.section-faq h4 {
-  font-size: 2rem;
-  color: #333;
-  background: -webkit-linear-gradient(45deg, #6a11cb, #2575fc);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.section-faq p {
-  color: #666;
-  font-size: 1rem;
-  line-height: 1.5;
-}
-
-/* Accordion customization */
-.accordion-header {
-  background-color: #fff;
-  color: #333;
-  padding: 15px 20px;
-  cursor: pointer;
-  border: none;
-  outline: none;
-  transition: background-color 0.3s ease;
-}
-
-.accordion-header:hover {
-  background-color: #f0f0f0;
-}
-
-.accordion-content {
-  background-color: #fff;
-  color: #666;
-  padding: 20px;
-  border-top: 1px solid #eee;
-  transition: all 0.3s ease-out;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .section-faq {
-    padding: 20px;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 
-  .section-faq h4 {
-    font-size: 1.5rem;
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
   }
 
-  .section-faq p {
-    font-size: 0.875rem;
+  .text-gradient-blue {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-mining-400 to-mining-600;
+  }
+
+  .text-gradient-amber {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-amber-600;
   }
 }
 
+/* ============================================
+   GLASS MORPHISM COMPONENTS
+   ============================================ */
 
+@layer components {
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
 
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
+  }
+
+  .glass-nav {
+    @apply bg-background/90 backdrop-blur-2xl border-b border-border shadow-sm;
+  }
+
+  .glass-button {
+    @apply bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all;
+  }
+
+  .glass-input {
+    @apply bg-white/5 backdrop-blur-sm border border-white/10 focus:border-primary/50 focus:bg-white/10 transition-all;
+  }
+}
+
+/* ============================================
+   GRADIENT UTILITIES
+   ============================================ */
+
+@layer utilities {
+  .gradient-mesh {
+    background-image:
+      radial-gradient(at 40% 20%, rgba(10, 132, 255, 0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, rgba(255, 159, 10, 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, rgba(10, 132, 255, 0.1) 0px, transparent 50%),
+      radial-gradient(at 80% 50%, rgba(255, 159, 10, 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(10, 132, 255, 0.12) 0px, transparent 50%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.08) 0%, rgba(255, 159, 10, 0.04) 50%, rgba(10, 132, 255, 0.06) 100%);
+  }
+
+  .gradient-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.5), rgba(255, 159, 10, 0.3));
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+}
+
+/* ============================================
+   HOVER & INTERACTION EFFECTS
+   ============================================ */
+
+@layer utilities {
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1;
+  }
+
+  .hover-glow {
+    @apply transition-shadow duration-300 hover:shadow-glow-md;
+  }
+
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-[1.02];
+  }
+
+  .magnetic-button {
+    @apply relative;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .underline-animation {
+    @apply relative;
+  }
+
+  .underline-animation::after {
+    @apply content-[''] absolute bottom-0 left-0 w-0 h-[2px] bg-primary transition-all duration-300;
+  }
+
+  .underline-animation:hover::after {
+    @apply w-full;
+  }
+}
+
+/* ============================================
+   SKELETON LOADING
+   ============================================ */
+
+@layer components {
+  .skeleton {
+    @apply relative overflow-hidden bg-muted/50 rounded;
+  }
+
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent);
+    animation: shimmer 2s infinite;
+  }
+}
+
+/* ============================================
+   BUTTON VARIANTS
+   ============================================ */
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 hover:shadow-glow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80 border border-border focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-foreground rounded-xl hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium bg-accent text-accent-foreground rounded-xl hover:bg-accent/90 hover:shadow-glow-amber focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none;
+  }
+}
+
+/* ============================================
+   CARD VARIANTS
+   ============================================ */
+
+@layer components {
+  .card-base {
+    @apply bg-card text-card-foreground rounded-2xl border border-border p-6;
+  }
+
+  .card-hover {
+    @apply card-base hover-lift hover:border-primary/30 hover:shadow-glow-sm transition-all duration-300;
+  }
+
+  .card-glass {
+    @apply glass-card p-6 hover-lift transition-all duration-300;
+  }
+
+  .card-feature {
+    @apply relative card-hover overflow-hidden;
+  }
+
+  .card-feature::before {
+    @apply content-[''] absolute inset-0 opacity-0 transition-opacity duration-300;
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.05) 0%, transparent 50%);
+  }
+
+  .card-feature:hover::before {
+    @apply opacity-100;
+  }
+}
+
+/* ============================================
+   FORM COMPONENTS
+   ============================================ */
+
+@layer components {
+  .input-base {
+    @apply w-full px-4 py-3 bg-card text-foreground rounded-xl border border-border placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300;
+  }
+
+  .textarea-base {
+    @apply input-base resize-none min-h-[120px];
+  }
+}
+
+/* ============================================
+   BADGE COMPONENTS
+   ============================================ */
+
+@layer components {
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary/10 text-primary border border-primary/20;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent/10 text-accent border border-accent/20;
+  }
+
+  .badge-success {
+    @apply badge bg-success/10 text-success border border-success/20;
+  }
+
+  .badge-muted {
+    @apply badge bg-muted text-muted-foreground;
+  }
+}
+
+/* ============================================
+   ANIMATION UTILITIES
+   ============================================ */
+
+@layer utilities {
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animate-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animate-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .animate-in {
+    animation: fade-in-up 0.6s ease-out forwards;
+    opacity: 0;
+  }
+
+  .stagger-children>* {
+    @apply animate-in;
+  }
+
+  .stagger-children>*:nth-child(1) {
+    animation-delay: 0ms;
+  }
+
+  .stagger-children>*:nth-child(2) {
+    animation-delay: 100ms;
+  }
+
+  .stagger-children>*:nth-child(3) {
+    animation-delay: 200ms;
+  }
+
+  .stagger-children>*:nth-child(4) {
+    animation-delay: 300ms;
+  }
+
+  .stagger-children>*:nth-child(5) {
+    animation-delay: 400ms;
+  }
+
+  .stagger-children>*:nth-child(6) {
+    animation-delay: 500ms;
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+/* ============================================
+   RESPONSIVE GRID UTILITIES
+   ============================================ */
+
+@layer utilities {
+  .grid-auto-fill {
+    grid-template-columns: repeat(auto-fill, minmax(var(--min-col-width, 280px), 1fr));
+  }
+
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(var(--min-col-width, 280px), 1fr));
+  }
+}
+
+/* ============================================
+   BENTO GRID
+   ============================================ */
+
+@layer components {
+  .bento-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, minmax(200px, auto));
+  }
+
+  .bento-item {
+    @apply card-hover;
+  }
+
+  .bento-item.large {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .bento-item.wide {
+    grid-column: span 2;
+  }
+
+  .bento-item.tall {
+    grid-row: span 2;
+  }
+
+  @media (max-width: 1024px) {
+    .bento-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .bento-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .bento-item.large,
+    .bento-item.wide,
+    .bento-item.tall {
+      grid-column: span 1;
+      grid-row: span 1;
+    }
+  }
+}
+
+/* ============================================
+   HERO SECTION UTILITIES
+   ============================================ */
+
+@layer components {
+  .hero-title {
+    @apply font-display text-display-2xl font-bold tracking-tight text-balance;
+  }
+
+  .hero-subtitle {
+    @apply text-body-lg text-muted-foreground max-w-2xl mx-auto text-balance;
+  }
+
+  .section-title {
+    @apply font-display text-display-lg font-bold tracking-tight;
+  }
+
+  .section-subtitle {
+    @apply text-body-md text-muted-foreground max-w-xl;
+  }
+}
+
+/* ============================================
+   PROSE TYPOGRAPHY
+   ============================================ */
+
+@layer components {
+  .prose-mining {
+    @apply text-foreground;
+  }
+
+  .prose-mining h1 {
+    @apply font-display text-display-lg font-bold mt-8 mb-4;
+  }
+
+  .prose-mining h2 {
+    @apply font-display text-display-md font-bold mt-6 mb-3;
+  }
+
+  .prose-mining h3 {
+    @apply font-display text-display-sm font-semibold mt-5 mb-2;
+  }
+
+  .prose-mining p {
+    @apply text-body-md text-muted-foreground mb-4 leading-relaxed;
+  }
+
+  .prose-mining a {
+    @apply text-primary underline-animation;
+  }
+
+  .prose-mining ul {
+    @apply list-disc list-inside space-y-2 text-muted-foreground mb-4;
+  }
+
+  .prose-mining code {
+    @apply font-mono text-sm bg-muted px-1.5 py-0.5 rounded;
+  }
+}
