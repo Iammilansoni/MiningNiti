@@ -1,152 +1,148 @@
-"use client";
+'use client';
+
 import React, { useState, useRef, FormEvent, useEffect, KeyboardEvent } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import axios from 'axios';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faPlay, faPause, faCopy } from '@fortawesome/free-solid-svg-icons';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Send, 
+  Upload, 
+  Copy, 
+  Play, 
+  Pause, 
+  Bot, 
+  User, 
+  Sparkles,
+  Settings,
+  ArrowLeft,
+  Database,
+  Globe,
+  Layers,
+  Check,
+  Loader2,
+  MessageSquare
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { cn } from '@/lib/utils';
 
 interface ChatItem {
+  id: string;
   message: string;
   response: string;
+  timestamp: Date;
 }
 
-const Loader: React.FC = () => (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="loader"></div>
-    <style jsx>{`
-      .loader {
-        display: inline-block;
-        width: 80px;
-        height: 80px;
-      }
-      .loader:after {
-        content: " ";
-        display: block;
-        width: 64px;
-        height: 64px;
-        margin: 8px;
-        border-radius: 50%;
-        border: 6px solid #fff;
-        border-color: #fff transparent #fff transparent;
-        animation: loader 1.2s linear infinite;
-      }
-      @keyframes loader {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-    `}</style>
-  </div>
-);
+const suggestedQueries = [
+  'What are the key mining safety regulations in India?',
+  'Explain the process for mining lease renewal',
+  'What are the environmental clearance requirements?',
+  'Latest DGMS circulars for coal mines',
+  'Mining safety officer qualifications',
+];
 
-const Page: React.FC = () => {
+const sourceOptions = [
+  { value: 'database', label: 'Database', icon: Database },
+  { value: 'internet', label: 'Internet', icon: Globe },
+  { value: 'both', label: 'Both', icon: Layers },
+];
+
+export default function ChatPage() {
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState<ChatItem[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [defaultSuggestions, setDefaultSuggestions] = useState<string[]>([
-    'What are the main features of MiningNiti for managing mining data?',
-    'What are the latest trends in mining technology?',
-    'How do mining companies manage environmental impact?',
-    'What are the safety regulations in the mining industry?',
-    'Can you explain the process of ore extraction?'
-  ]);
   const [source, setSource] = useState('both');
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentUtterance, setCurrentUtterance] = useState<SpeechSynthesisUtterance | null>(null);
-  const [highlightedText, setHighlightedText] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Auto-resize textarea
   useEffect(() => {
-    const handleResize = () => {
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-      }
-    };
-    handleResize();
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
   }, [message]);
 
-  const fetchSuggestions = async (input: string) => {
-    // Placeholder for fetching suggestions, replace URL and logic as needed
-    try {
-      const response = await axios.get(`http://localhost:8000/suggestions?q=${input}`);
-      setSuggestions(response.data.suggestions);
-    } catch (error) {
-      console.error('Failed to fetch suggestions:', error);
+  // Scroll to bottom on new message
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newMessage = e.target.value;
-    setMessage(newMessage);
-    if (newMessage.trim() === '') {
-      setSuggestions([]);
-      setDefaultSuggestions([
-        'What are the main features of MiningNiti for managing mining data?',
-        'What are the latest trends in mining technology?',
-        'How do mining companies manage environmental impact?',
-        'What are the safety regulations in the mining industry?',
-        'Can you explain the process of ore extraction?'
-      ]);
-    } else {
-      fetchSuggestions(newMessage);
-      setDefaultSuggestions([]);
-    }
-  };
+  }, [chatLog]);
 
   const handleSubmit = async (messageToSend: string) => {
+    if (!messageToSend.trim()) return;
+    
     setIsSending(true);
     setError(null);
-    const data = { input_query: messageToSend, source };
+    
+    const newMessage: ChatItem = {
+      id: Date.now().toString(),
+      message: messageToSend,
+      response: '',
+      timestamp: new Date(),
+    };
+
+    setChatLog(prev => [...prev, newMessage]);
+    setMessage('');
+
     try {
       const response = await axios.post(
         process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/chat',
-        data,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
+        { input_query: messageToSend, source },
+        { headers: { 'Content-Type': 'application/json' } }
       );
-      setChatLog([...chatLog, { message: messageToSend, response: response.data.response }]);
-      setMessage('');
-      setSuggestions([]);
-      setDefaultSuggestions([]);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
-      if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-      }
-    } catch (error) {
-      console.error(error);
+
+      setChatLog(prev => 
+        prev.map(item => 
+          item.id === newMessage.id 
+            ? { ...item, response: response.data.response }
+            : item
+        )
+      );
+    } catch (err) {
       setError('Failed to send message. Please try again.');
+      setChatLog(prev => prev.filter(item => item.id !== newMessage.id));
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: FormEvent) => {
     e.preventDefault();
     handleSubmit(message);
   };
 
-  const handleSuggestionClick = async (suggestion: string) => {
-    await handleSubmit(suggestion);
-  };
-
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault(); // Prevent the default newline behavior
-      handleFormSubmit(e as unknown as FormEvent<HTMLFormElement>); // Trigger form submission
+      e.preventDefault();
+      handleSubmit(message);
     }
+  };
+
+  const handleCopy = async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handlePlayVoice = (text: string) => {
+    if (isPlaying) {
+      speechSynthesis.cancel();
+      setIsPlaying(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => setIsPlaying(false);
+    setIsPlaying(true);
+    speechSynthesis.speak(utterance);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,199 +150,285 @@ const Page: React.FC = () => {
       const file = e.target.files[0];
       const formData = new FormData();
       formData.append('file', file);
+      
       try {
         const response = await axios.post(
-          process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000/extract_text_from_pdf',
+          process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000/extract_text_from_pdf',
           formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
+          { headers: { 'Content-Type': 'multipart/form-data' } }
         );
-        const extractedText = response.data.text;
-        setMessage(extractedText);
-      } catch (error) {
-        console.error('Error extracting text from PDF:', error);
+        setMessage(response.data.text);
+      } catch (err) {
         setError('Failed to extract text from PDF. Please try again.');
       }
     }
   };
 
-  const handlePlayVoice = (text: string) => {
-    if (isPlaying && currentUtterance) {
-      speechSynthesis.cancel();
-      setIsPlaying(false);
-      setHighlightedText(null);
-      return;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.onstart = () => {
-      setIsPlaying(true);
-      setHighlightedText(text);
-    };
-    utterance.onend = () => {
-      setIsPlaying(false);
-      setHighlightedText(null);
-    };
-    utterance.onboundary = (event) => {
-      const { charIndex } = event;
-      setHighlightedText(text.substring(0, charIndex));
-    };
-
-    setCurrentUtterance(utterance);
-    speechSynthesis.speak(utterance);
-  };
-
-  const handleCopyText = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Text copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy text: ', err);
-    });
-  };
-
   return (
-    <div className='pt-0 px-4' style={{ height: '100vh', overflowY: 'auto' }}>
-      {isSending && <Loader />}
-      <div className='flex flex-col items-center mt-8'>
-        <Image
-          className='h-30 w-30 rounded-full'
-          src='/icon.png'
-          alt='Profile Icon'
-          height={60}
-          width={60}
-          priority={true}
-        />
-        <p className='text-2xl text-pink-500 font-bold'>Chat Application</p>
-      </div>
-      <div className='fixed bottom-0 w-full bg-transparent pb-4'>
-        <form onSubmit={handleFormSubmit} className='flex items-center p-2 mx-auto w-full max-w-7xl'>
-          <textarea
-            id='chat'
-            rows={1}
-            ref={textareaRef}
-            className='flex-1 p-2.5 text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring focus:border-blue-500 resize-none overflow-hidden overflow-auto'
-            placeholder='Your message...'
-            value={message}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            style={{ minHeight: '40px', maxHeight: '200px' }}
-            aria-label="Type your message here"
-          />
-          <label className="p-2 ml-4 rounded-full bg-pink-500 text-white cursor-pointer hover:bg-pink-600 transition-colors duration-300 hidden sm:block">
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileUpload}
-              className='hidden'
-            />
-            Upload PDF
-          </label>
-          <label className="p-2 ml-4 rounded-full bg-pink-500 text-white cursor-pointer hover:bg-pink-600 transition-colors duration-300 block sm:hidden">
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileUpload}
-              className='hidden'
-            />
-            <FontAwesomeIcon icon={faUpload} />
-          </label>
-          <button
-            type='submit'
-            disabled={isSending}
-            className='p-2 ml-4 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300'
-          >
-            {isSending ? 'Sending...' : 'Send'}
-          </button>
-        </form>
-        <div className="flex justify-center mt-4">
-          <label className="mr-4">
-            <input
-              type="radio"
-              name="source"
-              value="database"
-              checked={source === "database"}
-              onChange={() => setSource("database")}
-            />
-            Database
-          </label>
-          <label className="mr-4">
-            <input
-              type="radio"
-              name="source"
-              value="internet"
-              checked={source === "internet"}
-              onChange={() => setSource("internet")}
-            />
-            Internet
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="source"
-              value="both"
-              checked={source === "both"}
-              onChange={() => setSource("both")}
-            />
-            Both
-          </label>
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <aside className="hidden lg:flex w-72 flex-col border-r border-border bg-card/50">
+        {/* Logo */}
+        <div className="p-4 border-b border-border">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="relative h-10 w-10 rounded-xl overflow-hidden">
+              <Image
+                src="/icon.png"
+                alt="MiningNiti Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <span className="font-display font-bold text-xl">MiningNiti</span>
+          </Link>
         </div>
-        {suggestions.length > 0 && (
-          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl bg-gray-100 shadow-lg p-4" style={{ marginBottom: '60px' }}>
-            {suggestions.map((suggestion, index) => (
-              <div
+
+        {/* Suggested Queries */}
+        <div className="flex-1 overflow-auto p-4">
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Suggested Queries
+          </h3>
+          <div className="space-y-2">
+            {suggestedQueries.map((query, index) => (
+              <button
                 key={index}
-                className="cursor-pointer hover:bg-gray-200 p-2"
-                onClick={() => handleSuggestionClick(suggestion)}
+                onClick={() => handleSubmit(query)}
+                disabled={isSending}
+                className="w-full text-left p-3 rounded-xl text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
               >
-                {suggestion}
-              </div>
+                {query}
+              </button>
             ))}
           </div>
-        )}
-        {defaultSuggestions.length > 0 && message.trim() === '' && (
-          <div className="absolute bottom-20 left-0 right-0 mx-auto w-full max-w-7xl shadow-lg p-4" style={{ marginBottom: '60px' }}>
-            {defaultSuggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="cursor-pointer hover:bg-pink-100 hover:text-black p-2 transition-colors duration-150"
-                onClick={() => handleSuggestionClick(suggestion)}
+        </div>
+
+        {/* Source Selection */}
+        <div className="p-4 border-t border-border">
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+            Search Source
+          </h3>
+          <div className="space-y-2">
+            {sourceOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setSource(option.value)}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3 rounded-xl text-sm transition-colors',
+                  source === option.value
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'text-muted-foreground hover:bg-secondary'
+                )}
               >
-                {suggestion}
-              </div>
+                <option.icon className="h-4 w-4" />
+                {option.label}
+              </button>
             ))}
           </div>
-        )}
-        {error && <p className="text-red-500 text-center mt-2">{error}</p>}
-      </div>
-      <div
-        className='my-4 flex flex-col items-center'
-        ref={chatContainerRef}
-        style={{ maxHeight: 'calc(100vh - 250px)', overflowY: 'auto' }}
-      >
-        {chatLog.map((item, index) => (
-          <div key={index} className='flex flex-col items-center w-full'>
-            <div className='bg-pink-100 text-blue-900 p-4 rounded-lg shadow-md my-2 w-3/4'>
-              <p className='text-left text-sm font-bold'>{item.message}</p>
-            </div>
-            <div className='bg-gray-100 text-gray-900 p-4 rounded-lg shadow-md my-2 w-3/4 relative'>
-              <span dangerouslySetInnerHTML={{ __html: highlightedText && item.response.includes(highlightedText) ? item.response.replace(highlightedText, `<mark>${highlightedText}</mark>`) : item.response }} />
-              <div className='absolute top-2 right-2 flex space-x-2'>
-                <button onClick={() => handlePlayVoice(item.response)} className='text-blue-500 hover:text-blue-700'>
-                  <FontAwesomeIcon icon={isPlaying ? faPause : faPlay} />
-                </button>
-                <button onClick={() => handleCopyText(item.response)} className='text-blue-500 hover:text-blue-700'>
-                  <FontAwesomeIcon icon={faCopy} />
-                </button>
+        </div>
+
+        {/* Settings */}
+        <div className="p-4 border-t border-border flex items-center justify-between">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </aside>
+
+      {/* Main Chat Area */}
+      <main className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 border-b border-border bg-card/50 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="lg:hidden">
+              <div className="relative h-10 w-10 rounded-xl overflow-hidden">
+                <Image
+                  src="/icon.png"
+                  alt="MiningNiti Logo"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </Link>
+            <div>
+              <h1 className="font-semibold">AI Assistant</h1>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                Online • Powered by RAG
               </div>
             </div>
           </div>
-        ))}
-      </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="muted" className="hidden sm:flex">
+              Source: {sourceOptions.find(s => s.value === source)?.label}
+            </Badge>
+            <ThemeToggle className="lg:hidden" />
+          </div>
+        </header>
+
+        {/* Chat Messages */}
+        <div 
+          ref={chatContainerRef}
+          className="flex-1 overflow-auto p-4 space-y-6 scrollbar-thin"
+        >
+          {chatLog.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center p-8">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="max-w-md"
+              >
+                <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                  <MessageSquare className="h-10 w-10 text-primary" />
+                </div>
+                <h2 className="font-display text-2xl font-bold mb-2">
+                  Welcome to MiningNiti
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Ask me anything about mining compliance, regulations, acts, or circulars.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {suggestedQueries.slice(0, 3).map((query, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSubmit(query)}
+                      className="text-xs"
+                    >
+                      {query.slice(0, 30)}...
+                    </Button>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          ) : (
+            <AnimatePresence>
+              {chatLog.map((item) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-4"
+                >
+                  {/* User Message */}
+                  <div className="flex gap-3 justify-end">
+                    <div className="max-w-[80%] rounded-2xl rounded-tr-md bg-primary text-primary-foreground p-4">
+                      <p className="text-sm">{item.message}</p>
+                      <span className="text-xs opacity-70 mt-2 block">
+                        {item.timestamp.toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 text-accent" />
+                    </div>
+                  </div>
+
+                  {/* Bot Response */}
+                  <div className="flex gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="max-w-[80%]">
+                      {item.response ? (
+                        <div className="rounded-2xl rounded-tl-md bg-secondary p-4">
+                          <p className="text-sm whitespace-pre-wrap">{item.response}</p>
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(item.response, item.id)}
+                              className="h-8 px-2"
+                            >
+                              {copiedId === item.id ? (
+                                <Check className="h-4 w-4 text-success" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePlayVoice(item.response)}
+                              className="h-8 px-2"
+                            >
+                              {isPlaying ? (
+                                <Pause className="h-4 w-4" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl rounded-tl-md bg-secondary p-4">
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm text-muted-foreground">Thinking...</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="px-4 py-2 bg-destructive/10 text-destructive text-sm text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Input Area */}
+        <div className="p-4 border-t border-border bg-card/50 backdrop-blur-sm">
+          <form onSubmit={handleFormSubmit} className="max-w-4xl mx-auto">
+            <div className="flex gap-3 items-end">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={textareaRef}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask about mining regulations..."
+                  rows={1}
+                  className="w-full px-4 py-3 pr-12 rounded-xl border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  style={{ minHeight: '48px', maxHeight: '150px' }}
+                />
+                <label className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-primary transition-colors">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Upload className="h-5 w-5" />
+                </label>
+              </div>
+              <Button 
+                type="submit" 
+                size="icon" 
+                className="h-12 w-12 rounded-xl"
+                disabled={isSending || !message.trim()}
+              >
+                {isSending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Press Enter to send, Shift+Enter for new line
+            </p>
+          </form>
+        </div>
+      </main>
     </div>
   );
-};
-
-export default Page;
+}
