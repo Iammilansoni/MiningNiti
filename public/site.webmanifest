@@ -1,0 +1,23 @@
+{
+  "name": "MiningNiti - AI Mining Compliance Assistant",
+  "short_name": "MiningNiti",
+  "description": "AI-powered chatbot for mining compliance queries and regulations",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
