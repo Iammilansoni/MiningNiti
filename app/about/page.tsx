@@ -10,7 +10,7 @@ import { Container, Section, SectionHeader } from '@/components/ui/container';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { teamMembers } from '@/lib/constants';
+
 
 const milestones = [
   { year: '2023', title: 'SIH 2023 Winner', description: 'Won Smart India Hackathon for CMPDI problem statement' },
@@ -184,53 +184,6 @@ export default function AboutPage() {
                       </div>
                       <h3 className="font-display font-semibold text-xl mb-2">{value.title}</h3>
                       <p className="text-muted-foreground">{value.description}</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </Container>
-        </Section>
-
-        {/* Team Section */}
-        <Section id="team" className="bg-card/50">
-          <Container>
-            <SectionHeader
-              badge="Our Team"
-              title="Meet the Innovators"
-              subtitle="The talented individuals behind MiningNiti."
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teamMembers.map((member, index) => (
-                <motion.div
-                  key={member.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card variant="default" hover="lift" className="overflow-hidden">
-                    <div className="relative h-48">
-                      <Image
-                        src={member.image}
-                        alt={member.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <CardContent className="p-5">
-                      <h3 className="font-semibold text-lg">{member.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-3">{member.role}</p>
-                      {member.skills && (
-                        <div className="flex flex-wrap gap-1">
-                          {member.skills.map((skill) => (
-                            <Badge key={skill} variant="muted" size="sm">
-                              {skill}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 </motion.div>

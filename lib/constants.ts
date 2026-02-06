@@ -1,9 +1,9 @@
-import { NavLink, TeamMember, Feature, FAQ, TechItem, SiteConfig } from '@/types';
+import { NavLink, Feature, FAQ, TechItem, SiteConfig } from '@/types';
 
 export const siteConfig: SiteConfig = {
     name: 'MiningNiti',
     description: 'AI-Powered Mining Compliance Platform - SIH 2023 Winner',
-    url: 'https://miningniti.com',
+    url: 'https://miningniti.vercel.app',
     ogImage: '/og-image.png',
     links: {
         github: 'https://github.com/iammilansoni',
@@ -18,51 +18,6 @@ export const navLinks: NavLink[] = [
     { label: 'Resources', href: '/resources' },
     { label: 'Docs', href: '/docs' },
     { label: 'Contact', href: '/contact' },
-];
-
-export const teamMembers: TeamMember[] = [
-    {
-        name: 'Gavesh',
-        role: 'Team Lead',
-        image: '/gavesh.png',
-        linkedin: '#',
-        skills: ['AI/ML', 'Python', 'Leadership'],
-    },
-    {
-        name: 'Milan',
-        role: 'Full Stack Developer',
-        image: '/milan.png',
-        linkedin: 'https://linkedin.com/in/iammilansoni',
-        skills: ['Next.js', 'TypeScript', 'AI Integration'],
-    },
-    {
-        name: 'Abhilash',
-        role: 'Backend Developer',
-        image: '/abhilash.png',
-        linkedin: '#',
-        skills: ['Python', 'FastAPI', 'LangChain'],
-    },
-    {
-        name: 'Khushal',
-        role: 'ML Engineer',
-        image: '/khushal.png',
-        linkedin: '#',
-        skills: ['FAISS', 'RAG', 'DPO'],
-    },
-    {
-        name: 'Avadhi',
-        role: 'UI/UX Designer',
-        image: '/avadhi.png',
-        linkedin: '#',
-        skills: ['Figma', 'Design Systems', 'Prototyping'],
-    },
-    {
-        name: 'Khushbu',
-        role: 'Data Analyst',
-        image: '/khushbu.png',
-        linkedin: '#',
-        skills: ['Data Analysis', 'Mining Domain', 'Research'],
-    },
 ];
 
 export const features: Feature[] = [

@@ -155,11 +155,11 @@ MiningNiti/
 
 ## 📸 Screenshots
 
-> Add screenshots of your app here
+| Landing Page | Chat Interface |
+|---|---|
+| ![Landing](https://miningniti.vercel.app/og-image.png) | ![Chat](https://miningniti.vercel.app/og-image.png) |
 
-| Chat Interface | Source Citations |
-|----------------|------------------|
-| ![Chat](placeholder) | ![Citations](placeholder) |
+> 🔗 **[Live Demo →](https://miningniti.vercel.app)**
 
 ---
 
