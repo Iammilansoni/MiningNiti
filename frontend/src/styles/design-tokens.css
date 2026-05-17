@@ -1,0 +1,329 @@
+/* Mining Industry Design Tokens */
+
+:root {
+  /* Primary Brand Colors - Mining Theme */
+  --mining-primary: 210 100% 50%;
+  /* Deep cyan for tech/intelligence */
+  --mining-secondary: 34 100% 45%;
+  /* Mining gold/amber */
+  --mining-accent: 142 76% 36%;
+  /* Earth green for sustainability */
+  --mining-danger: 0 84% 60%;
+  /* Alert red for safety */
+  --mining-warning: 45 93% 58%;
+  /* Construction yellow */
+  --mining-success: 142 71% 45%;
+  /* Forest green for success */
+
+  /* Neutral Mining Colors */
+  --mining-slate: 215 28% 17%;
+  /* Deep mining tunnel */
+  --mining-stone: 210 6% 32%;
+  /* Stone/concrete */
+  --mining-steel: 213 10% 52%;
+  /* Industrial steel */
+  --mining-silver: 210 14% 83%;
+  /* Refined metal */
+
+  /* Semantic Colors for Mining Operations */
+  --safety-critical: 0 100% 50%;
+  /* Emergency stop red */
+  --safety-warning: 39 100% 50%;
+  /* High-vis orange */
+  --safety-caution: 45 100% 51%;
+  /* Construction yellow */
+  --safety-ok: 120 100% 25%;
+  /* Safety green */
+
+  /* Mining Equipment Colors */
+  --equipment-active: 210 100% 56%;
+  /* Active equipment blue */
+  --equipment-maintenance: 39 100% 50%;
+  /* Maintenance orange */
+  --equipment-offline: 0 0% 40%;
+  /* Offline gray */
+
+  /* Environmental Colors */
+  --earth-brown: 25 50% 35%;
+  /* Earth/soil */
+  --mineral-blue: 200 100% 35%;
+  /* Deep mineral */
+  --coal-black: 0 0% 8%;
+  /* Coal/carbon */
+  --ore-copper: 15 85% 45%;
+  /* Copper ore */
+
+  /* Advanced Gradients */
+  --mining-gradient-primary: linear-gradient(135deg,
+      hsl(var(--mining-primary)) 0%,
+      hsl(var(--mining-secondary)) 100%);
+
+  --mining-gradient-safety: linear-gradient(135deg,
+      hsl(var(--safety-critical)) 0%,
+      hsl(var(--safety-warning)) 100%);
+
+  --mining-gradient-earth: linear-gradient(135deg,
+      hsl(var(--earth-brown)) 0%,
+      hsl(var(--ore-copper)) 100%);
+
+  /* Typography Scale - Enhanced for readability */
+  --text-xs: 0.75rem;
+  /* 12px */
+  --text-sm: 0.875rem;
+  /* 14px */
+  --text-base: 1rem;
+  /* 16px */
+  --text-lg: 1.125rem;
+  /* 18px */
+  --text-xl: 1.25rem;
+  /* 20px */
+  --text-2xl: 1.5rem;
+  /* 24px */
+  --text-3xl: 1.875rem;
+  /* 30px */
+  --text-4xl: 2.25rem;
+  /* 36px */
+  --text-5xl: 3rem;
+  /* 48px */
+  --text-6xl: 3.75rem;
+  /* 60px */
+
+  /* Spacing Scale - Golden ratio based */
+  --space-1: 0.25rem;
+  /* 4px */
+  --space-2: 0.5rem;
+  /* 8px */
+  --space-3: 0.75rem;
+  /* 12px */
+  --space-4: 1rem;
+  /* 16px */
+  --space-5: 1.25rem;
+  /* 20px */
+  --space-6: 1.5rem;
+  /* 24px */
+  --space-8: 2rem;
+  /* 32px */
+  --space-10: 2.5rem;
+  /* 40px */
+  --space-12: 3rem;
+  /* 48px */
+  --space-16: 4rem;
+  /* 64px */
+  --space-20: 5rem;
+  /* 80px */
+  --space-24: 6rem;
+  /* 96px */
+
+  /* Border Radius Scale */
+  --radius-xs: 0.125rem;
+  /* 2px */
+  --radius-sm: 0.25rem;
+  /* 4px */
+  --radius-md: 0.375rem;
+  /* 6px */
+  --radius-lg: 0.5rem;
+  /* 8px */
+  --radius-xl: 0.75rem;
+  /* 12px */
+  --radius-2xl: 1rem;
+  /* 16px */
+  --radius-3xl: 1.5rem;
+  /* 24px */
+  --radius-full: 9999px;
+
+  /* Shadow System - Enhanced for depth */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+  /* Mining-specific shadows */
+  --shadow-neon: 0 0 20px hsl(var(--mining-primary) / 0.5);
+  --shadow-safety: 0 0 15px hsl(var(--safety-critical) / 0.3);
+  --shadow-equipment: 0 0 25px hsl(var(--equipment-active) / 0.4);
+
+  /* Animation Timing */
+  --timing-fast: 150ms;
+  --timing-normal: 250ms;
+  --timing-slow: 350ms;
+  --timing-slower: 500ms;
+
+  /* Animation Easing */
+  --ease-in-quad: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  --ease-bouncy: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Z-Index Scale */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+  --z-loading: 1090;
+}
+
+/* Dark theme overrides */
+.dark {
+  --mining-primary: 200 100% 65%;
+  --mining-secondary: 34 90% 55%;
+  --mining-accent: 142 60% 45%;
+
+  --shadow-neon: 0 0 30px hsl(var(--mining-primary) / 0.6);
+  --shadow-safety: 0 0 20px hsl(var(--safety-critical) / 0.4);
+  --shadow-equipment: 0 0 35px hsl(var(--equipment-active) / 0.5);
+}
+
+/* Mining-specific utility classes */
+.mining-gradient-primary {
+  background: var(--mining-gradient-primary);
+}
+
+.mining-gradient-safety {
+  background: var(--mining-gradient-safety);
+}
+
+.mining-gradient-earth {
+  background: var(--mining-gradient-earth);
+}
+
+.mining-shadow-neon {
+  box-shadow: var(--shadow-neon);
+}
+
+.mining-shadow-safety {
+  box-shadow: var(--shadow-safety);
+}
+
+.mining-shadow-equipment {
+  box-shadow: var(--shadow-equipment);
+}
+
+/* Advanced text treatments */
+.text-mining-primary {
+  color: hsl(var(--mining-primary));
+}
+
+.text-mining-secondary {
+  color: hsl(var(--mining-secondary));
+}
+
+.text-safety-critical {
+  color: hsl(var(--safety-critical));
+}
+
+.bg-mining-primary {
+  background-color: hsl(var(--mining-primary));
+}
+
+.bg-mining-secondary {
+  background-color: hsl(var(--mining-secondary));
+}
+
+/* Equipment status indicators */
+.equipment-status-active {
+  color: hsl(var(--equipment-active));
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.equipment-status-maintenance {
+  color: hsl(var(--equipment-maintenance));
+  animation: blink 1s ease-in-out infinite alternate;
+}
+
+.equipment-status-offline {
+  color: hsl(var(--equipment-offline));
+  opacity: 0.6;
+}
+
+/* Safety compliance indicators */
+.safety-compliance-ok {
+  background: hsl(var(--safety-ok));
+  color: white;
+}
+
+.safety-compliance-warning {
+  background: hsl(var(--safety-warning));
+  color: black;
+}
+
+.safety-compliance-critical {
+  background: hsl(var(--safety-critical));
+  color: white;
+  animation: urgent-pulse 0.5s ease-in-out infinite alternate;
+}
+
+/* Mining data visualization colors */
+.chart-production {
+  color: hsl(var(--mining-primary));
+}
+
+.chart-safety {
+  color: hsl(var(--safety-ok));
+}
+
+.chart-efficiency {
+  color: hsl(var(--mining-secondary));
+}
+
+.chart-compliance {
+  color: hsl(var(--mining-accent));
+}
+
+.chart-maintenance {
+  color: hsl(var(--equipment-maintenance));
+}
+
+@keyframes urgent-pulse {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive design tokens */
+@media (min-width: 640px) {
+  :root {
+    --text-base: 1.125rem;
+    /* 18px on larger screens */
+    --space-4: 1.25rem;
+    /* 20px */
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --text-base: 1.25rem;
+    /* 20px on tablets+ */
+  }
+}

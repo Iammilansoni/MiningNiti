@@ -1,0 +1,454 @@
+/* Holographic Dashboard Styles */
+
+.holographic-container {
+  background: radial-gradient(ellipse at center, rgba(0, 210, 255, 0.1) 0%, transparent 70%);
+  position: relative;
+  overflow: hidden;
+}
+
+.holographic-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 210, 255, 0.15) 0%, transparent 50%);
+  animation: holographicPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes holographicPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.holographic-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d2ff, transparent);
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.8);
+  animation: scanlineMove 3s linear infinite;
+}
+
+@keyframes scanlineMove {
+  0% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+.holographic-corner-ui {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: #00d2ff;
+  text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
+  opacity: 0.7;
+  animation: textFlicker 2s ease-in-out infinite alternate;
+}
+
+@keyframes textFlicker {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.holographic-grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(0, 210, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 210, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  animation: gridMove 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes gridMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(20px, 20px);
+  }
+}
+
+.neon-text {
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor,
+    0 0 20px currentColor;
+}
+
+.glass-morphism {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: linear-gradient(45deg, #00d2ff, #ff6b6b, #4ecdc4, #a8e6cf);
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: subtract;
+  animation: borderRotate 3s linear infinite;
+}
+
+@keyframes borderRotate {
+  0% {
+    background: linear-gradient(45deg, #00d2ff, #ff6b6b, #4ecdc4, #a8e6cf);
+  }
+  25% {
+    background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #a8e6cf, #00d2ff);
+  }
+  50% {
+    background: linear-gradient(225deg, #4ecdc4, #a8e6cf, #00d2ff, #ff6b6b);
+  }
+  75% {
+    background: linear-gradient(315deg, #a8e6cf, #00d2ff, #ff6b6b, #4ecdc4);
+  }
+  100% {
+    background: linear-gradient(405deg, #00d2ff, #ff6b6b, #4ecdc4, #a8e6cf);
+  }
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  position: relative;
+}
+
+.status-indicator.online {
+  background: #00ff00;
+  box-shadow: 0 0 10px #00ff00;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status-indicator.active {
+  background: #00d2ff;
+  box-shadow: 0 0 10px #00d2ff;
+  animation: statusPulse 2s ease-in-out infinite 0.5s;
+}
+
+.status-indicator.warning {
+  background: #ffd700;
+  box-shadow: 0 0 10px #ffd700;
+  animation: statusPulse 2s ease-in-out infinite 1s;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+/* Holographic button hover effects */
+.holographic-tile {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.holographic-tile:hover {
+  transform: translateY(-10px);
+  box-shadow: 
+    0 10px 30px rgba(0, 210, 255, 0.3),
+    0 0 50px rgba(0, 210, 255, 0.2);
+}
+
+.holographic-tile::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(0, 210, 255, 0.1),
+    transparent
+  );
+  transform: rotate(45deg);
+  animation: tileShimmer 3s ease-in-out infinite;
+}
+
+@keyframes tileShimmer {
+  0% {
+    transform: translateX(-100%) rotate(45deg);
+  }
+  50% {
+    transform: translateX(0%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) rotate(45deg);
+  }
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .holographic-corner-ui {
+    font-size: 9px;
+  }
+  
+  .holographic-grid-overlay {
+    background-size: 15px 15px;
+  }
+}
+
+/* Multi-color neon border */
+.neon-multi-border {
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.neon-multi-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: linear-gradient(
+    45deg,
+    #ff0080,
+    #ff8c00,
+    #40e0d0,
+    #ff0080,
+    #00ff80,
+    #8000ff,
+    #ff4080,
+    #00d2ff,
+    #ff0080
+  );
+  background-size: 400% 400%;
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  animation: neonBorderFlow 4s ease-in-out infinite;
+}
+
+.neon-multi-border::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: inherit;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+@keyframes neonBorderFlow {
+  0%, 100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) brightness(1) blur(0px);
+  }
+  25% {
+    background-position: 100% 50%;
+    filter: hue-rotate(90deg) brightness(1.2) blur(0.5px);
+  }
+  50% {
+    background-position: 100% 100%;
+    filter: hue-rotate(180deg) brightness(1.1) blur(0px);
+  }
+  75% {
+    background-position: 0% 100%;
+    filter: hue-rotate(270deg) brightness(1.3) blur(0.5px);
+  }
+}
+
+/* Enhanced neon border with glow effect */
+.neon-multi-border-glow {
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.neon-multi-border-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  background: linear-gradient(
+    45deg,
+    #ff0080,
+    #ff8c00,
+    #40e0d0,
+    #ff0080,
+    #00ff80,
+    #8000ff,
+    #ff4080,
+    #00d2ff,
+    #ff0080
+  );
+  background-size: 400% 400%;
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  animation: neonBorderFlow 4s ease-in-out infinite;
+  filter: blur(1px);
+}
+
+.neon-multi-border-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: linear-gradient(
+    45deg,
+    #ff0080,
+    #ff8c00,
+    #40e0d0,
+    #ff0080,
+    #00ff80,
+    #8000ff,
+    #ff4080,
+    #00d2ff,
+    #ff0080
+  );
+  background-size: 400% 400%;
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  animation: neonBorderFlow 4s ease-in-out infinite;
+  z-index: 1;
+}
+
+/* Thin neon border variant */
+.neon-thin-border {
+  position: relative;
+  border: 0.5px solid transparent;
+}
+
+.neon-thin-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 0.5px;
+  background: linear-gradient(
+    90deg,
+    #ff006e,
+    #8338ec,
+    #3a86ff,
+    #06ffa5,
+    #ffbe0b,
+    #fb5607,
+    #ff006e
+  );
+  background-size: 200% 200%;
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  animation: thinNeonFlow 3s linear infinite;
+}
+
+@keyframes thinNeonFlow {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+/* Pulsing neon border */
+.neon-pulse-border {
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.neon-pulse-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: linear-gradient(
+    45deg,
+    #ff0a78,
+    #ff8c42,
+    #54e346,
+    #46c5e3,
+    #dc46e3,
+    #ff0a78
+  );
+  background-size: 300% 300%;
+  border-radius: inherit;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  animation: neonPulseBorder 2s ease-in-out infinite;
+}
+
+@keyframes neonPulseBorder {
+  0%, 100% {
+    background-position: 0% 50%;
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    background-position: 100% 50%;
+    opacity: 1;
+    transform: scale(1.01);
+  }
+}
+
+/* Dark mode specific styles */
+@media (prefers-color-scheme: dark) {
+  .holographic-container {
+    background: radial-gradient(ellipse at center, rgba(0, 210, 255, 0.15) 0%, transparent 70%);
+  }
+  
+  .neon-multi-border::before,
+  .neon-multi-border-glow::before,
+  .neon-multi-border-glow::after {
+    filter: brightness(1.2) saturate(1.3);
+  }
+}
