@@ -24,7 +24,7 @@ import { VoiceInput } from '@/components/ui/voice-input';
 import {
   MessageSquare, Plus, Clock, Send, Search, Edit3, Trash2,
   PanelLeftClose, PanelLeft, Sparkles, FileText, ChevronDown,
-  ExternalLink, Copy, Check,
+  Copy, Check,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -190,7 +190,8 @@ export default function ChatPage() {
 
   const { data: sessions = [], isLoading: sessionsLoading } = useChatSessions();
   const { data: sessionDetail, isLoading: messagesLoading } = useChatMessages(activeSessionId);
-  const createSession = useCreateChatSession();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _createSession = useCreateChatSession();
   const sendMsg = useSendMessage();
   const updateSession = useUpdateChatSession();
   const deleteSession = useDeleteChatSession();
