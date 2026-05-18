@@ -1,5 +1,4 @@
 import { Mountain } from 'lucide-react';
-import { ShinyText } from '@/components/reactbits';
 
 export default function GlobalLoading() {
   return (
