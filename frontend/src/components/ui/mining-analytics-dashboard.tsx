@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   LineChart, 
   Line, 
@@ -9,9 +9,6 @@ import {
   Area, 
   BarChart, 
   Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -29,22 +26,18 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  TrendingUp, 
+  TrendingUp,
   TrendingDown, 
-  Activity, 
+  Activity,
   Shield, 
-  Zap, 
-  AlertTriangle, 
+  AlertTriangle,
   CheckCircle,
   Clock,
   BarChart3,
-  PieChart as PieChartIcon,
   Target,
   Gauge,
-  Map,
   Users,
   Truck,
-  HardHat,
   Wrench,
   FileText,
   Brain
@@ -64,16 +57,6 @@ const MINING_COLORS = {
   maintenance: '#f97316'
 };
 
-const CHART_COLORS = [
-  MINING_COLORS.primary,
-  MINING_COLORS.secondary,
-  MINING_COLORS.accent,
-  MINING_COLORS.safety,
-  MINING_COLORS.warning,
-  MINING_COLORS.production,
-  MINING_COLORS.efficiency
-];
-
 // Sample data generators
 const generateProductionData = () => {
   const data = [];
@@ -92,11 +75,11 @@ const generateProductionData = () => {
 };
 
 const generateSafetyMetrics = () => [
-  { name: 'Incidents', value: 0, target: 0, status: 'excellent' },
-  { name: 'Near Misses', value: 2, target: 5, status: 'good' },
-  { name: 'Compliance Score', value: 94, target: 90, status: 'excellent' },
-  { name: 'Training Hours', value: 847, target: 800, status: 'excellent' },
-  { name: 'Equipment Checks', value: 156, target: 150, status: 'good' }
+  { name: 'Incidents', value: 0, target: 0, status: 'excellent' as const },
+  { name: 'Near Misses', value: 2, target: 5, status: 'good' as const },
+  { name: 'Compliance Score', value: 94, target: 90, status: 'excellent' as const },
+  { name: 'Training Hours', value: 847, target: 800, status: 'excellent' as const },
+  { name: 'Equipment Checks', value: 156, target: 150, status: 'good' as const }
 ];
 
 const generateEquipmentStatus = () => [
@@ -120,7 +103,7 @@ interface MetricCardProps {
   value: string | number;
   change?: number;
   trend?: 'up' | 'down' | 'stable';
-  icon: React.ElementType;
+  icon: React.ElementType<{ className?: string }>;
   iconColor?: string;
   description?: string;
   target?: number;
@@ -260,7 +243,7 @@ interface EquipmentStatusChartProps {
 function EquipmentStatusChart({ data }: EquipmentStatusChartProps) {
   return (
     <div className="space-y-4">
-      {data.map((equipment, index) => (
+      {data.map((equipment) => (
         <div key={equipment.name} className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="font-medium">{equipment.name}</span>
@@ -371,7 +354,7 @@ export default function MiningAnalyticsDashboard() {
     <div className="space-y-6">
       {/* KPI Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {kpiMetrics.map((metric, index) => (
+        {kpiMetrics.map((metric) => (
           <MetricCard key={metric.title} {...metric} />
         ))}
       </div>
@@ -511,7 +494,7 @@ export default function MiningAnalyticsDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {safetyMetrics.map((metric, index) => (
+                {safetyMetrics.map((metric) => (
                   <SafetyIndicator key={metric.name} metric={metric} />
                 ))}
               </CardContent>
@@ -657,7 +640,7 @@ export default function MiningAnalyticsDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {complianceData.map((item, index) => (
+                {complianceData.map((item) => (
                   <div key={item.category} className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">{item.category}</span>
