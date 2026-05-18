@@ -2,14 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { 
   Send, 
   Bot, 
@@ -22,20 +19,15 @@ import {
   ThumbsDown,
   RefreshCw,
   Lightbulb,
-  AlertTriangle,
   Shield,
   FileText,
   BarChart3,
   Settings,
   Sparkles,
-  Clock,
-  CheckCircle,
   Brain,
   Zap,
-  MessageSquare,
   Download,
   Share2,
-  Bookmark,
   MoreVertical
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -58,7 +50,7 @@ interface Message {
 interface QuickAction {
   id: string;
   label: string;
-  icon: React.ElementType;
+  icon: React.ElementType<{ className?: string }>;
   prompt: string;
   category: 'safety' | 'compliance' | 'production' | 'maintenance';
   color: string;
@@ -124,7 +116,7 @@ export default function EnhancedChatInterface({
   const [inputMessage, setInputMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  // const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -314,7 +306,7 @@ export default function EnhancedChatInterface({
 
           {/* Messages */}
           <AnimatePresence>
-            {messages.map((message, index) => {
+            {messages.map((message) => {
               const CategoryIcon = getCategoryIcon(message.metadata?.category);
               
               return (
