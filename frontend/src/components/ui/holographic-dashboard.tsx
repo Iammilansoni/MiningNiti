@@ -1,21 +1,16 @@
 'use client';
 
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, Float, Text3D, OrbitControls, Sphere, Ring } from '@react-three/drei';
+import { Html, Float, OrbitControls, Sphere, Ring } from '@react-three/drei';
 import * as THREE from 'three';
-import { motion } from 'framer-motion';
 import { 
   Upload, 
   MessageSquare, 
   Database, 
   Brain, 
   Shield, 
-  Search,
-  FileText,
-  BarChart3,
-  Zap,
-  Eye
+  Search
 } from 'lucide-react';
 
 // Interface tile data
@@ -347,11 +342,9 @@ function DataStreams() {
 
 // Main scene component
 function HolographicScene() {
-  const { camera } = useThree();
-  const [selectedTile, setSelectedTile] = useState<string | null>(null);
-
+  useThree();
   const handleTileClick = (tileId: string) => {
-    setSelectedTile(tileId);
+    void tileId;
     // Add haptic feedback or sound here
   };
 
