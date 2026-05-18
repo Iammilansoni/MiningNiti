@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { useDashboardStats, useDocuments, usePrompts } from '@/hooks/useApi';
 import { 
-  RecentActivity, 
   QuickActions, 
   SafetyScoreWidget, 
   ActivityFeed 
@@ -40,7 +39,7 @@ function StatCard({
 }: {
   title: string;
   value: number;
-  icon: React.ElementType;
+  icon: React.ElementType<{ className?: string }>;
   description?: string;
   trend?: { value: number; isPositive: boolean };
   gradient: string;
@@ -133,7 +132,7 @@ function AIInsightsCard() {
 
 export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: documents, isLoading: docsLoading } = useDocuments();
+  useDocuments(); // Pre-fetches documents for context; data used in child components
   const { data: prompts } = usePrompts();
 
   return (
