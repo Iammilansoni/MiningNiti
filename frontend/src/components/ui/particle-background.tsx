@@ -15,7 +15,7 @@ interface Particle {
 
 export default function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { theme, resolvedTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const animationFrameRef = useRef<number | null>(null);
   const particlesRef = useRef<Particle[]>([]);
 

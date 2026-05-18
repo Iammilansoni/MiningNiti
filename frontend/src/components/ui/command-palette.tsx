@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Command,
   CommandDialog,
@@ -21,10 +20,7 @@ import {
   Search,
   Wand2,
   BarChart3,
-  Shield,
-  Users,
   HelpCircle,
-  LogOut,
   Moon,
   Sun,
   Keyboard,

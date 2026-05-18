@@ -21,7 +21,6 @@ import {
   Search,
   Command,
   Zap,
-  TrendingUp,
   AlertTriangle,
   CheckCircle2,
   Clock,
@@ -118,7 +117,7 @@ export default function EnhancedDashboardLayout({ children }: EnhancedDashboardL
     processing: 3,
     uptime: 99.9
   });
-  const [notifications, setNotifications] = useState(2);
+  const [notifications] = useState(2);
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
