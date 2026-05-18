@@ -11,7 +11,6 @@ import CommandPalette from '@/components/ui/command-palette';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,

@@ -207,7 +207,7 @@ export default function PricingSection() {
           className="text-center mt-16"
         >
           <p className="text-muted-foreground mb-4">
-            Need a custom solution? We've got you covered.
+            Need a custom solution? We&apos;ve got you covered.
           </p>
           <Link href="/contact">
             <Button variant="link" className="text-primary">

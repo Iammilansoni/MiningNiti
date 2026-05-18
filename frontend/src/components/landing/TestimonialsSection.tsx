@@ -79,7 +79,7 @@ function TestimonialCard({ testimonial, isActive }: { testimonial: Testimonial; 
         
         {/* Content */}
         <blockquote className="text-lg md:text-xl text-foreground leading-relaxed mb-8">
-          "{testimonial.content}"
+          &quot;{testimonial.content}&quot;
         </blockquote>
         
         {/* Author */}
