@@ -123,7 +123,7 @@ function getActivityColor(type: Activity['type']) {
 
 export default function ActivityFeed() {
   const [activities, setActivities] = useState<Activity[]>(mockActivities);
-  const [isLive, setIsLive] = useState(true);
+  const [isLive] = useState(true);
 
   // Simulate real-time updates
   useEffect(() => {
