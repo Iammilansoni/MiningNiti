@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import { 
-  FileText, 
   MoreHorizontal, 
   Eye, 
   Download, 
@@ -75,7 +74,6 @@ function getFileIcon(fileType: string) {
 }
 
 export default function DocumentCard({
-  id,
   title,
   file_type,
   file_size,
