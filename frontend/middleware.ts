@@ -10,8 +10,8 @@ const isPublicRoute = createRouteMatcher([
 
 const isDashboardRoute = createRouteMatcher(['/dashboard(.*)']);
 
-export default clerkMiddleware((auth, req) => {
-  const { userId } = auth();
+export default clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth();
   const currentUrl = req.nextUrl;
   const isHomePage = currentUrl.pathname === '/';
   const isAuthPage = currentUrl.pathname.includes('/sign-in') || currentUrl.pathname.includes('/sign-up');
@@ -33,10 +33,7 @@ export default clerkMiddleware((auth, req) => {
     return NextResponse.redirect(signInUrl);
   }
 
-  // Protect dashboard routes - require authentication
-  if (isDashboardRoute(req)) {
-    auth().protect();
-  }
+
 
   return NextResponse.next();
 });
