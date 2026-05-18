@@ -40,7 +40,6 @@ import {
     type DocumentAnalysisResponse,
     type ChatSession,
     type ChatSessionDetail,
-    type ChatMessage,
     type ChatResponse,
     type CustomPrompt,
     type UserProfile,
@@ -133,10 +132,10 @@ export function useDocumentAnalysis(documentId: string | null) {
         queryKey: queryKeys.documentAnalysis(documentId!),
         queryFn: () => getDocumentAnalysis(documentId!, getToken),
         enabled: !!documentId,
-        refetchInterval: (data) => {
-            // Keep polling if document is still being processed
+        refetchInterval: (query) => {
+            const data = query.state.data as DocumentAnalysisResponse | undefined;
             if (!data) return false;
-            const status = (data as DocumentAnalysisResponse).status;
+            const status = data.status;
             return status === 'pending' || status === 'processing' || status === 'analyzing'
                 ? 3000
                 : false;
@@ -201,8 +200,9 @@ export function useJobStatus(jobId: string | null) {
         queryKey: queryKeys.jobStatus(jobId!),
         queryFn: () => getJobStatus(jobId!, getToken),
         enabled: !!jobId,
-        refetchInterval: (data) => {
-            const status = (data as JobStatus)?.status;
+        refetchInterval: (query) => {
+            const data = query.state.data as JobStatus | undefined;
+            const status = data?.status;
             return status === 'pending' || status === 'processing' ? 2000 : false;
         },
     });
