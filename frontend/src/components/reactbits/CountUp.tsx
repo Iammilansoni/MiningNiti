@@ -34,7 +34,6 @@ export function CountUp({
     if (!isInView) return;
 
     const startTime = Date.now();
-    const endTime = startTime + duration * 1000;
 
     const step = () => {
       const now = Date.now();

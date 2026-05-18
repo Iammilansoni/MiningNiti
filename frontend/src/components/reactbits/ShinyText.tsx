@@ -12,7 +12,7 @@ interface ShinyTextProps {
   shimmerWidth?: number;
 }
 
-export function ShinyText({ children, className, shimmerWidth = 100 }: ShinyTextProps) {
+export function ShinyText({ children, className }: ShinyTextProps) {
   return (
     <motion.span
       className={cn(
