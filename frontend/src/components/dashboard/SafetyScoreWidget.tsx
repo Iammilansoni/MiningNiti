@@ -5,7 +5,7 @@ import { Shield, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { CountUp } from '@/components/reactbits';
 
 interface SafetyScoreProps {
-  score: number;
+  score?: number;
   trend?: number;
   incidents?: number;
   warnings?: number;
