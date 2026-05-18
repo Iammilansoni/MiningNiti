@@ -24,7 +24,7 @@ export default function NotFound() {
             <ShinyText>Page not found</ShinyText>
           </h1>
           <p className="text-muted-foreground text-lg max-w-[300px] mx-auto">
-            We searched deep in the mines, but couldn't find the page you're looking for.
+            We searched deep in the mines, but couldn&apos;t find the page you&apos;re looking for.
           </p>
         </div>
         
