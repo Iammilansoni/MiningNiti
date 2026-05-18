@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useDocuments, useDeleteDocument, useReanalyzeDocument, useDocumentAnalysis, useCreateDocument } from '@/hooks/useApi';
 import type { Document, DocumentAnalysis } from '@/lib/api';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -189,7 +189,7 @@ function AnalysisDialog({ doc, open, onClose }: { doc: Document | null; open: bo
                     <div key={key}>
                       <p className="text-xs text-muted-foreground capitalize mb-1">{key}</p>
                       <div className="flex flex-wrap gap-1">
-                        {vals.slice(0, 4).map((v, i) => (
+                        {(vals as string[]).slice(0, 4).map((v: string, i: number) => (
                           <Badge key={i} variant="outline" className="text-xs">{v}</Badge>
                         ))}
                         {vals.length > 4 && <Badge variant="outline" className="text-xs">+{vals.length - 4}</Badge>}
