@@ -9,8 +9,7 @@ import {
   Github, 
   Mail,
   MapPin,
-  Phone,
-  ArrowUpRight
+  Phone
 } from 'lucide-react';
 
 const footerLinks = {
