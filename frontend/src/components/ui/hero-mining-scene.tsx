@@ -2,7 +2,7 @@
 
 import { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, Sphere, Box, MeshDistortMaterial, GradientTexture, Stars } from '@react-three/drei';
+import { Float, Sphere, Box, MeshDistortMaterial, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Glowing Orb representing AI Core
@@ -156,6 +156,7 @@ function DataParticles() {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
+          args={[positions, 3]}
           count={count}
           array={positions}
           itemSize={3}
