@@ -1,10 +1,9 @@
 'use client';
 
-import { useRef, useState, useMemo } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, Float, OrbitControls, Sphere, Box, Plane, Text } from '@react-three/drei';
+import { useRef, useState } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Html, Float, OrbitControls, Sphere, Box, Plane } from '@react-three/drei';
 import * as THREE from 'three';
-import { motion } from 'framer-motion';
 import { 
   FileText, 
   Search, 
@@ -346,7 +345,7 @@ function DataStreams() {
 
   return (
     <group ref={streamsRef}>
-      {documentTypes.map((doc, i) => {
+      {documentTypes.map((doc) => {
         const startPos = doc.position;
         const endPos = [0, 0, 0] as [number, number, number];
         
