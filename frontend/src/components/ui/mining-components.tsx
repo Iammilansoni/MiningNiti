@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -15,13 +15,11 @@ import {
   TrendingUp, 
   TrendingDown,
   Wrench,
-  Users,
   BarChart3,
   Activity,
   MapPin,
   Calendar,
-  Target,
-  Gauge
+  Target
 } from 'lucide-react';
 
 // Safety Status Indicator Component
@@ -392,7 +390,7 @@ interface OperationalKPIProps {
     period: string;
   };
   status?: 'good' | 'warning' | 'critical';
-  icon: React.ElementType;
+  icon: React.ElementType<{ className?: string }>;
 }
 
 export function OperationalKPI({ 
