@@ -5,7 +5,7 @@
 
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { FileText, MessageSquare, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { FileText, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Document } from '@/lib/api';
 
@@ -53,7 +53,7 @@ export function RecentActivity({ documents, className }: RecentActivityProps) {
       <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
       <div className="space-y-3">
         {documents.slice(0, 5).map((doc, index) => {
-          const status = statusConfig[doc.status] || statusConfig.processing;
+          const status = statusConfig[doc.status as keyof typeof statusConfig] || statusConfig.processing;
           const StatusIcon = status.icon;
 
           return (
@@ -70,7 +70,7 @@ export function RecentActivity({ documents, className }: RecentActivityProps) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{doc.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(doc.uploaded_at), { addSuffix: true })}
+                  {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
                 </p>
               </div>
               <div className="text-xs text-muted-foreground capitalize">
