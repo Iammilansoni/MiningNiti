@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useDashboardStats, useDocumentAnalytics, useSafetyAnalytics } from '@/hooks/useApi';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,11 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollReveal, SpotlightCard, ShinyText } from '@/components/reactbits';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Legend,
+  LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts';
 import {
   Shield, FileText, TrendingUp, AlertTriangle, CheckCircle,
-  BarChart2, Clock, Zap, Activity,
+  BarChart2, Activity, Zap,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -54,7 +54,7 @@ function MetricCard({
   title: string;
   value: string | number;
   subtitle?: string;
-  icon: React.ElementType;
+  icon: React.ElementType<{ className?: string }>;
   gradient: string;
   trend?: { value: number; positive: boolean };
 }) {
