@@ -1,225 +1,145 @@
-// src/components/layout/Sidebar.tsx
-// Modern sidebar with animations
-
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/uiStore';
-import { UserButton } from '@clerk/nextjs';
+import { MiningNitiMark } from '@/components/product/brand';
 import {
-  Home,
   LayoutDashboard,
-  FileText,
   MessageSquare,
-  Wand2,
+  FileText,
+  BarChart2,
   Settings,
   ChevronLeft,
   ChevronRight,
-  Mountain,
-  HelpCircle,
-  BarChart2,
+  Sparkles,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
-const navigation = [
-  { name: 'Home', href: '/', icon: Home },
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Documents', href: '/dashboard/documents', icon: FileText },
-  { name: 'AI Chat', href: '/dashboard/chat', icon: MessageSquare },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart2 },
-  { name: 'Prompts', href: '/dashboard/prompts', icon: Wand2 },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-];
-
-const secondaryNav = [
-  { name: 'Help & Support', href: '/help', icon: HelpCircle },
+const navItems = [
+  {
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: LayoutDashboard,
+  },
+  {
+    name: 'AI Intelligence',
+    href: '/dashboard/chat',
+    icon: MessageSquare,
+  },
+  {
+    name: 'Documents',
+    href: '/dashboard/documents',
+    icon: FileText,
+  },
+  {
+    name: 'Prompts',
+    href: '/dashboard/prompts',
+    icon: Sparkles,
+  },
+  {
+    name: 'Analytics',
+    href: '/dashboard/analytics',
+    icon: BarChart2,
+  },
+  {
+    name: 'Settings',
+    href: '/dashboard/settings',
+    icon: Settings,
+  },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
-  const [hovering, setHovering] = useState(false);
-
-  const isExpanded = !sidebarCollapsed || hovering;
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <motion.aside
-        className={cn(
-          'fixed left-0 top-0 z-40 h-screen bg-card border-r border-border flex flex-col',
-          'transition-all duration-300 ease-in-out'
-        )}
-        animate={{ width: isExpanded ? 240 : 72 }}
-        onMouseEnter={() => setHovering(true)}
-        onMouseLeave={() => setHovering(false)}
-      >
-        {/* Logo */}
-        <div className="h-16 flex items-center px-4 border-b border-border/50">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg glow-primary">
-              <Mountain className="w-6 h-6 text-white" />
-            </div>
-            <AnimatePresence>
-              {isExpanded && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="font-bold text-lg tracking-tight"
-                >
-                  <span className="text-foreground">Mining</span>
-                  <span className="text-primary">Niti</span>
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </Link>
-        </div>
-
-        {/* Main Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href || 
-              (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            
-            const NavLink = (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
-                  'hover:bg-accent group relative',
-                  isActive && 'bg-accent text-accent-foreground font-medium'
-                )}
-              >
-                {isActive && (
-                  <div
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-r-full"
-                  />
-                )}
-                <item.icon className={cn(
-                  'w-5 h-5 flex-shrink-0 transition-colors',
-                  isActive ? 'text-cyan-600' : 'text-muted-foreground group-hover:text-foreground'
-                )} />
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className="whitespace-nowrap text-sm"
-                    >
-                      {item.name}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Link>
-            );
-
-            return sidebarCollapsed && !hovering ? (
-              <Tooltip key={item.name}>
-                <TooltipTrigger asChild>{NavLink}</TooltipTrigger>
-                <TooltipContent side="right" sideOffset={10}>
-                  {item.name}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              NavLink
-            );
-          })}
-        </nav>
-
-        {/* Secondary Navigation */}
-        <div className="px-3 py-2 border-t border-border">
-          {secondaryNav.map((item) => {
-            const SecondaryLink = (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className="whitespace-nowrap text-sm"
-                    >
-                      {item.name}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Link>
-            );
-
-            return sidebarCollapsed && !hovering ? (
-              <Tooltip key={item.name}>
-                <TooltipTrigger asChild>{SecondaryLink}</TooltipTrigger>
-                <TooltipContent side="right" sideOffset={10}>
-                  {item.name}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              SecondaryLink
-            );
-          })}
-        </div>
-
-        {/* User Section */}
-        <div className="p-3 border-t border-border">
-          <div className={cn(
-            'flex items-center gap-3',
-            !isExpanded && 'justify-center'
-          )}>
-            <UserButton 
-              afterSignOutUrl="/"
-              appearance={{
-                elements: {
-                  avatarBox: 'w-9 h-9'
-                }
-              }}
-            />
-            <AnimatePresence>
-              {isExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="flex-1 min-w-0"
-                >
-                  <p className="text-sm font-medium truncate">My Account</p>
-                  <p className="text-xs text-muted-foreground truncate">Manage profile</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Collapse Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full border border-border bg-card shadow-sm hover:bg-accent"
-          onClick={toggleSidebar}
-        >
-          {sidebarCollapsed ? (
-            <ChevronRight className="w-3 h-3" />
-          ) : (
-            <ChevronLeft className="w-3 h-3" />
+    <aside
+      className={cn(
+        'group flex h-screen flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out',
+        sidebarCollapsed ? 'w-[var(--sidebar-width-collapsed)]' : 'w-[var(--sidebar-width)]'
+      )}
+    >
+      {/* ── Brand ── */}
+      <div className="flex h-[var(--header-height)] shrink-0 items-center px-4 border-b border-border">
+        <Link href="/" className="flex items-center gap-2 focus-visible:outline-none hover:opacity-80 transition-opacity">
+          <MiningNitiMark className="shrink-0" />
+          {!sidebarCollapsed && (
+            <span className="text-sm font-semibold tracking-tight truncate transition-opacity duration-300">
+              MiningNiti
+            </span>
           )}
-        </Button>
-      </motion.aside>
-    </TooltipProvider>
+        </Link>
+      </div>
+
+      {/* ── Workspace Switcher (Mock) ── */}
+      {!sidebarCollapsed && (
+        <div className="px-4 py-4">
+          <button className="flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
+            <div className="flex items-center gap-2 truncate">
+              <div className="size-5 rounded bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                M
+              </div>
+              <span className="truncate">Mining Corp Inc.</span>
+            </div>
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" className="text-muted-foreground shrink-0">
+              <path d="M4.18179 6.18181C4.35753 6.00608 4.64245 6.00608 4.81819 6.18181L7.49999 8.86362L10.1818 6.18181C10.3575 6.00608 10.6424 6.00608 10.8182 6.18181C10.9939 6.35755 10.9939 6.64247 10.8182 6.81821L7.81819 9.81821C7.73379 9.9026 7.61934 9.95001 7.49999 9.95001C7.38064 9.95001 7.26618 9.9026 7.18179 9.81821L4.18179 6.81821C4.00605 6.64247 4.00605 6.35755 4.18179 6.18181Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* ── Navigation ── */}
+      <nav className={cn('flex-1 overflow-y-auto px-2 py-2 space-y-1', sidebarCollapsed && 'pt-4')}>
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative',
+                isActive
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                sidebarCollapsed ? 'justify-center' : 'justify-start'
+              )}
+              title={sidebarCollapsed ? item.name : undefined}
+            >
+              {isActive && (
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary" />
+              )}
+              <item.icon className="size-[18px] shrink-0" />
+              {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* ── Footer ── */}
+      <div className="shrink-0 border-t border-border p-2 space-y-1">
+        <Link
+          href="/"
+          className={cn(
+            'flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            sidebarCollapsed ? 'justify-center' : 'justify-start'
+          )}
+          title={sidebarCollapsed ? "Return to Website" : undefined}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="size-[18px] shrink-0"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          {!sidebarCollapsed && <span className="truncate">Back to Website</span>}
+        </Link>
+        <button
+          onClick={toggleSidebar}
+          className={cn(
+            'flex w-full items-center rounded-md px-2 py-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            sidebarCollapsed ? 'justify-center' : 'justify-between'
+          )}
+        >
+          {!sidebarCollapsed && <span className="text-sm font-medium">Collapse</span>}
+          {sidebarCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+        </button>
+      </div>
+    </aside>
   );
 }

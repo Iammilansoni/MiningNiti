@@ -1,90 +1,69 @@
-// src/components/layout/Header.tsx
-// Dashboard header with breadcrumbs and search
-
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { Bell, Menu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import CommandPalette from '@/components/ui/command-palette';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { UserButton } from '@clerk/nextjs';
 import { useUIStore } from '@/stores/uiStore';
-import { cn } from '@/lib/utils';
-
-const pathNames: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/dashboard/documents': 'Documents',
-  '/dashboard/chat': 'AI Chat',
-  '/dashboard/prompts': 'Prompts',
-  '/dashboard/settings': 'Settings',
-};
+import { Menu, Search, Bell } from 'lucide-react';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 export function Header() {
   const pathname = usePathname();
-  const { sidebarCollapsed, setMobileMenuOpen } = useUIStore();
+  const { setMobileMenuOpen } = useUIStore();
 
-  const currentPage = pathNames[pathname] || 'Dashboard';
+  // Simple breadcrumb logic based on pathname
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const currentPage = pathSegments.length > 1 
+    ? pathSegments[pathSegments.length - 1].charAt(0).toUpperCase() + pathSegments[pathSegments.length - 1].slice(1)
+    : 'Dashboard';
 
   return (
-    <header className={cn(
-      'fixed top-0 right-0 z-30 h-16 bg-background/80 backdrop-blur-md border-b border-border',
-      'transition-all duration-300',
-      sidebarCollapsed ? 'left-[72px]' : 'left-[240px]',
-      'max-md:left-0'
-    )}>
-      <div className="h-full px-4 md:px-6 flex items-center justify-between gap-4">
-        {/* Mobile Menu Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
+    <header className="sticky top-0 z-40 flex h-[var(--header-height)] w-full items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md">
+      <div className="flex items-center gap-4">
+        {/* Mobile Menu Toggle */}
+        <button
           onClick={() => setMobileMenuOpen(true)}
+          className="md:hidden flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Menu className="w-5 h-5" />
-        </Button>
+          <Menu className="size-5" />
+          <span className="sr-only">Open Menu</span>
+        </button>
 
-        {/* Page Title & Breadcrumb */}
-        <div className="flex-1 min-w-0">
-          <motion.h1
-            key={currentPage}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-lg font-semibold truncate"
-          >
-            {currentPage}
-          </motion.h1>
+        {/* Breadcrumbs / Page Title */}
+        <div className="hidden md:flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">MiningNiti</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="font-medium text-foreground">{currentPage}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        {/* Command Palette Trigger (Visual only for now) */}
+        <button className="hidden md:flex items-center gap-2 rounded-md border border-input bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+          <Search className="size-3.5" />
+          <span className="mr-6">Search documents...</span>
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </button>
+
+        <div className="flex items-center gap-1">
+          <button className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative">
+            <Bell className="size-4" />
+            <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-primary" />
+            <span className="sr-only">Notifications</span>
+          </button>
+          <ThemeToggle />
         </div>
 
-        {/* Command Palette Search */}
-        <div className="hidden md:flex items-center">
-          <CommandPalette />
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {/* Notifications */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-cyan-500 rounded-full" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="py-4 text-center text-sm text-muted-foreground">
-                No new notifications
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="pl-2 ml-2 border-l border-border flex items-center">
+          <UserButton 
+            afterSignOutUrl="/"
+            appearance={{
+              elements: {
+                avatarBox: "size-8 rounded-full border border-border"
+              }
+            }}
+          />
         </div>
       </div>
     </header>
