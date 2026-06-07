@@ -1,7 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  BarChart3,
+  FileText,
+  MessageSquareText,
+  Search,
+  Settings,
+  Upload,
+  Wand2,
+} from 'lucide-react';
 import {
   Command,
   CommandDialog,
@@ -12,23 +21,9 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command';
-import {
-  FileText,
-  MessageSquare,
-  Settings,
-  Upload,
-  Search,
-  Wand2,
-  BarChart3,
-  HelpCircle,
-  Moon,
-  Sun,
-  Keyboard,
-} from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { Badge } from '@/components/ui/badge';
 
-interface CommandItem {
+interface PaletteItem {
   id: string;
   label: string;
   icon: React.ReactNode;
@@ -40,159 +35,115 @@ interface CommandItem {
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
 
-  // Toggle with keyboard shortcut
   useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((open) => !open);
-      }
-      // Escape to close
-      if (e.key === 'Escape') {
-        setOpen(false);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setOpen((value) => !value);
       }
     };
 
-    document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const runCommand = useCallback((command: () => void) => {
+  const runCommand = useCallback((action: () => void) => {
     setOpen(false);
-    command();
+    action();
   }, []);
 
-  const commands: CommandItem[] = useMemo(() => [
-    // Navigation
-    {
-      id: 'dashboard',
-      label: 'Go to Dashboard',
-      icon: <BarChart3 className="w-4 h-4" />,
-      shortcut: '⌘D',
-      action: () => router.push('/dashboard'),
-      category: 'Navigation',
-    },
-    {
-      id: 'documents',
-      label: 'Go to Documents',
-      icon: <FileText className="w-4 h-4" />,
-      shortcut: '⌘1',
-      action: () => router.push('/dashboard/documents'),
-      category: 'Navigation',
-    },
-    {
-      id: 'chat',
-      label: 'Go to AI Chat',
-      icon: <MessageSquare className="w-4 h-4" />,
-      shortcut: '⌘2',
-      action: () => router.push('/dashboard/chat'),
-      category: 'Navigation',
-    },
-    {
-      id: 'prompts',
-      label: 'Go to Prompts',
-      icon: <Wand2 className="w-4 h-4" />,
-      shortcut: '⌘3',
-      action: () => router.push('/dashboard/prompts'),
-      category: 'Navigation',
-    },
-    {
-      id: 'settings',
-      label: 'Go to Settings',
-      icon: <Settings className="w-4 h-4" />,
-      shortcut: '⌘,',
-      action: () => router.push('/dashboard/settings'),
-      category: 'Navigation',
-    },
-    // Actions
-    {
-      id: 'upload',
-      label: 'Upload Document',
-      icon: <Upload className="w-4 h-4" />,
-      shortcut: '⌘U',
-      action: () => router.push('/dashboard/documents?upload=true'),
-      category: 'Actions',
-    },
-    {
-      id: 'new-chat',
-      label: 'New AI Chat',
-      icon: <MessageSquare className="w-4 h-4" />,
-      shortcut: '⌘N',
-      action: () => router.push('/dashboard/chat?new=true'),
-      category: 'Actions',
-    },
-    {
-      id: 'search',
-      label: 'Search Documents',
-      icon: <Search className="w-4 h-4" />,
-      shortcut: '⌘F',
-      action: () => router.push('/dashboard/documents?search=true'),
-      category: 'Actions',
-    },
-    // Appearance
-    {
-      id: 'toggle-theme',
-      label: theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-      icon: theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />,
-      shortcut: '⌘T',
-      action: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
-      category: 'Appearance',
-    },
-    // Help
-    {
-      id: 'shortcuts',
-      label: 'Keyboard Shortcuts',
-      icon: <Keyboard className="w-4 h-4" />,
-      shortcut: '⌘/',
-      action: () => console.log('Show shortcuts'),
-      category: 'Help',
-    },
-    {
-      id: 'help',
-      label: 'Help & Support',
-      icon: <HelpCircle className="w-4 h-4" />,
-      action: () => window.open('https://docs.miningniti.com', '_blank'),
-      category: 'Help',
-    },
-  ], [router, theme, setTheme]);
+  const commands = useMemo<PaletteItem[]>(
+    () => [
+      {
+        id: 'overview',
+        label: 'Open overview',
+        icon: <BarChart3 className="size-4" />,
+        shortcut: 'G O',
+        action: () => router.push('/dashboard'),
+        category: 'Navigation',
+      },
+      {
+        id: 'documents',
+        label: 'Open documents',
+        icon: <FileText className="size-4" />,
+        shortcut: 'G D',
+        action: () => router.push('/dashboard/documents'),
+        category: 'Navigation',
+      },
+      {
+        id: 'assistant',
+        label: 'Open AI assistant',
+        icon: <MessageSquareText className="size-4" />,
+        shortcut: 'G A',
+        action: () => router.push('/dashboard/chat'),
+        category: 'Navigation',
+      },
+      {
+        id: 'analytics',
+        label: 'Open analytics',
+        icon: <BarChart3 className="size-4" />,
+        shortcut: 'G R',
+        action: () => router.push('/dashboard/analytics'),
+        category: 'Navigation',
+      },
+      {
+        id: 'prompts',
+        label: 'Open prompts',
+        icon: <Wand2 className="size-4" />,
+        action: () => router.push('/dashboard/prompts'),
+        category: 'Navigation',
+      },
+      {
+        id: 'settings',
+        label: 'Open settings',
+        icon: <Settings className="size-4" />,
+        action: () => router.push('/dashboard/settings'),
+        category: 'Navigation',
+      },
+      {
+        id: 'upload',
+        label: 'Upload documents',
+        icon: <Upload className="size-4" />,
+        action: () => router.push('/dashboard/documents?upload=true'),
+        category: 'Actions',
+      },
+      {
+        id: 'new-chat',
+        label: 'Start new conversation',
+        icon: <MessageSquareText className="size-4" />,
+        action: () => router.push('/dashboard/chat'),
+        category: 'Actions',
+      },
+    ],
+    [router]
+  );
 
-  // Group commands by category
   const groupedCommands = useMemo(() => {
-    const groups: Record<string, CommandItem[]> = {};
-    commands.forEach((cmd) => {
-      if (!groups[cmd.category]) {
-        groups[cmd.category] = [];
-      }
-      groups[cmd.category].push(cmd);
-    });
-    return groups;
+    return commands.reduce<Record<string, PaletteItem[]>>((groups, command) => {
+      groups[command.category] = [...(groups[command.category] ?? []), command];
+      return groups;
+    }, {});
   }, [commands]);
 
   return (
     <>
-      {/* Trigger button for mobile/accessibility */}
       <button
         onClick={() => setOpen(true)}
-        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        className="flex h-9 w-full max-w-xl items-center gap-2 rounded-md border bg-background px-3 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
       >
-        <Search className="w-4 h-4" />
-        <span>Search...</span>
-        <Badge variant="outline" className="ml-2 text-xs">⌘K</Badge>
+        <Search className="size-4" />
+        <span className="flex-1 text-left">Search documents, actions, and pages</span>
+        <Badge variant="outline" className="text-[11px] font-medium">
+          Ctrl K
+        </Badge>
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <Command className="rounded-xl border border-border shadow-2xl">
-          <CommandInput 
-            placeholder="Type a command or search..." 
-            className="border-b border-border"
-          />
-          <CommandList className="max-h-[400px]">
-            <CommandEmpty className="py-6 text-center text-muted-foreground">
-              No results found.
-            </CommandEmpty>
-            
+        <Command className="rounded-lg border shadow-[var(--shadow-overlay)]">
+          <CommandInput placeholder="Search MiningNiti..." className="border-b" />
+          <CommandList>
+            <CommandEmpty>No matching command found.</CommandEmpty>
             {Object.entries(groupedCommands).map(([category, items], index) => (
               <div key={category}>
                 {index > 0 && <CommandSeparator />}
@@ -201,16 +152,16 @@ export default function CommandPalette() {
                     <CommandItem
                       key={item.id}
                       onSelect={() => runCommand(item.action)}
-                      className="flex items-center justify-between py-3 cursor-pointer"
+                      className="flex cursor-pointer items-center justify-between py-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-1.5 rounded-md bg-muted text-muted-foreground">
+                        <span className="flex size-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
                           {item.icon}
-                        </div>
+                        </span>
                         <span>{item.label}</span>
                       </div>
                       {item.shortcut && (
-                        <kbd className="px-2 py-1 rounded bg-muted text-xs text-muted-foreground font-mono">
+                        <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
                           {item.shortcut}
                         </kbd>
                       )}
