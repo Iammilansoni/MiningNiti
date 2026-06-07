@@ -1,350 +1,161 @@
-// src/app/(dashboard)/dashboard/settings/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { toast } from 'sonner';
-import { useUserProfile, useUpdateUserProfile } from '@/hooks/useApi';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/product/page-header';
+import { SectionCard } from '@/components/product/section-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { ScrollReveal, SpotlightCard, ShinyText } from '@/components/reactbits';
-import { User, Building2, Bell, Shield, Zap, Save } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { User, Shield, Building2, Bell } from 'lucide-react';
+import { useUser, UserProfile } from '@clerk/nextjs';
 
 export default function SettingsPage() {
-  const { data: profile, isLoading } = useUserProfile();
-  const updateProfile = useUpdateUserProfile();
-
-  const [fullName, setFullName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [companyRole, setCompanyRole] = useState('');
-  const [industryFocus, setIndustryFocus] = useState('');
-
-  // Populate form when profile loads
-  useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name ?? '');
-      setCompanyName(profile.company_name ?? '');
-      setCompanyRole(profile.company_role ?? '');
-      setIndustryFocus(profile.industry_focus?.[0] ?? '');
-    }
-  }, [profile]);
-
-  const handleSave = () => {
-    updateProfile.mutate(
-      {
-        full_name: fullName || undefined,
-        company_name: companyName || undefined,
-        company_role: companyRole || undefined,
-        industry_focus: industryFocus ? [industryFocus] : undefined,
-      },
-      {
-        onSuccess: () => toast.success('Profile updated successfully'),
-        onError: (e) => toast.error('Update failed', { description: e.message }),
-      }
-    );
-  };
+  const { user } = useUser();
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <ScrollReveal>
-        <div>
-          <h1 className="text-2xl font-bold">
-            <ShinyText>Settings</ShinyText>
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Manage your account and application preferences</p>
-        </div>
-      </ScrollReveal>
+    <div className="animate-in fade-in duration-500 h-full flex flex-col">
+      <PageHeader
+        title="Settings"
+        description="Manage your account, workspace, and security preferences."
+        className="mb-6"
+      />
 
-      {/* Profile Settings */}
-      <ScrollReveal delay={0.1}>
-        <SpotlightCard className="p-0">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <User className="mr-2 h-5 w-5 text-cyan-600" />
-              Profile Settings
-            </CardTitle>
-            <CardDescription>Your personal information as stored in MiningNiti</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {isLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+      <Tabs defaultValue="profile" className="flex-1 flex flex-col md:flex-row gap-6">
+        <TabsList className="flex md:flex-col h-auto bg-transparent p-0 gap-2 w-full md:w-48 overflow-x-auto md:overflow-visible shrink-0 justify-start">
+          <TabsTrigger value="profile" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground justify-start gap-2 w-full text-left">
+            <User className="size-4 shrink-0" />
+            <span className="hidden md:inline">Profile</span>
+          </TabsTrigger>
+          <TabsTrigger value="workspace" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground justify-start gap-2 w-full text-left">
+            <Building2 className="size-4 shrink-0" />
+            <span className="hidden md:inline">Workspace</span>
+          </TabsTrigger>
+          <TabsTrigger value="security" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground justify-start gap-2 w-full text-left">
+            <Shield className="size-4 shrink-0" />
+            <span className="hidden md:inline">Security</span>
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground justify-start gap-2 w-full text-left">
+            <Bell className="size-4 shrink-0" />
+            <span className="hidden md:inline">Notifications</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <div className="flex-1 max-w-3xl">
+          <TabsContent value="profile" className="mt-0 outline-none">
+            <SectionCard className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-foreground">Profile Settings</h3>
+                <p className="text-sm text-muted-foreground">Manage your personal information and preferences.</p>
               </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="clerk-id">Clerk User ID</Label>
-                  <Input
-                    id="clerk-id"
-                    value={profile?.clerk_user_id ?? ''}
-                    disabled
-                    className="font-mono text-xs bg-muted"
+
+              {/* Native Clerk UI if loaded, else fallback skeleton/simple form */}
+              {user ? (
+                <div className="clerk-profile-wrapper">
+                  <UserProfile 
+                    appearance={{
+                      elements: {
+                        rootBox: "w-full",
+                        card: "shadow-none border-0 bg-transparent p-0 w-full",
+                        navbar: "hidden",
+                        pageScrollBox: "p-0",
+                        headerTitle: "hidden",
+                        headerSubtitle: "hidden",
+                      }
+                    }}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    value={profile?.email ?? ''}
-                    disabled
-                    className="bg-muted"
-                    placeholder="Managed by Clerk"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="full-name">Full Name</Label>
-                  <Input
-                    id="full-name"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="job-title">Job Title</Label>
-                  <Input
-                    id="job-title"
-                    placeholder="Mining Engineer"
-                    value={companyRole}
-                    onChange={(e) => setCompanyRole(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-          </CardContent>
-        </SpotlightCard>
-      </ScrollReveal>
-
-      {/* Company Settings */}
-      <ScrollReveal delay={0.2}>
-        <SpotlightCard className="p-0">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Building2 className="mr-2 h-5 w-5 text-purple-600" />
-              Company Settings
-            </CardTitle>
-            <CardDescription>Configure your company information for AI context</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {isLoading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="company-name">Company Name</Label>
-                  <Input
-                    id="company-name"
-                    placeholder="Acme Mining Corporation"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="industry-focus">Industry Focus</Label>
-                  <Select value={industryFocus} onValueChange={setIndustryFocus}>
-                    <SelectTrigger id="industry-focus">
-                      <SelectValue placeholder="Select your mining focus" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="coal">Coal Mining</SelectItem>
-                      <SelectItem value="gold">Gold Mining</SelectItem>
-                      <SelectItem value="copper">Copper Mining</SelectItem>
-                      <SelectItem value="iron">Iron Ore Mining</SelectItem>
-                      <SelectItem value="quarry">Quarrying</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </SpotlightCard>
-      </ScrollReveal>
-
-      {/* AI Preferences */}
-      <ScrollReveal delay={0.3}>
-        <SpotlightCard className="p-0">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Zap className="mr-2 h-5 w-5 text-yellow-600" />
-              AI Preferences
-            </CardTitle>
-            <CardDescription>Customize AI behavior and response settings</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="default-prompt">Default AI Persona</Label>
-              <Select defaultValue="safety">
-                <SelectTrigger id="default-prompt">
-                  <SelectValue placeholder="Choose default AI behavior" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="safety">Safety Expert</SelectItem>
-                  <SelectItem value="equipment">Equipment Specialist</SelectItem>
-                  <SelectItem value="compliance">Compliance Officer</SelectItem>
-                  <SelectItem value="general">General Mining Assistant</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="response-length">Response Length</Label>
-              <Select defaultValue="detailed">
-                <SelectTrigger id="response-length">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="concise">Concise</SelectItem>
-                  <SelectItem value="detailed">Detailed</SelectItem>
-                  <SelectItem value="comprehensive">Comprehensive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Include Source References</Label>
-                <p className="text-sm text-muted-foreground">Show document sources in AI responses</p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Auto-suggest Follow-up Questions</Label>
-                <p className="text-sm text-muted-foreground">AI suggests related questions after responses</p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-          </CardContent>
-        </SpotlightCard>
-      </ScrollReveal>
-
-      {/* Notifications */}
-      <ScrollReveal delay={0.4}>
-        <SpotlightCard className="p-0">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Bell className="mr-2 h-5 w-5 text-orange-600" />
-              Notification Settings
-            </CardTitle>
-            <CardDescription>Configure how you receive notifications</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {[
-              { label: 'Document Processing Complete', desc: 'Get notified when documents finish processing' },
-              { label: 'Weekly Usage Summary', desc: 'Receive weekly reports on AI usage and insights' },
-              { label: 'System Updates', desc: 'Notifications about new features and updates' },
-              { label: 'Security Alerts', desc: 'Important security and compliance notifications' },
-            ].map(({ label, desc }) => (
-              <div key={label} className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>{label}</Label>
-                  <p className="text-sm text-muted-foreground">{desc}</p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            ))}
-          </CardContent>
-        </SpotlightCard>
-      </ScrollReveal>
-
-      {/* Data & Privacy */}
-      <ScrollReveal delay={0.5}>
-        <SpotlightCard className="p-0">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Shield className="mr-2 h-5 w-5 text-green-600" />
-              Data &amp; Privacy
-            </CardTitle>
-            <CardDescription>Manage your data and privacy preferences</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Data Retention</Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically delete old conversations and documents
-                </p>
-              </div>
-              <Select defaultValue="1year">
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="6months">6 months</SelectItem>
-                  <SelectItem value="1year">1 year</SelectItem>
-                  <SelectItem value="2years">2 years</SelectItem>
-                  <SelectItem value="never">Never</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Analytics &amp; Insights</Label>
-                <p className="text-sm text-muted-foreground">Help improve our service by sharing usage analytics</p>
-              </div>
-              <Switch defaultChecked />
-            </div>
-            <Separator />
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium">Export Data</h4>
-                  <p className="text-sm text-muted-foreground">Download all your data in a portable format</p>
-                </div>
-                <Button variant="outline">Export</Button>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-medium text-destructive">Delete Account</h4>
-                  <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
-                </div>
-                <Button variant="destructive">Delete</Button>
-              </div>
-            </div>
-          </CardContent>
-        </SpotlightCard>
-      </ScrollReveal>
-
-      {/* Save */}
-      <ScrollReveal delay={0.6}>
-        <div className="flex justify-end">
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              className="btn-premium min-w-32"
-              onClick={handleSave}
-              disabled={updateProfile.isPending || isLoading}
-            >
-              {updateProfile.isPending ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="mr-2"
-                  >
-                    <Save className="h-4 w-4" />
-                  </motion.div>
-                  Saving...
-                </>
               ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </>
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input id="name" defaultValue="Loading..." disabled />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input id="email" type="email" defaultValue="Loading..." disabled />
+                  </div>
+                  <Button disabled>Save Changes</Button>
+                </div>
               )}
-            </Button>
-          </motion.div>
+            </SectionCard>
+          </TabsContent>
+
+          <TabsContent value="workspace" className="mt-0 outline-none">
+            <SectionCard className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-foreground">Workspace Settings</h3>
+                <p className="text-sm text-muted-foreground">Configure your mining operation details.</p>
+              </div>
+              <div className="space-y-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="company">Company Name</Label>
+                  <Input id="company" defaultValue="Mining Corp Inc." />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="domain">Workspace Domain</Label>
+                  <div className="flex items-center gap-2">
+                    <Input id="domain" defaultValue="miningcorp" className="flex-1" />
+                    <span className="text-muted-foreground text-sm">.miningniti.com</span>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <Button>Save Workspace</Button>
+                </div>
+              </div>
+            </SectionCard>
+          </TabsContent>
+
+          <TabsContent value="security" className="mt-0 outline-none">
+            <SectionCard className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-foreground">Security & Access</h3>
+                <p className="text-sm text-muted-foreground">Manage authentication and API keys.</p>
+              </div>
+              
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Two-Factor Authentication</h4>
+                  <p className="text-sm text-muted-foreground mb-4">Add an extra layer of security to your account.</p>
+                  <Button variant="outline">Enable 2FA</Button>
+                </div>
+                
+                <div className="pt-4 border-t border-border">
+                  <h4 className="text-sm font-medium mb-2">API Keys</h4>
+                  <p className="text-sm text-muted-foreground mb-4">Use these keys to authenticate API requests.</p>
+                  <div className="flex items-center gap-2">
+                    <Input value="sk_test_••••••••••••••••••••" readOnly className="font-mono text-sm" />
+                    <Button variant="secondary">Copy</Button>
+                    <Button variant="outline">Rotate</Button>
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="mt-0 outline-none">
+            <SectionCard className="p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-foreground">Notification Preferences</h3>
+                <p className="text-sm text-muted-foreground">Choose what alerts you want to receive.</p>
+              </div>
+              <div className="space-y-4">
+                 {['Compliance Alerts', 'Document Processing complete', 'Weekly Digest', 'Security Alerts'].map((item) => (
+                    <div key={item} className="flex items-center justify-between p-3 rounded-md border border-border/50">
+                      <div>
+                        <p className="font-medium text-sm text-foreground">{item}</p>
+                        <p className="text-xs text-muted-foreground">Receive emails for this event type.</p>
+                      </div>
+                      {/* Simplified toggle visual */}
+                      <div className="w-10 h-5 bg-primary rounded-full relative cursor-pointer">
+                         <div className="absolute right-1 top-1 bottom-1 w-3 bg-background rounded-full" />
+                      </div>
+                    </div>
+                 ))}
+              </div>
+            </SectionCard>
+          </TabsContent>
         </div>
-      </ScrollReveal>
+      </Tabs>
     </div>
   );
 }
