@@ -1,189 +1,81 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { 
-  MoreHorizontal, 
-  Eye, 
-  Download, 
-  Trash2, 
-  CheckCircle, 
-  Clock,
-  AlertTriangle,
-  Bot
-} from 'lucide-react';
+import { SectionCard } from '@/components/product/section-card';
+import { StatusBadge, StatusTone } from '@/components/product/status';
+import { CategoryChip, DocumentCategory } from '@/components/documents/CategoryChips';
+import { FileText, MoreVertical, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { formatDistanceToNow } from 'date-fns';
 
-export interface DocumentCardProps {
+interface DocumentCardProps {
   id: string;
   title: string;
-  file_type: string;
-  file_size: number;
-  status: 'processed' | 'processing' | 'failed' | 'pending';
-  uploaded_at: string;
-  file_url?: string;
-  file_name?: string;
-  category?: string;
-  onView?: () => void;
-  onDelete?: () => void;
+  category: DocumentCategory;
+  status: 'verified' | 'pending' | 'flagged';
+  date: string;
+  size: string;
+  onClick?: () => void;
 }
 
-function getStatusConfig(status: DocumentCardProps['status']) {
-  switch (status) {
-    case 'processed':
-      return { 
-        icon: <CheckCircle className="w-4 h-4" />, 
-        color: 'bg-green-500/10 text-green-500 border-green-500/20',
-        label: 'Processed'
-      };
-    case 'processing':
-      return { 
-        icon: <Clock className="w-4 h-4 animate-spin" />, 
-        color: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-        label: 'Processing'
-      };
-    case 'failed':
-      return { 
-        icon: <AlertTriangle className="w-4 h-4" />, 
-        color: 'bg-red-500/10 text-red-500 border-red-500/20',
-        label: 'Failed'
-      };
-    default:
-      return { 
-        icon: <Clock className="w-4 h-4" />, 
-        color: 'bg-muted text-muted-foreground',
-        label: 'Pending'
-      };
-  }
-}
+const statusMap: Record<string, { label: string; tone: StatusTone }> = {
+  verified: { label: 'Verified', tone: 'success' },
+  pending: { label: 'Processing', tone: 'info' },
+  flagged: { label: 'Flagged', tone: 'warning' },
+};
 
-function getFileIcon(fileType: string) {
-  const type = fileType.toLowerCase();
-  if (type.includes('pdf')) return '📄';
-  if (type.includes('doc')) return '📝';
-  if (type.includes('txt')) return '📃';
-  if (type.includes('xls') || type.includes('csv')) return '📊';
-  return '📁';
-}
-
-export default function DocumentCard({
+export function DocumentCard({
   title,
-  file_type,
-  file_size,
-  status,
-  uploaded_at,
-  file_url,
-  file_name,
   category,
-  onView,
-  onDelete,
+  status,
+  date,
+  size,
+  onClick,
 }: DocumentCardProps) {
-  const statusConfig = getStatusConfig(status);
-  const fileIcon = getFileIcon(file_type);
-  const sizeInMB = (file_size / (1024 * 1024)).toFixed(2);
+  const statusConfig = statusMap[status];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -4, scale: 1.01 }}
-      transition={{ duration: 0.2 }}
-      className="group relative overflow-hidden rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
-    >
-      {/* Status indicator bar */}
-      <div className={`absolute top-0 left-0 right-0 h-1 ${
-        status === 'processed' ? 'bg-green-500' :
-        status === 'processing' ? 'bg-amber-500' :
-        status === 'failed' ? 'bg-red-500' : 'bg-muted'
-      }`} />
-
-      <div className="p-5">
+    <SectionCard className="surface-elevated-interactive group cursor-pointer" onClick={onClick}>
+      <div className="flex flex-col h-full p-4 gap-4">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">{fileIcon}</div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted border border-border group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+              <FileText className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-semibold text-foreground truncate" title={title}>
                 {title}
               </h3>
-              <p className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(uploaded_at), { addSuffix: true })}
-              </p>
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                <span className="truncate">{size}</span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="size-3" />
+                  {date}
+                </span>
+              </div>
             </div>
           </div>
-          
-          {/* Actions menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onView} disabled={status !== 'processed'}>
-                <Eye className="w-4 h-4 mr-2" />
-                View
-              </DropdownMenuItem>
-              {file_url && (
-                <DropdownMenuItem asChild>
-                  <a href={file_url} download={file_name}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </a>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem 
-                onClick={onDelete} 
-                className="text-red-500 focus:text-red-500"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Menu action
+            }}
+          >
+            <MoreVertical className="size-4" />
+          </Button>
         </div>
 
-        {/* Meta info */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className="text-xs">
-            {file_type.split('/')[1]?.toUpperCase() || 'FILE'}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            {sizeInMB} MB
-          </Badge>
-          {category && (
-            <Badge variant="secondary" className="text-xs">
-              {category}
-            </Badge>
-          )}
-        </div>
-
-        {/* Status footer */}
-        <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-          <div className={`flex items-center gap-2 px-2 py-1 rounded-full border ${statusConfig.color}`}>
-            {statusConfig.icon}
-            <span className="text-xs font-medium">{statusConfig.label}</span>
-          </div>
-          
-          {status === 'processed' && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Bot className="w-3 h-3" />
-              <span>AI Analyzed</span>
-            </div>
-          )}
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
+          <CategoryChip category={category} />
+          <StatusBadge
+            label={statusConfig.label}
+            tone={statusConfig.tone}
+            pulse={status === 'pending'}
+          />
         </div>
       </div>
-    </motion.div>
+    </SectionCard>
   );
 }

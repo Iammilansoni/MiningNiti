@@ -1,58 +1,83 @@
-'use client';
-
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { ShieldCheck, Target, Droplets, HardHat, FileText } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-interface CategoryChipsProps {
-  categories: string[];
-  selectedCategory: string | null;
-  onSelectCategory: (category: string | null) => void;
-}
+export type DocumentCategory = 'Safety' | 'Compliance' | 'Geological' | 'Maintenance' | 'Other';
 
-const categoryColors: Record<string, string> = {
-  'All': 'from-slate-500 to-slate-600',
-  'Safety': 'from-red-500 to-rose-600',
-  'Equipment': 'from-blue-500 to-cyan-600',
-  'Regulatory': 'from-green-500 to-emerald-600',
-  'Training': 'from-purple-500 to-violet-600',
-  'Incident': 'from-amber-500 to-orange-600',
-  'Environmental': 'from-teal-500 to-green-600',
-  'Maintenance': 'from-indigo-500 to-blue-600',
+const categoryConfig: Record<DocumentCategory, { icon: LucideIcon; style: string }> = {
+  Safety: { icon: HardHat, style: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
+  Compliance: { icon: ShieldCheck, style: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
+  Geological: { icon: Target, style: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
+  Maintenance: { icon: Droplets, style: 'text-purple-500 bg-purple-500/10 border-purple-500/20' },
+  Other: { icon: FileText, style: 'text-muted-foreground bg-muted border-border' },
 };
 
-export default function CategoryChips({
+interface CategoryChipProps {
+  category: DocumentCategory;
+  className?: string;
+  onClick?: () => void;
+  isActive?: boolean;
+  interactive?: boolean;
+}
+
+export function CategoryChip({
+  category,
+  className,
+  onClick,
+  isActive = false,
+  interactive = false,
+}: CategoryChipProps) {
+  const config = categoryConfig[category] || categoryConfig.Other;
+  const Icon = config.icon;
+
+  const baseClasses = cn(
+    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border transition-colors',
+    isActive ? config.style : 'border-transparent text-muted-foreground bg-muted hover:bg-muted/80 hover:text-foreground',
+    interactive && 'cursor-pointer',
+    className
+  );
+
+  return (
+    <div className={baseClasses} onClick={interactive ? onClick : undefined}>
+      <Icon className="size-3.5" />
+      {category}
+    </div>
+  );
+}
+
+export function CategoryFilter({
   categories,
   selectedCategory,
   onSelectCategory,
-}: CategoryChipsProps) {
-  const allCategories = ['All', ...categories];
-
+  className,
+}: {
+  categories: DocumentCategory[];
+  selectedCategory: DocumentCategory | null;
+  onSelectCategory: (category: DocumentCategory | null) => void;
+  className?: string;
+}) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {allCategories.map((category, index) => {
-        const isSelected = selectedCategory === category || (category === 'All' && !selectedCategory);
-        const gradient = categoryColors[category] || 'from-gray-500 to-gray-600';
-        
-        return (
-          <motion.button
-            key={category}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onSelectCategory(category === 'All' ? null : category)}
-            className={cn(
-              'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
-              isSelected
-                ? `bg-gradient-to-r ${gradient} text-white shadow-md`
-                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/50'
-            )}
-          >
-            {category}
-          </motion.button>
-        );
-      })}
+    <div className={cn('flex flex-wrap gap-2', className)}>
+      <div
+        className={cn(
+          'inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border cursor-pointer transition-colors',
+          selectedCategory === null
+            ? 'bg-primary text-primary-foreground border-primary'
+            : 'bg-muted text-muted-foreground border-transparent hover:bg-muted/80 hover:text-foreground'
+        )}
+        onClick={() => onSelectCategory(null)}
+      >
+        All
+      </div>
+      {categories.map((category) => (
+        <CategoryChip
+          key={category}
+          category={category}
+          isActive={selectedCategory === category}
+          interactive
+          onClick={() => onSelectCategory(category)}
+        />
+      ))}
     </div>
   );
 }
