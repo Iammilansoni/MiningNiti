@@ -1,183 +1,58 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { 
-  Pickaxe, 
-  Twitter, 
-  Linkedin, 
-  Github, 
-  Mail,
-  MapPin,
-  Phone
-} from 'lucide-react';
+import { MiningNitiMark } from '@/components/product/brand';
 
-const footerLinks = {
-  product: [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Integrations', href: '#' },
-    { label: 'API Docs', href: '#' },
-    { label: 'Changelog', href: '#' },
-  ],
-  solutions: [
-    { label: 'Safety Management', href: '#' },
-    { label: 'Equipment Operations', href: '#' },
-    { label: 'Regulatory Compliance', href: '#' },
-    { label: 'Document Intelligence', href: '#' },
-  ],
-  company: [
-    { label: 'About Us', href: '#' },
-    { label: 'Careers', href: '#' },
-    { label: 'Blog', href: '#' },
-    { label: 'Press Kit', href: '#' },
-    { label: 'Contact', href: '#' },
-  ],
-  legal: [
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Terms of Service', href: '#' },
-    { label: 'Cookie Policy', href: '#' },
-    { label: 'Security', href: '#' },
-  ],
-};
-
-const socialLinks = [
-  { icon: <Twitter className="w-5 h-5" />, href: '#', label: 'Twitter' },
-  { icon: <Linkedin className="w-5 h-5" />, href: '#', label: 'LinkedIn' },
-  { icon: <Github className="w-5 h-5" />, href: '#', label: 'GitHub' },
-];
-
-export default function Footer() {
+export function Footer() {
   return (
-    <footer className="relative border-t border-border/50 bg-card/50 backdrop-blur-sm">
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80 pointer-events-none" />
-
-      <div className="container mx-auto px-4 relative z-10">
-        {/* Main footer content */}
-        <div className="py-16 grid grid-cols-2 md:grid-cols-6 gap-8">
-          {/* Brand column */}
-          <div className="col-span-2">
+    <footer className="border-t border-white/5 bg-[#05030A] py-12 sm:py-16">
+      <div className="mx-auto max-w-[var(--landing-max-width)] px-6">
+        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5">
+          
+          <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-primary to-emerald-600">
-                <Pickaxe className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
-                MiningNiti
-              </span>
+              <MiningNitiMark className="size-6 text-white/40" />
+              <span className="font-semibold text-white">MiningNiti</span>
             </Link>
-            <p className="text-muted-foreground mb-6 max-w-xs">
-              AI-powered document intelligence for the mining industry. 
-              Transform your operations with intelligent automation.
+            <p className="text-sm text-white/40 max-w-xs mb-6">
+              The AI-native intelligence layer for modern mining operations. Automate compliance, parse complex documents, and operate with absolute certainty.
             </p>
-            
-            {/* Contact info */}
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                <span>contact@miningniti.com</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                <span>+1 (555) 123-4567</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                <span>San Francisco, CA</span>
-              </div>
+            <div className="text-sm text-white/25">
+              © {new Date().getFullYear()} MiningNiti Inc. All rights reserved.
             </div>
           </div>
 
-          {/* Product links */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Product</h4>
-            <ul className="space-y-3">
-              {footerLinks.product.map((link) => (
-                <li key={link.label}>
-                  <Link 
-                    href={link.href}
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+            <h3 className="font-semibold text-white mb-4">Platform</h3>
+            <ul className="space-y-3 text-sm text-white/40">
+                <li><Link href="#architecture" className="hover:text-white transition-colors">Architecture</Link></li>
+               <li><Link href="#features" className="hover:text-white transition-colors">Features</Link></li>
+               <li><Link href="#trust" className="hover:text-white transition-colors">Security</Link></li>
+               <li><Link href="#integrations" className="hover:text-white transition-colors">Integrations</Link></li>
             </ul>
           </div>
 
-          {/* Solutions links */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Solutions</h4>
-            <ul className="space-y-3">
-              {footerLinks.solutions.map((link) => (
-                <li key={link.label}>
-                  <Link 
-                    href={link.href}
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+            <h3 className="font-semibold text-white mb-4">Resources</h3>
+            <ul className="space-y-3 text-sm text-white/40">
+                <li><Link href="#faq" className="hover:text-white transition-colors">FAQ</Link></li>
+               <li><Link href="/dashboard/chat" className="hover:text-white transition-colors">Documentation</Link></li>
+               <li><Link href="/api-reference" className="hover:text-white transition-colors">API Reference</Link></li>
+               <li><Link href="/case-studies" className="hover:text-white transition-colors">Case Studies</Link></li>
+               <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
             </ul>
           </div>
 
-          {/* Company links */}
           <div>
-            <h4 className="font-semibold text-foreground mb-4">Company</h4>
-            <ul className="space-y-3">
-              {footerLinks.company.map((link) => (
-                <li key={link.label}>
-                  <Link 
-                    href={link.href}
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+            <h3 className="font-semibold text-white mb-4">Company</h3>
+            <ul className="space-y-3 text-sm text-white/40">
+                <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
+               <li><Link href="/careers" className="hover:text-white transition-colors">Careers</Link></li>
+               <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+               <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
 
-          {/* Legal links */}
-          <div>
-            <h4 className="font-semibold text-foreground mb-4">Legal</h4>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
-                <li key={link.label}>
-                  <Link 
-                    href={link.href}
-                    className="text-muted-foreground hover:text-primary transition-colors text-sm"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="py-6 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} MiningNiti. All rights reserved.
-          </p>
-
-          {/* Social links */}
-          <div className="flex items-center gap-4">
-            {socialLinks.map((social) => (
-              <motion.a
-                key={social.label}
-                href={social.href}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-2 rounded-lg bg-muted/50 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                aria-label={social.label}
-              >
-                {social.icon}
-              </motion.a>
-            ))}
-          </div>
         </div>
       </div>
     </footer>
