@@ -21,24 +21,25 @@ export default function LandingPage() {
       {/* 1. THE HOOK: Hero & Social Proof */}
       <HeroSection />
       
-      <section className="relative z-20 bg-[#05030A] py-16 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[200px] bg-[radial-gradient(ellipse_at_top,rgba(148,122,252,0.06),transparent_70%)] pointer-events-none z-0" />
+      <section className="relative z-20 bg-[#0A0A0B] pb-20 border-b border-white/[0.02] overflow-hidden -mt-16">
         <div className="mx-auto max-w-[1200px] px-6 text-center relative z-10">
-          <p className="text-[12px] font-medium tracking-[0.15em] uppercase text-white/40 mb-8">
+          <p className="text-[11px] font-mono font-medium tracking-[0.2em] uppercase text-white/40 mb-10">
             Trusted by compliance teams across the mining sector
           </p>
           <div 
-            className="flex flex-col gap-6"
+            className="relative flex overflow-hidden glass-panel-premium rounded-3xl py-8 border-white/5"
             style={{
-              maskImage: 'linear-gradient(to right, transparent 0, #000 10%, #000 90%, transparent 100%)',
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0, #000 10%, #000 90%, transparent 100%)'
+              maskImage: 'linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%)'
             }}
           >
-            <div className="flex w-max animate-[scrollLogos_35s_linear_infinite]">
-              {[1, 2].map((set) => (
-                <div key={set} className="flex items-center gap-20 px-10">
+            <div className="flex w-max animate-[scrollLogos_40s_linear_infinite]">
+              {[1, 2, 3].map((set) => (
+                <div key={set} className="flex items-center gap-24 px-12">
                   {['CMPDI', 'Ministry of Coal', 'Coal India', 'NTPC', 'Rio Tinto', 'BHP', 'Anglo American'].map(name => (
-                    <span key={name} className="text-xl font-bold tracking-tight text-white/30 whitespace-nowrap">{name}</span>
+                    <span key={`${set}-${name}`} className="text-2xl font-bold tracking-tight text-white/40 hover:text-white/80 transition-colors whitespace-nowrap">
+                      {name}
+                    </span>
                   ))}
                 </div>
               ))}

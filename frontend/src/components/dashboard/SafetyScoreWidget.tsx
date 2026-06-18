@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import { Shield, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
-import { CountUp } from '@/components/reactbits';
 
 interface SafetyScoreProps {
   score?: number;
@@ -81,7 +80,7 @@ export default function SafetyScoreWidget({
             {/* Center text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className={`text-3xl font-bold ${colors.text}`}>
-                <CountUp end={score} duration={1.5} />
+                {score}
               </span>
               <span className="text-xs text-muted-foreground">Overall</span>
             </div>

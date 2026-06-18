@@ -39,7 +39,7 @@ export default function BlogPage() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#05030A]">
+    <div className="flex flex-col min-h-screen bg-[#0A0A0B]">
       <Navbar />
       <main className="flex-1 pt-32 pb-24">
         
@@ -53,7 +53,7 @@ export default function BlogPage() {
 
         {/* Featured Post (First one) */}
         <div className="max-w-[1200px] mx-auto px-6 mb-16">
-          <Link href="#" className="group block bg-[#0C0C0C] border border-white/10 rounded-3xl overflow-hidden hover:border-white/20 transition-all">
+          <Link href="#" className="group block bg-white/[0.02] border border-white/[0.08] rounded-3xl overflow-hidden hover:bg-white/[0.04] transition-all shadow-lg">
             <div className="grid md:grid-cols-2">
               <div className={`h-[300px] md:h-auto ${posts[0].image} relative overflow-hidden`}>
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
@@ -74,7 +74,7 @@ export default function BlogPage() {
         {/* Grid of remaining posts */}
         <div className="max-w-[1200px] mx-auto px-6 grid md:grid-cols-3 gap-6">
           {posts.slice(1).map((post, i) => (
-            <Link key={i} href="#" className="group bg-[#0C0C0C] border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 transition-all flex flex-col">
+            <Link key={i} href="#" className="group bg-white/[0.02] border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.04] transition-all flex flex-col shadow-lg">
               <div className={`h-[180px] ${post.image} relative overflow-hidden`}>
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
               </div>

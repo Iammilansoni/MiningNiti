@@ -75,70 +75,43 @@ Be precise and avoid duplicates. Extract exactly as written in the document.
     async def analyze(self, text: str, context: Optional[Dict] = None) -> Dict[str, Any]:
         """
         Extract named entities from document.
-        
-        Returns:
-            {
-                "equipment": List[str],
-                "chemicals": List[str],
-                "locations": List[str],
-                "personnel": List[str],
-                "dates": List[str],
-                "regulations": List[str],
-                "entity_count": int
-            }
+
+        Returns dict with keys: equipment, chemicals, locations, personnel,
+        dates, regulations (all List[str]), entity_count (int)
         """
-        prompt = f"""{self.system_prompt}
+        prompt = f"""Extract all mining-specific named entities from this document.
 
-Extract entities from this mining document:
+Document content ({len(text)} chars total, showing up to 15000):
+{self._prepare_text(text)}
 
-{self._truncate_text(text, 5000)}
-
-Respond in JSON format:
+Respond with a JSON object:
 {{
-  "equipment": ["equipment name 1", "equipment name 2"],
-  "chemicals": ["chemical 1", "chemical 2"],
-  "locations": ["location 1", "location 2"],
-  "personnel": ["person/role 1", "person/role 2"],
-  "dates": ["date 1", "date 2"],
-  "regulations": ["regulation 1", "regulation 2"]
+  "equipment": ["<equipment name or model>"],
+  "chemicals": ["<chemical compound, gas, or mineral>"],
+  "locations": ["<mine name, section, or area>"],
+  "personnel": ["<role or name>"],
+  "dates": ["<date or time period>"],
+  "regulations": ["<e.g. 30 CFR 75.400, OSHA 1910.134>"]
 }}
 
 Notes:
 - List each unique entity only once
-- Use exact text from document when possible
+- Use exact text from document
 - For personnel, prefer roles over names for privacy
-- Include regulation citations in standard format (e.g., "30 CFR 75.400")
+- Include regulation citations in standard format
 """
-        try:
-            response = self._generate(prompt)
-            result = self._parse_json(response)
-            
-            entities = {
-                "equipment": self._deduplicate(result.get("equipment", [])),
-                "chemicals": self._deduplicate(result.get("chemicals", [])),
-                "locations": self._deduplicate(result.get("locations", [])),
-                "personnel": self._deduplicate(result.get("personnel", [])),
-                "dates": self._deduplicate(result.get("dates", [])),
-                "regulations": self._deduplicate(result.get("regulations", []))
-            }
-            
-            # Calculate total entity count
-            entity_count = sum(len(v) for v in entities.values())
-            entities["entity_count"] = entity_count
-            
-            return entities
-            
-        except Exception as e:
-            logger.error(f"Entity extraction failed: {e}")
-            return {
-                "equipment": [],
-                "chemicals": [],
-                "locations": [],
-                "personnel": [],
-                "dates": [],
-                "regulations": [],
-                "entity_count": 0
-            }
+        result = await self._generate_json(prompt)
+
+        entities = {
+            "equipment": self._deduplicate(result.get("equipment", [])),
+            "chemicals": self._deduplicate(result.get("chemicals", [])),
+            "locations": self._deduplicate(result.get("locations", [])),
+            "personnel": self._deduplicate(result.get("personnel", [])),
+            "dates": self._deduplicate(result.get("dates", [])),
+            "regulations": self._deduplicate(result.get("regulations", [])),
+        }
+        entities["entity_count"] = sum(len(v) for v in entities.values())
+        return entities
     
     def _deduplicate(self, items: List[str]) -> List[str]:
         """Remove duplicates while preserving order"""

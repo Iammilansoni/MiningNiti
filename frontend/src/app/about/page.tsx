@@ -11,7 +11,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#05030A]">
+    <div className="flex flex-col min-h-screen bg-[#0A0A0B]">
       <Navbar />
       <main className="flex-1 pt-32 pb-24">
         
@@ -28,7 +28,7 @@ export default function AboutPage() {
         </section>
 
         {/* The Story */}
-        <section className="py-20 border-t border-white/5 bg-[#0C0C0C]">
+        <section className="py-20 border-t border-white/[0.08] bg-white/[0.02]">
           <div className="max-w-[1000px] mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">The infrastructure gap in heavy industry.</h2>
@@ -46,23 +46,23 @@ export default function AboutPage() {
             </div>
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-[#947AFC]/20 to-transparent rounded-3xl blur-2xl" />
-              <div className="relative bg-black border border-white/10 rounded-3xl p-8 h-full flex flex-col justify-center">
+              <div className="relative bg-[#0A0A0B] border border-white/[0.08] rounded-3xl p-8 h-full flex flex-col justify-center shadow-2xl">
                 <div className="grid grid-cols-2 gap-8">
                   <div>
                     <div className="text-4xl font-bold text-white mb-2">10M+</div>
-                    <div className="text-sm font-mono text-[#947AFC]">Documents Indexed</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-[#947AFC]">Documents Indexed</div>
                   </div>
                   <div>
                     <div className="text-4xl font-bold text-white mb-2">99.8%</div>
-                    <div className="text-sm font-mono text-[#947AFC]">Parse Accuracy</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-[#947AFC]">Parse Accuracy</div>
                   </div>
                   <div>
                     <div className="text-4xl font-bold text-white mb-2">0</div>
-                    <div className="text-sm font-mono text-[#947AFC]">Data Leaks</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-[#947AFC]">Data Leaks</div>
                   </div>
                   <div>
                     <div className="text-4xl font-bold text-white mb-2">14</div>
-                    <div className="text-sm font-mono text-[#947AFC]">Regulatory Zones</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-[#947AFC]">Regulatory Zones</div>
                   </div>
                 </div>
               </div>
@@ -78,7 +78,7 @@ export default function AboutPage() {
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             {values.map((v, i) => (
-              <div key={i} className="bg-[#05030A] border border-white/10 p-8 rounded-2xl hover:border-white/20 transition-colors">
+              <div key={i} className="bg-white/[0.02] border border-white/[0.08] p-8 rounded-2xl hover:bg-white/[0.04] transition-colors shadow-lg">
                 <div className="size-10 rounded-xl bg-[#947AFC]/10 border border-[#947AFC]/20 flex items-center justify-center mb-6">
                   <v.icon className="size-5 text-[#947AFC]" />
                 </div>

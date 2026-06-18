@@ -1,8 +1,10 @@
-import { PageHeader } from '@/components/product/page-header';
+'use client';
+
+import { useUser } from '@clerk/nextjs';
 
 export function WelcomeHeader() {
-  // In a real app, this would get the user's name from Clerk
-  const firstName = 'Alex';
+  const { user } = useUser();
+  const firstName = user?.firstName || 'there';
   
   const today = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',

@@ -5,10 +5,11 @@ Document storage, classification, and embeddings
 
 import uuid
 from enum import Enum
-from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, DateTime, Text, Boolean, ForeignKey, Enum as SQLEnum
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, Integer, Float, DateTime, Text, ForeignKey, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
+from pgvector.sqlalchemy import Vector
 
 from app.models.base import Base, UUIDMixin, TimestampMixin
 
@@ -75,7 +76,8 @@ class Document(Base, UUIDMixin, TimestampMixin):
     
     # Extracted content
     content = Column(Text, nullable=True)  # Full text content
-    page_count = Column(Integer, nullable=True)
+    page_count = Column(Integer, nullable=True)   # deprecated alias — use total_pages
+    total_pages = Column(Integer, nullable=True)  # authoritative page count from extractor
     word_count = Column(Integer, nullable=True)
     
     # AI Classification
@@ -148,6 +150,7 @@ class Document(Base, UUIDMixin, TimestampMixin):
             "word_count": self.word_count,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "processed_at": self.processed_at.isoformat() if self.processed_at else None,
+        "total_pages": self.total_pages or self.page_count,
         }
 
 
@@ -155,6 +158,10 @@ class DocumentEmbedding(Base, UUIDMixin):
     """
     Vector embeddings for document chunks.
     Used for semantic search and RAG.
+
+    The embedding column uses pgvector's native Vector(768) type with an
+    HNSW index (see migration 001) for sub-5ms approximate nearest-neighbor
+    search instead of brute-force Python cosine similarity.
     """
     
     __tablename__ = "document_embeddings"
@@ -170,15 +177,20 @@ class DocumentEmbedding(Base, UUIDMixin):
     # Chunk information
     chunk_index = Column(Integer, nullable=False)
     chunk_text = Column(Text, nullable=False)
-    
-    # Vector embedding (stored as binary for efficiency)
-    # Will be converted to/from numpy array in service layer
-    embedding = Column(JSONB, nullable=False)  # Using JSONB for Supabase compatibility
+
+    # Vector embedding — native pgvector type with HNSW index (see migration 001)
+    # Replaces the old JSONB column for 10-100x faster similarity search.
+    embedding = Column(Vector(768), nullable=False)
     embedding_model = Column(String(100), default="text-embedding-004")
-    
-    # Chunk metadata
+
+    # Context metadata — powers context-aware answers with page citations
+    section_title = Column(String(500), nullable=True)  # e.g. "Safety Procedures"
+    page_numbers = Column(JSONB, nullable=True)          # e.g. [12, 13] — pages this chunk spans
+
+    # Legacy page columns (kept for backward compat, use page_numbers instead)
     start_page = Column(Integer, nullable=True)
     end_page = Column(Integer, nullable=True)
+
     extra_metadata = Column("metadata", JSONB, default=dict)
     
     # Relationships

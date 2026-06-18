@@ -47,64 +47,48 @@ Prioritize:
     
     async def analyze(self, text: str, context: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Generate document summary.
-        
+        Generate document summary and key points.
+
         Returns:
             {
                 "summary": str,
                 "key_points": List[str],
                 "action_items": List[str],
-                "word_count": int,
-                "document_purpose": str
+                "document_purpose": str,
+                "confidence": float
             }
         """
         category = context.get("category", "unknown") if context else "unknown"
-        
-        prompt = f"""{self.system_prompt}
 
-Summarize this mining document:
+        prompt = f"""Summarize this mining document clearly and concisely.
 
 Document Type: {category}
-Document Content:
-{self._truncate_text(text, 6000)}
+Document content ({len(text)} chars total, showing up to 15000):
+{self._prepare_text(text)}
 
-Respond in JSON format:
+Respond with a JSON object:
 {{
-  "summary": "2-3 paragraph executive summary",
+  "summary": "<2-3 paragraph executive summary covering main purpose and findings>",
   "key_points": [
-    "Key point 1",
-    "Key point 2",
-    "Key point 3",
-    "Key point 4",
-    "Key point 5"
+    "<Key point 1>",
+    "<Key point 2>",
+    "<Key point 3>",
+    "<Key point 4>",
+    "<Key point 5>"
   ],
-  "action_items": [
-    "Action item 1 (if any)",
-    "Action item 2 (if any)"
-  ],
-  "document_purpose": "one sentence describing document's main purpose"
+  "action_items": ["<required action or follow-up if any>"],
+  "document_purpose": "<one sentence describing the document's main purpose>",
+  "confidence": <0.0-1.0>
 }}
 """
-        try:
-            response = self._generate(prompt)
-            result = self._parse_json(response)
-            
-            summary = result.get("summary", "Summary not available.")
-            
-            return {
-                "summary": summary,
-                "key_points": result.get("key_points", []),
-                "action_items": result.get("action_items", []),
-                "document_purpose": result.get("document_purpose", ""),
-                "word_count": len(summary.split())
-            }
-            
-        except Exception as e:
-            logger.error(f"Summarization failed: {e}")
-            return {
-                "summary": "Summary generation failed.",
-                "key_points": [],
-                "action_items": [],
-                "document_purpose": "",
-                "word_count": 0
-            }
+        result = await self._generate_json(prompt)
+
+        summary = result.get("summary") or "Summary not available."
+        return {
+            "summary": summary,
+            "key_points": result.get("key_points", []),
+            "action_items": result.get("action_items", []),
+            "document_purpose": result.get("document_purpose", ""),
+            "confidence": float(result.get("confidence") or 0.7),
+            "word_count": len(summary.split()),
+        }
