@@ -5,7 +5,7 @@ Combines all endpoint routers into single API router
 
 from fastapi import APIRouter
 
-from app.api.v1 import documents, chat, analytics, jobs, health, prompts, user
+from app.api.v1 import documents, chat, chat_stream, analytics, jobs, health, prompts, user
 
 api_router = APIRouter()
 
@@ -23,6 +23,12 @@ api_router.include_router(
 
 api_router.include_router(
     chat.router,
+    prefix="/chat",
+    tags=["Chat"]
+)
+
+api_router.include_router(
+    chat_stream.router,
     prefix="/chat",
     tags=["Chat"]
 )

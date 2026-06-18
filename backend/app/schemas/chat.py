@@ -9,12 +9,14 @@ from pydantic import BaseModel, Field
 
 
 class ChatSource(BaseModel):
-    """Source citation for RAG response"""
+    """Source citation for RAG response — includes page numbers for verifiable context."""
     document_id: str
     document_title: str
+    file_name: str                          # e.g. "Mining_site.pdf"
     chunk_text: str = Field(..., max_length=500)
     relevance_score: float = Field(..., ge=0, le=1)
-    page: Optional[int] = None
+    page_numbers: List[int] = Field(default_factory=list)  # e.g. [12, 13]
+    section_title: Optional[str] = None    # e.g. "Safety Procedures"
 
 
 class ChatRequest(BaseModel):

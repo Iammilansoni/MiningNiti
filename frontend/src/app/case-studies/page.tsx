@@ -38,7 +38,7 @@ export default function CaseStudiesPage() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#05030A]">
+    <div className="flex flex-col min-h-screen bg-[#0A0A0B]">
       <Navbar />
       <main className="flex-1 pt-32 pb-24">
         
@@ -54,9 +54,9 @@ export default function CaseStudiesPage() {
         {/* Grid */}
         <div className="max-w-[1200px] mx-auto px-6 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {studies.map((study, i) => (
-            <div key={i} className="group bg-[#0C0C0C] border border-white/10 rounded-3xl p-8 hover:border-white/20 transition-all flex flex-col">
+            <div key={i} className="group bg-white/[0.02] border border-white/[0.08] rounded-3xl p-8 hover:bg-white/[0.04] transition-all flex flex-col shadow-lg">
               <div className="flex items-center gap-3 mb-8">
-                <div className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-white/70">
+                <div className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-xs font-bold text-white/70">
                   {study.logo}
                 </div>
                 <span className="text-sm font-medium text-white/50">{study.company}</span>
@@ -67,7 +67,7 @@ export default function CaseStudiesPage() {
                   <div className="text-4xl font-bold text-[#947AFC]">{study.metric}</div>
                   <study.icon className="size-6 text-[#947AFC] mb-1.5 opacity-50" />
                 </div>
-                <div className="text-sm font-mono text-white/40 uppercase tracking-wider">{study.metricLabel}</div>
+                <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">{study.metricLabel}</div>
               </div>
 
               <h3 className="text-xl font-bold text-white mb-3 leading-snug">{study.title}</h3>
@@ -75,10 +75,10 @@ export default function CaseStudiesPage() {
                 {study.desc}
               </p>
 
-              <div className="mt-auto pt-6 border-t border-white/5">
+              <div className="mt-auto pt-6 border-t border-white/[0.08]">
                 <div className="flex flex-wrap gap-2 mb-6">
                   {study.tags.map(tag => (
-                    <span key={tag} className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-[11px] text-white/50">
+                    <span key={tag} className="px-2.5 py-1 rounded bg-white/[0.04] border border-white/[0.08] text-[11px] text-white/50">
                       {tag}
                     </span>
                   ))}

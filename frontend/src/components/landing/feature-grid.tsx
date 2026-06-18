@@ -354,27 +354,30 @@ export function FeatureGrid() {
           </motion.p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-3 gap-6">
           {features.map((f, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
-              className={`${f.span} bg-[#0C0C0C] border border-white/10 rounded-3xl p-6 flex flex-col hover:-translate-y-2 hover:border-[#947AFC]/50 hover:bg-gradient-to-br hover:from-[#110e1a]/90 hover:to-[#0a0812]/90 hover:shadow-[0_10px_40px_-10px_rgba(148,122,252,0.3)] transition-all duration-500 ease-out group relative`}
+              transition={{ duration: 0.7, delay: 0.15 + i * 0.1 }}
+              className={`${f.span} glass-panel-premium p-8 flex flex-col group relative overflow-hidden hover:-translate-y-2 hover:shadow-[0_20px_50px_-10px_rgba(148,122,252,0.3)] transition-all duration-500 ease-out`}
             >
+              {/* Subtle hover glow behind the card content */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/0 to-[var(--primary)]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              
               {/* Header */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="size-9 rounded-xl bg-[#947AFC]/10 border border-[#947AFC]/20 flex items-center justify-center">
-                  <f.icon className="size-4 text-[#947AFC]" />
+              <div className="relative z-10 flex items-center gap-4 mb-4">
+                <div className="size-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shadow-inner group-hover:bg-[var(--primary)]/20 transition-colors">
+                  <f.icon className="size-5 text-[var(--primary)]" />
                 </div>
-                <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-white/40">{f.label}</span>
+                <span className="text-[12px] font-mono uppercase tracking-[0.15em] text-white/50">{f.label}</span>
               </div>
-              <h3 className="text-lg font-bold text-white mb-1.5">{f.title}</h3>
-              <p className="text-sm text-white/45 leading-relaxed mb-4">{f.description}</p>
+              <h3 className="relative z-10 text-xl font-bold text-white mb-2">{f.title}</h3>
+              <p className="relative z-10 text-sm text-white/50 leading-relaxed mb-6">{f.description}</p>
 
               {/* Live Diagram */}
-              <div className="mt-auto bg-black/30 rounded-2xl border border-white/[0.06] p-4 overflow-hidden">
+              <div className="relative z-10 mt-auto bg-black/40 rounded-2xl border border-white/5 p-5 overflow-hidden backdrop-blur-md">
                 {f.diagram}
               </div>
             </motion.div>

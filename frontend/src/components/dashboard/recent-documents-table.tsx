@@ -1,22 +1,30 @@
+'use client';
+
 import { SectionCard } from '@/components/product/section-card';
 import { StatusBadge } from '@/components/product/status';
 import { Button } from '@/components/ui/button';
 import { FileText, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-
-const recentDocs = [
-  { id: '1', title: 'Q3 Environmental Audit.pdf', category: 'Compliance', status: 'verified', date: '2 hrs ago' },
-  { id: '2', title: 'Site Alpha Safety Protocol v2.docx', category: 'Safety', status: 'pending', date: '5 hrs ago' },
-  { id: '3', title: 'Geological Survey - Sector 7.pdf', category: 'Survey', status: 'verified', date: '1 day ago' },
-  { id: '4', title: 'Equipment Maintenance Log_Oct.xlsx', category: 'Maintenance', status: 'flagged', date: '2 days ago' },
-];
+import { useQuery } from '@tanstack/react-query';
+import { getDocuments } from '@/lib/api';
+import { useAuth } from '@clerk/nextjs';
+import { formatDistanceToNow } from 'date-fns';
 
 export function RecentDocumentsTable() {
+  const { getToken } = useAuth();
+  
+  const { data, isLoading } = useQuery({
+    queryKey: ['recent-documents'],
+    queryFn: () => getDocuments(getToken, { page_size: 5 }),
+  });
+
+  const recentDocs = data?.documents || [];
+
   return (
-    <SectionCard className="flex flex-col h-full">
+    <SectionCard className="flex flex-col h-full bg-card shadow-sm border border-border">
       <div className="flex items-center justify-between border-b border-border p-4">
-        <h2 className="text-sm font-semibold">Recent Documents</h2>
-        <Button variant="ghost" size="sm" asChild className="h-8 text-xs">
+        <h2 className="text-sm font-semibold text-foreground">Recent Documents</h2>
+        <Button variant="ghost" size="sm" asChild className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">
           <Link href="/dashboard/documents">
             View All <ArrowRight className="ml-1 size-3" />
           </Link>
@@ -24,7 +32,7 @@ export function RecentDocumentsTable() {
       </div>
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-muted-foreground">
+          <thead className="bg-muted/30 text-muted-foreground">
             <tr>
               <th className="h-9 px-4 text-left font-medium">Document</th>
               <th className="h-9 px-4 text-left font-medium hidden sm:table-cell">Category</th>
@@ -33,27 +41,39 @@ export function RecentDocumentsTable() {
             </tr>
           </thead>
           <tbody>
-            {recentDocs.map((doc) => (
-              <tr key={doc.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors last:border-0">
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <FileText className="size-4 text-muted-foreground shrink-0" />
-                    <span className="font-medium truncate">{doc.title}</span>
-                  </div>
-                </td>
-                <td className="p-4 hidden sm:table-cell text-muted-foreground">
-                  {doc.category}
-                </td>
-                <td className="p-4">
-                  {doc.status === 'verified' && <StatusBadge label="Verified" tone="success" />}
-                  {doc.status === 'pending' && <StatusBadge label="Processing" tone="info" pulse />}
-                  {doc.status === 'flagged' && <StatusBadge label="Flagged" tone="warning" />}
-                </td>
-                <td className="p-4 hidden md:table-cell text-right text-muted-foreground whitespace-nowrap">
-                  {doc.date}
-                </td>
+            {isLoading ? (
+              <tr>
+                <td colSpan={4} className="p-4 text-center text-muted-foreground">Loading documents...</td>
               </tr>
-            ))}
+            ) : recentDocs.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="p-4 text-center text-muted-foreground">No recent documents found.</td>
+              </tr>
+            ) : (
+              recentDocs.map((doc) => (
+                <tr key={doc.id} className="border-b border-border hover:bg-muted/20 transition-colors last:border-0">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <FileText className="size-4 text-primary shrink-0" />
+                      <span className="font-medium truncate text-foreground/90">{doc.title || doc.file_name}</span>
+                    </div>
+                  </td>
+                  <td className="p-4 hidden sm:table-cell text-muted-foreground">
+                    {doc.category || 'Uncategorized'}
+                  </td>
+                  <td className="p-4">
+                    {doc.status === 'completed' && <StatusBadge label="Verified" tone="success" />}
+                    {doc.status === 'processing' && <StatusBadge label="Processing" tone="info" pulse />}
+                    {doc.status === 'failed' && <StatusBadge label="Failed" tone="danger" />}
+                    {doc.status === 'pending' && <StatusBadge label="Pending" tone="neutral" />}
+                    {doc.status === 'analyzing' && <StatusBadge label="Analyzing" tone="warning" pulse />}
+                  </td>
+                  <td className="p-4 hidden md:table-cell text-right text-muted-foreground whitespace-nowrap">
+                    {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

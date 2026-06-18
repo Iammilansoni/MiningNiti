@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/uiStore';
 import { MiningNitiMark } from '@/components/product/brand';
@@ -56,33 +57,33 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'group flex h-screen flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out',
+        'group flex h-full flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out',
         sidebarCollapsed ? 'w-[var(--sidebar-width-collapsed)]' : 'w-[var(--sidebar-width)]'
       )}
     >
       {/* ── Brand ── */}
-      <div className="flex h-[var(--header-height)] shrink-0 items-center px-4 border-b border-border">
+      <div className="flex h-[var(--header-height)] shrink-0 items-center px-4 border-b border-sidebar-border">
         <Link href="/" className="flex items-center gap-2 focus-visible:outline-none hover:opacity-80 transition-opacity">
           <MiningNitiMark className="shrink-0" />
           {!sidebarCollapsed && (
-            <span className="text-sm font-semibold tracking-tight truncate transition-opacity duration-300">
+            <span className="text-sm font-semibold tracking-tight truncate transition-opacity duration-300 text-sidebar-foreground">
               MiningNiti
             </span>
           )}
         </Link>
       </div>
 
-      {/* ── Workspace Switcher (Mock) ── */}
+      {/* ── Workspace Switcher ── */}
       {!sidebarCollapsed && (
         <div className="px-4 py-4">
-          <button className="flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-accent transition-colors">
+          <button className="flex w-full items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent transition-colors shadow-sm">
             <div className="flex items-center gap-2 truncate">
               <div className="size-5 rounded bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                 M
               </div>
-              <span className="truncate">Mining Corp Inc.</span>
+              <span className="truncate text-sidebar-foreground">Mining Corp Inc.</span>
             </div>
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" className="text-muted-foreground shrink-0">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" className="text-sidebar-foreground/40 shrink-0">
               <path d="M4.18179 6.18181C4.35753 6.00608 4.64245 6.00608 4.81819 6.18181L7.49999 8.86362L10.1818 6.18181C10.3575 6.00608 10.6424 6.00608 10.8182 6.18181C10.9939 6.35755 10.9939 6.64247 10.8182 6.81821L7.81819 9.81821C7.73379 9.9026 7.61934 9.95001 7.49999 9.95001C7.38064 9.95001 7.26618 9.9026 7.18179 9.81821L4.18179 6.81821C4.00605 6.64247 4.00605 6.35755 4.18179 6.18181Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd" />
             </svg>
           </button>
@@ -90,7 +91,7 @@ export function Sidebar() {
       )}
 
       {/* ── Navigation ── */}
-      <nav className={cn('flex-1 overflow-y-auto px-2 py-2 space-y-1', sidebarCollapsed && 'pt-4')}>
+      <nav className={cn('flex-1 overflow-y-auto px-3 py-2 space-y-1', sidebarCollapsed && 'pt-4')}>
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -98,16 +99,22 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative',
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring relative group/nav',
                 isActive
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
                 sidebarCollapsed ? 'justify-center' : 'justify-start'
               )}
               title={sidebarCollapsed ? item.name : undefined}
             >
               {isActive && (
-                <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary" />
+                <motion.span 
+                  layoutId="sidebar-active-indicator"
+                  className="absolute left-0 top-1 bottom-1 w-1 rounded-r-full bg-sidebar-primary" 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                />
               )}
               <item.icon className="size-[18px] shrink-0" />
               {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
@@ -117,11 +124,11 @@ export function Sidebar() {
       </nav>
 
       {/* ── Footer ── */}
-      <div className="shrink-0 border-t border-border p-2 space-y-1">
+      <div className="shrink-0 border-t border-sidebar-border p-3 space-y-1">
         <Link
           href="/"
           className={cn(
-            'flex w-full items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
             sidebarCollapsed ? 'justify-center' : 'justify-start'
           )}
           title={sidebarCollapsed ? "Return to Website" : undefined}
@@ -132,7 +139,7 @@ export function Sidebar() {
         <button
           onClick={toggleSidebar}
           className={cn(
-            'flex w-full items-center rounded-md px-2 py-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'flex w-full items-center rounded-lg px-3 py-2 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
             sidebarCollapsed ? 'justify-center' : 'justify-between'
           )}
         >

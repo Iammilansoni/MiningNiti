@@ -1,12 +1,18 @@
 """
 Agent Orchestrator
-Coordinates multi-agent document analysis pipeline
+Coordinates multi-agent document analysis pipeline.
+
+Improvements over v1:
+  - Accepts pages parameter from extractor for future per-page analysis
+  - Runs safety/entity/summary in parallel after classification
+  - Adds per-agent timing metrics
+  - All agents use JSON mode (no regex) + exponential backoff retry
 """
 
 import logging
 import asyncio
-from typing import Any, Dict, Optional
-from datetime import datetime
+from typing import Any, Dict, List, Optional
+from datetime import datetime, timezone
 
 from app.agents.classifier import ClassifierAgent
 from app.agents.safety_analyzer import SafetyAnalyzerAgent
@@ -19,32 +25,33 @@ logger = logging.getLogger(__name__)
 class AgentOrchestrator:
     """
     Multi-Agent Orchestrator for Document Intelligence.
-    
-    Coordinates the execution of specialized agents in a pipeline:
-    1. Classifier Agent - Categorizes document
-    2. Safety Analyzer Agent - Checks compliance (runs in parallel with 3 & 4)
-    3. Entity Extractor Agent - Extracts entities (runs in parallel)
-    4. Summarizer Agent - Creates summary (runs in parallel)
-    
-    The orchestrator optimizes execution by running independent agents
-    concurrently while respecting dependencies.
+
+    Execution order:
+    1. ClassifierAgent   — runs first (result feeds category context to others)
+    2. SafetyAnalyzerAgent  ┐
+    3. EntityExtractorAgent ├── run in parallel after classification
+    4. SummarizerAgent      ┘
     """
-    
+
     def __init__(self):
         self.classifier = ClassifierAgent()
         self.safety_analyzer = SafetyAnalyzerAgent()
         self.entity_extractor = EntityExtractorAgent()
         self.summarizer = SummarizerAgent()
-    
-    async def analyze_document(self, text: str) -> Dict[str, Any]:
+
+    async def analyze_document(
+        self,
+        text: str,
+        pages: Optional[List] = None,
+    ) -> Dict[str, Any]:
         """
         Run full multi-agent analysis pipeline on document.
-        
+
         Args:
-            text: Document text content
-            
+            text: Full document text
+            pages: Per-page content from extractor (reserved for future per-page analysis)
+
         Returns:
-            Aggregated results from all agents:
             {
                 "classification": {...},
                 "safety": {...},
@@ -53,86 +60,103 @@ class AgentOrchestrator:
                 "metadata": {...}
             }
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         logger.info("Starting multi-agent document analysis")
-        
+
+        agent_timings: Dict[str, int] = {}
+
         try:
-            # Step 1: Classification (needed for context)
-            logger.info("Running Classifier Agent...")
+            # ── Step 1: Classification (feeds category context to other agents) ──
+            t0 = datetime.now(timezone.utc)
+            logger.info("Running ClassifierAgent...")
             classification = await self.classifier.analyze(text)
-            
-            category = classification.get("category")
-            context = {"category": category.value if hasattr(category, 'value') else str(category)}
-            
-            # Step 2: Run remaining agents in parallel
+            agent_timings["classifier_ms"] = int(
+                (datetime.now(timezone.utc) - t0).total_seconds() * 1000
+            )
+
+            category = classification.get("category", "other")
+            context = {"category": category}
+
+            # ── Step 2: Parallel agents using category context ─────────────────
             logger.info("Running parallel agents (Safety, Entity, Summary)...")
-            
-            safety_task = asyncio.create_task(
-                self.safety_analyzer.analyze(text, context)
-            )
-            entity_task = asyncio.create_task(
-                self.entity_extractor.analyze(text, context)
-            )
-            summary_task = asyncio.create_task(
-                self.summarizer.analyze(text, context)
-            )
-            
-            # Wait for all parallel tasks
+            t1 = datetime.now(timezone.utc)
+
             safety, entities, summary = await asyncio.gather(
-                safety_task,
-                entity_task,
-                summary_task,
-                return_exceptions=True
+                self.safety_analyzer.analyze(text, context),
+                self.entity_extractor.analyze(text, context),
+                self.summarizer.analyze(text, context),
+                return_exceptions=True,
             )
-            
-            # Handle any exceptions
+
+            agent_timings["parallel_agents_ms"] = int(
+                (datetime.now(timezone.utc) - t1).total_seconds() * 1000
+            )
+
+            # Handle per-agent exceptions gracefully
             if isinstance(safety, Exception):
-                logger.error(f"Safety analysis failed: {safety}")
-                safety = {"error": str(safety)}
-            
+                logger.error(f"SafetyAnalyzerAgent failed: {safety}")
+                safety = {
+                    "error": str(safety),
+                    "score": None,
+                    "status": "pending",
+                    "hazards": [],
+                    "recommendations": [],
+                }
+
             if isinstance(entities, Exception):
-                logger.error(f"Entity extraction failed: {entities}")
-                entities = {"error": str(entities)}
-            
+                logger.error(f"EntityExtractorAgent failed: {entities}")
+                entities = {
+                    "error": str(entities),
+                    "equipment": [],
+                    "chemicals": [],
+                    "locations": [],
+                    "personnel": [],
+                    "dates": [],
+                    "regulations": [],
+                }
+
             if isinstance(summary, Exception):
-                logger.error(f"Summarization failed: {summary}")
-                summary = {"error": str(summary)}
-            
-            end_time = datetime.utcnow()
-            processing_time_ms = int((end_time - start_time).total_seconds() * 1000)
-            
-            logger.info(f"Multi-agent analysis completed in {processing_time_ms}ms")
-            
+                logger.error(f"SummarizerAgent failed: {summary}")
+                summary = {
+                    "error": str(summary),
+                    "summary": "Analysis failed.",
+                    "key_points": [],
+                }
+
+            total_ms = int(
+                (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+            )
+            logger.info(f"Multi-agent analysis completed in {total_ms}ms")
+
             return {
                 "classification": classification,
                 "safety": safety,
                 "entities": entities,
                 "summary": summary,
                 "metadata": {
-                    "processing_time_ms": processing_time_ms,
-                    "agents_used": ["classifier", "safety_analyzer", "entity_extractor", "summarizer"],
-                    "analyzed_at": end_time.isoformat()
-                }
+                    "processing_time_ms": total_ms,
+                    "agent_timings": agent_timings,
+                    "agents_used": [
+                        "classifier",
+                        "safety_analyzer",
+                        "entity_extractor",
+                        "summarizer",
+                    ],
+                    "analyzed_at": datetime.now(timezone.utc).isoformat(),
+                },
             }
-            
+
         except Exception as e:
-            logger.error(f"Orchestrator failed: {e}")
+            logger.error(f"Orchestrator failed: {e}", exc_info=True)
             return {
                 "error": str(e),
-                "metadata": {
-                    "failed": True,
-                    "error_message": str(e)
-                }
+                "metadata": {"failed": True, "error_message": str(e)},
             }
-    
+
     async def analyze_for_safety_only(self, text: str) -> Dict[str, Any]:
-        """
-        Quick safety-only analysis for real-time checks.
-        """
+        """Quick safety-only analysis for real-time checks."""
         return await self.safety_analyzer.analyze(text)
-    
+
     async def classify_only(self, text: str) -> Dict[str, Any]:
-        """
-        Quick classification only.
-        """
+        """Quick classification only."""
         return await self.classifier.analyze(text)
