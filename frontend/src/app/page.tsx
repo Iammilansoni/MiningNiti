@@ -13,7 +13,7 @@ import { TrustSection } from '@/components/landing/trust-section';
 import { MagicInputDemo } from '@/components/landing/magic-input-demo';
 import { RoiCalculator } from '@/components/landing/roi-calculator';
 import { IndiaMapDeployments } from '@/components/landing/india-map-deployments';
-import { Footer } from '@/components/landing/footer';
+import { Footer } from '@/components/landing/Footer';
 
 export default function LandingPage() {
   return (
