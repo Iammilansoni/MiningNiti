@@ -1,5 +1,5 @@
 import { Navbar } from '@/components/landing/Navbar';
-import { Footer } from '@/components/landing/footer';
+import { Footer } from '@/components/landing/Footer';
 import { Terminal, Code2, Database } from 'lucide-react';
 
 export default function ApiReferencePage() {
