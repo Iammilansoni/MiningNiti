@@ -63,7 +63,8 @@ Be thorough but practical. Focus on actionable findings.
                 "hazards": List[Dict],
                 "recommendations": List[str],
                 "compliance_details": Dict,
-                "confidence": float (0-1)
+                "confidence": float (0-1),
+                "reasoning": Dict (explainability layer)
             }
         """
         category = context.get("category", "unknown") if context else "unknown"
@@ -93,6 +94,14 @@ Be thorough but practical. Focus on actionable findings.
             "    \"dgms_compliant\": <true|false>,\n"
             "    \"missing_elements\": [\"<missing safety element>\"]\n"
             "  },\n"
+            "  \"reasoning\": {\n"
+            "    \"score_explanation\": \"<1-2 sentence explanation of why this specific score was assigned>\",\n"
+            "    \"positive_factors\": [\"<safety elements that contributed positively to the score>\"],\n"
+            "    \"negative_factors\": [\"<safety gaps or issues that reduced the score>\"],\n"
+            "    \"evidence\": [\n"
+            "      {\"text\": \"<exact quote or paraphrase from document>\", \"factor\": \"<positive|negative>\", \"impact\": \"<explanation>\"}\n"
+            "    ]\n"
+            "  },\n"
             "  \"summary\": \"<brief safety assessment summary>\"\n"
             "}\n\n"
             "Scoring guide:\n"
@@ -111,5 +120,12 @@ Be thorough but practical. Focus on actionable findings.
             "hazards": result.get("hazards", []),
             "recommendations": result.get("recommendations", []),
             "compliance_details": result.get("compliance_details", {}),
+            "reasoning": result.get("reasoning", {
+                "score_explanation": "",
+                "positive_factors": [],
+                "negative_factors": [],
+                "evidence": [],
+            }),
             "summary": result.get("summary", ""),
         }
+

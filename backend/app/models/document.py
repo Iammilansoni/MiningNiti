@@ -148,8 +148,8 @@ class Document(Base, UUIDMixin, TimestampMixin):
             "entities": self.entities,
             "page_count": self.page_count,
             "word_count": self.word_count,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "processed_at": self.processed_at.isoformat() if self.processed_at else None,
+            "created_at": self.created_at.replace(tzinfo=timezone.utc).isoformat() if self.created_at else None,
+            "processed_at": self.processed_at.replace(tzinfo=timezone.utc).isoformat() if self.processed_at else None,
         "total_pages": self.total_pages or self.page_count,
         }
 

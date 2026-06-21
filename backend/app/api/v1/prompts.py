@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.api.deps import get_current_user_id
+from app.api.deps import get_current_user_id, get_current_user
 from app.models.prompt import CustomPrompt
 from app.schemas.prompt import PromptCreate, PromptUpdate, PromptResponse, PromptListResponse
 from app.core.exceptions import NotFoundError
@@ -53,14 +53,14 @@ async def list_prompts(
 @router.post("", response_model=PromptResponse, status_code=201)
 async def create_prompt(
     request: PromptCreate,
-    user_id: str = Depends(get_current_user_id),
+    user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
     Create a new custom prompt.
     """
     prompt = CustomPrompt(
-        user_id=user_id,
+        user_id=user.clerk_user_id,
         name=request.name,
         prompt_text=request.prompt,
         description=request.description,
@@ -72,7 +72,7 @@ async def create_prompt(
     db.commit()
     db.refresh(prompt)
 
-    logger.info(f"Prompt created: {prompt.id} by user {user_id[:12]}")
+    logger.info(f"Prompt created: {prompt.id} by user {user.clerk_user_id[:12]}")
 
     return PromptResponse(
         id=str(prompt.id),
