@@ -177,7 +177,7 @@ export default function ActivityFeed() {
                 </div>
 
                 {/* Content */}
-                <div className="flex-grow min-w-0">
+                <div className="grow min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-foreground truncate">{activity.title}</p>
                     {getStatusIcon(activity.status)}

@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Navbar } from './Navbar';
 import { AnnouncementBanner } from './AnnouncementBanner';
 import { IntelligenceGraph } from './IntelligenceGraph';
-import { DeepFluidBackground } from './DeepFluidBackground';
 import { ArrowRight } from 'lucide-react';
+import ColorBends from '@/components/ui/ColorBends';
 
 /*
   HeroSection — MiningNiti Landing Page
@@ -36,8 +36,39 @@ export function HeroSection() {
   return (
     <section className="relative min-h-screen w-full flex flex-col bg-[#0A0A0B] overflow-hidden">
 
-      {/* ── Background: Deep Fluid Mesh ── */}
-      <DeepFluidBackground />
+      {/* ── Background: ColorBends WebGL ── */}
+      <div className="absolute inset-0 z-0" style={{ width: '100%', height: '100%' }}>
+        <ColorBends
+          colors={["#947afc", "#3d1a8f", "#1a0a4a", "#0a0510"]}
+          rotation={110}
+          speed={0.15}
+          scale={1.2}
+          frequency={0.9}
+          warpStrength={1.2}
+          mouseInfluence={0.8}
+          noise={0.08}
+          parallax={0.4}
+          iterations={2}
+          intensity={0.9}
+          bandWidth={5}
+          transparent={false}
+          className=""
+          style={{ width: '100%', height: '100%' }}
+        />
+      </div>
+
+      {/* ── Film Grain overlay ── */}
+      <div
+        className="absolute inset-0 z-[1] opacity-[0.04] mix-blend-screen pointer-events-none"
+        style={{
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")',
+          backgroundRepeat: 'repeat',
+          backgroundSize: '128px 128px'
+        }}
+      />
+
+      {/* ── Deep Vignette ── */}
+      <div className="absolute inset-0 z-[1] bg-[radial-gradient(circle_at_center,transparent_0%,#0A0A0B_80%)] opacity-70 pointer-events-none" />
 
       <Navbar />
 
@@ -51,8 +82,8 @@ export function HeroSection() {
           animate="visible"
           className="mb-6"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.06] bg-white/[0.02] px-4 py-1.5">
-            <span className="inline-block size-1.5 rounded-full bg-[#947AFC] animate-pulse" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/6 bg-white/2 px-4 py-1.5">
+            <span className="inline-block size-1.5 rounded-full bg-purple-400 animate-pulse" />
             <span className="text-[12px] font-medium text-white/40 tracking-wide">
               SIH 2023 National Winner
             </span>
@@ -101,7 +132,7 @@ export function HeroSection() {
           </Link>
           <Link
             href="#architecture"
-            className="group inline-flex items-center gap-2 h-12 px-7 rounded-full border border-white/[0.08] text-[15px] font-medium text-white/60 hover:text-white/90 hover:border-white/15 hover:bg-white/[0.03] transition-all duration-300"
+            className="group inline-flex items-center gap-2 h-12 px-7 rounded-full border border-white/8 text-[15px] font-medium text-white/60 hover:text-white/90 hover:border-white/15 hover:bg-white/3 transition-all duration-300"
           >
             Watch Demo
             <ArrowRight className="size-4 text-white/30 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all duration-300" />
@@ -116,7 +147,7 @@ export function HeroSection() {
       </div>
 
       {/* ── Bottom gradient fade into next section ── */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#05030A] to-transparent pointer-events-none z-20" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#05030A] to-transparent pointer-events-none z-20" />
 
       {/* ── Announcement Banner ── */}
       <AnnouncementBanner />

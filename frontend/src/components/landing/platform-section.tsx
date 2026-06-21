@@ -24,9 +24,9 @@ const kpis = [
     label: 'TOTAL DOCUMENTS',
     value: '1,247',
     icon: FileText,
-    iconColor: 'text-[#947AFC]',
-    iconBg: 'bg-[#947AFC]/10',
-    borderColor: 'border-[#947AFC]/20',
+    iconColor: 'text-purple-400',
+    iconBg: 'bg-purple-400/10',
+    borderColor: 'border-purple-400/20',
   },
   {
     label: 'PROCESSED',
@@ -68,7 +68,7 @@ const recentDocs = [
   {
     name: 'Incident_Report_Q2_2025.pdf',
     status: 'Analyzing',
-    statusColor: 'bg-[#947AFC]/15 text-[#947AFC] border-[#947AFC]/20',
+    statusColor: 'bg-purple-400/15 text-purple-400 border-purple-400/20',
   },
 ];
 
@@ -101,10 +101,10 @@ function DashboardMockup() {
       <div className="flex h-[360px] sm:h-[420px]">
 
         {/* Sidebar */}
-        <div className="w-[160px] shrink-0 border-r border-white/[0.06] bg-[#050505] flex flex-col py-4">
+        <div className="w-[160px] shrink-0 border-r border-white/6 bg-[#050505] flex flex-col py-4">
           {/* Brand */}
           <div className="flex items-center gap-2 px-4 mb-6">
-            <div className="size-6 rounded-md bg-[#947AFC] flex items-center justify-center text-[10px] font-bold text-white">M</div>
+            <div className="size-6 rounded-md bg-purple-400 flex items-center justify-center text-[10px] font-bold text-white">M</div>
             <span className="text-[12px] font-semibold text-white">MiningNiti</span>
           </div>
 
@@ -115,7 +115,7 @@ function DashboardMockup() {
                 key={item.label}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-colors ${
                   item.active
-                    ? 'bg-[#947AFC]/15 text-[#947AFC]'
+                    ? 'bg-purple-400/15 text-purple-400'
                     : 'text-white/40 hover:text-white/70'
                 }`}
               >
@@ -129,7 +129,7 @@ function DashboardMockup() {
         {/* Main content */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Top bar */}
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/6">
             <div>
               <div className="text-[13px] font-semibold text-white">Welcome back, Rajesh</div>
               <div className="text-[10px] text-white/40">Here's your document intelligence overview</div>
@@ -141,7 +141,7 @@ function DashboardMockup() {
           </div>
 
           {/* KPI grid */}
-          <div className="grid grid-cols-4 gap-2.5 px-5 py-4 border-b border-white/[0.06]">
+          <div className="grid grid-cols-4 gap-2.5 px-5 py-4 border-b border-white/6">
             {kpis.map((kpi) => (
               <motion.div
                 key={kpi.label}
@@ -166,7 +166,7 @@ function DashboardMockup() {
           <div className="px-5 py-3 flex-1 overflow-hidden">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-semibold text-white/80">Recent Documents</span>
-              <span className="text-[10px] text-[#947AFC] cursor-pointer hover:text-[#a88ffc]">View all</span>
+              <span className="text-[10px] text-purple-400 cursor-pointer hover:text-[#a88ffc]">View all</span>
             </div>
             <div className="flex flex-col gap-1.5">
               {recentDocs.map((doc, i) => (
@@ -219,7 +219,7 @@ export function PlatformSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4"
+            className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4"
           >
             The Platform
           </motion.p>
@@ -230,7 +230,7 @@ export function PlatformSection() {
             className="text-[clamp(2rem,4vw,3rem)] font-bold tracking-tight text-white mb-4"
           >
             Everything You Need,{' '}
-            <span className="text-[#947AFC]">In One Place.</span>
+            <span className="text-purple-400">In One Place.</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -251,7 +251,7 @@ export function PlatformSection() {
           className="relative"
         >
           {/* Glow behind the mockup */}
-          <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-[#947AFC]/20 via-transparent to-transparent blur-sm pointer-events-none" />
+          <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-purple-400/20 via-transparent to-transparent blur-sm pointer-events-none" />
           <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(ellipse_at_top,rgba(148,122,252,0.12),transparent_60%)] pointer-events-none" />
 
           <DashboardMockup />
@@ -275,13 +275,13 @@ export function PlatformSection() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 h-12 px-8 rounded-full bg-[#947AFC] text-[15px] font-semibold text-white shadow-[0_0_30px_rgba(148,122,252,0.35)] hover:bg-[#a88ffc] hover:shadow-[0_0_40px_rgba(148,122,252,0.5)] transition-all duration-300 hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 h-12 px-8 rounded-full bg-purple-400 text-[15px] font-semibold text-white shadow-[0_0_30px_rgba(148,122,252,0.35)] hover:bg-[#a88ffc] hover:shadow-[0_0_40px_rgba(148,122,252,0.5)] transition-all duration-300 hover:-translate-y-0.5"
             >
               Request Access <ArrowRight className="size-4" />
             </Link>
             <Link
               href="mailto:hello@miningniti.com"
-              className="inline-flex items-center h-12 px-8 rounded-full border border-white/15 bg-white/[0.04] text-[15px] font-medium text-white hover:bg-white/[0.08] hover:border-white/25 transition-all duration-200"
+              className="inline-flex items-center h-12 px-8 rounded-full border border-white/15 bg-white/4 text-[15px] font-medium text-white hover:bg-white/[0.08] hover:border-white/25 transition-all duration-200"
             >
               Contact Sales
             </Link>
@@ -295,7 +295,7 @@ export function PlatformSection() {
               { icon: CheckCircle2, text: 'On-premise available' },
             ].map((item) => (
               <div key={item.text} className="flex items-center gap-2 text-white/40 text-[13px]">
-                <item.icon className="size-4 text-[#947AFC]" />
+                <item.icon className="size-4 text-purple-400" />
                 {item.text}
               </div>
             ))}

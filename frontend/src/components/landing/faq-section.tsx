@@ -56,7 +56,7 @@ export function FaqSection() {
               initial={{ opacity: 0, y: 16 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5 }}
-              className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4"
+              className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4"
             >
               FAQ
             </motion.p>
@@ -81,7 +81,7 @@ export function FaqSection() {
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.3 }}
               href="mailto:hello@miningniti.com"
-              className="inline-flex items-center gap-2 text-sm font-medium text-[#947AFC] hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-medium text-purple-400 hover:text-white transition-colors"
             >
               Still have questions? Contact us
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
@@ -112,11 +112,11 @@ export function FaqSection() {
                       className={cn(
                         'size-6 rounded-full border flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-200',
                         isOpen
-                          ? 'border-[#947AFC] bg-[#947AFC]/10'
+                          ? 'border-[#947AFC] bg-purple-400/10'
                           : 'border-white/20 group-hover:border-white/40'
                       )}
                     >
-                      <Plus className={cn('size-3 transition-colors duration-200', isOpen ? 'text-[#947AFC]' : 'text-white/50')} />
+                      <Plus className={cn('size-3 transition-colors duration-200', isOpen ? 'text-purple-400' : 'text-white/50')} />
                     </motion.span>
                     <span className={cn(
                       'text-[15px] font-semibold leading-snug transition-colors duration-200',

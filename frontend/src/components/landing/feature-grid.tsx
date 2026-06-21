@@ -18,7 +18,7 @@ function SearchDiagram() {
       <div className="flex items-center gap-2 bg-black/30 border border-white/10 rounded-lg px-3 py-2">
         <Search className="size-3 text-white/40 shrink-0" />
         <span className="text-xs text-white/60 font-mono">ventilation compliance shaft B october</span>
-        <motion.span animate={{ opacity: [0,1,0] }} transition={{ duration: 0.8, repeat: Infinity }} className="ml-auto w-0.5 h-3 bg-[#947AFC] shrink-0" />
+        <motion.span animate={{ opacity: [0,1,0] }} transition={{ duration: 0.8, repeat: Infinity }} className="ml-auto w-0.5 h-3 bg-purple-400 shrink-0" />
       </div>
       {/* Results */}
       <div className="space-y-1.5">
@@ -29,9 +29,9 @@ function SearchDiagram() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.15 + 0.2 }}
-            className="flex items-center gap-3 bg-white/[0.04] border border-white/[0.06] rounded-lg px-3 py-2 group hover:border-[#947AFC]/30 hover:bg-[#947AFC]/5 transition-all cursor-pointer"
+            className="flex items-center gap-3 bg-white/4 border border-white/6 rounded-lg px-3 py-2 group hover:border-[#947AFC]/30 hover:bg-purple-400/5 transition-all cursor-pointer"
           >
-            <FileText className="size-3 text-[#947AFC] shrink-0" />
+            <FileText className="size-3 text-purple-400 shrink-0" />
             <span className="text-[11px] text-white/70 flex-1 truncate">{r.title}</span>
             <span className="text-[10px] font-mono text-white/30 shrink-0">{r.page}</span>
             <div className="w-8 h-1 rounded-full bg-white/10 overflow-hidden shrink-0">
@@ -40,7 +40,7 @@ function SearchDiagram() {
                 whileInView={{ width: `${r.match}%` }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.15 + 0.4, duration: 0.6 }}
-                className="h-full bg-[#947AFC] rounded-full"
+                className="h-full bg-purple-400 rounded-full"
               />
             </div>
           </motion.div>
@@ -248,7 +248,7 @@ function AlertsDiagram() {
   const alerts = [
     { level: 'CRITICAL', msg: 'Missing fire drill record — Shaft C', time: 'just now', color: 'border-red-500/40 bg-red-500/5', dot: 'bg-red-500' },
     { level: 'WARNING', msg: 'Permit WD-11 expires in 14 days', time: '2m ago', color: 'border-amber-500/40 bg-amber-500/5', dot: 'bg-amber-400' },
-    { level: 'INFO', msg: 'Indexing complete — 128 new docs', time: '5m ago', color: 'border-[#947AFC]/30 bg-[#947AFC]/5', dot: 'bg-[#947AFC]' },
+    { level: 'INFO', msg: 'Indexing complete — 128 new docs', time: '5m ago', color: 'border-[#947AFC]/30 bg-purple-400/5', dot: 'bg-purple-400' },
   ];
   return (
     <div className="w-full mt-2 space-y-2">
@@ -332,7 +332,7 @@ export function FeatureGrid() {
             initial={{ opacity: 0, y: 16 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
-            className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4"
+            className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4"
           >
             Platform Capabilities
           </motion.p>
@@ -364,7 +364,7 @@ export function FeatureGrid() {
               className={`${f.span} glass-panel-premium p-8 flex flex-col group relative overflow-hidden hover:-translate-y-2 hover:shadow-[0_20px_50px_-10px_rgba(148,122,252,0.3)] transition-all duration-500 ease-out`}
             >
               {/* Subtle hover glow behind the card content */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/0 to-[var(--primary)]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-linear-to-br from-[var(--primary)]/0 to-[var(--primary)]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
               {/* Header */}
               <div className="relative z-10 flex items-center gap-4 mb-4">

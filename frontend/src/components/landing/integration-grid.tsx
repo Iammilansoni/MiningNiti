@@ -31,7 +31,7 @@ export function IntegrationGrid() {
             </p>
             <a 
               href="#" 
-              className="inline-flex items-center gap-2 text-[15px] font-medium text-[#947AFC] hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-[15px] font-medium text-purple-400 hover:text-white transition-colors"
             >
               View all 40+ integrations
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none" className="shrink-0">
@@ -48,10 +48,10 @@ export function IntegrationGrid() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, duration: 0.5 }}
-                className="group p-6 rounded-2xl bg-[#0C0C0C] border border-white/10 hover:-translate-y-2 hover:border-[#947AFC]/50 hover:bg-gradient-to-br hover:from-[#110e1a]/90 hover:to-[#0a0812]/90 hover:shadow-[0_10px_40px_-10px_rgba(148,122,252,0.3)] transition-all duration-500 ease-out relative"
+                className="group p-6 rounded-2xl bg-[#0C0C0C] border border-white/10 hover:-translate-y-2 hover:border-[#947AFC]/50 hover:bg-linear-to-br hover:from-[#110e1a]/90 hover:to-[#0a0812]/90 hover:shadow-[0_10px_40px_-10px_rgba(148,122,252,0.3)] transition-all duration-500 ease-out relative"
               >
-                <div className="size-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center mb-4 group-hover:bg-[#947AFC]/10 group-hover:border-[#947AFC]/30 transition-colors">
-                  <item.icon className="size-5 text-white/60 group-hover:text-[#947AFC] transition-colors" />
+                <div className="size-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center mb-4 group-hover:bg-purple-400/10 group-hover:border-[#947AFC]/30 transition-colors">
+                  <item.icon className="size-5 text-white/60 group-hover:text-purple-400 transition-colors" />
                 </div>
                 <h3 className="font-semibold text-white mb-2">{item.name}</h3>
                 <p className="text-sm text-white/40 leading-relaxed">

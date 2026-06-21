@@ -65,7 +65,7 @@ export function StatCard({
       )}
     >
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/5 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-br from-transparent via-transparent to-primary/5 pointer-events-none" />
 
       <div className="relative flex items-start justify-between">
         <div className="space-y-2">
@@ -97,7 +97,7 @@ export function StatCard({
 
         <div
           className={cn(
-            'p-3 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10',
+            'p-3 rounded-xl bg-linear-to-br from-cyan-500/10 to-blue-500/10',
             iconClassName
           )}
         >
