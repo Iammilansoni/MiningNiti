@@ -102,6 +102,12 @@ def init_db():
     from app.models import user, document, chat, audit, prompt  # noqa: F401
     from app.models.base import Base as ModelBase
 
+    # Ensure pgvector extension exists before creating tables that use VECTOR columns
+    with engine.connect() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        conn.commit()
+    logger.info("pgvector extension ensured")
+
     ModelBase.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully")
 
