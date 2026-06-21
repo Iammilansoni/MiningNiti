@@ -104,15 +104,23 @@ class ChatService:
 
             response = self.model.generate_content(prompt)
             answer = response.text
+            
+            tokens_used = None
+            if hasattr(response, "usage_metadata") and response.usage_metadata:
+                tokens_used = {
+                    "input": getattr(response.usage_metadata, "prompt_token_count", 0),
+                    "output": getattr(response.usage_metadata, "candidates_token_count", 0)
+                }
 
             sources = self._build_sources(relevant_chunks[:3])
-            return answer, sources
+            return answer, sources, tokens_used
 
         except Exception as e:
             logger.error(f"Chat generation error: {e}", exc_info=True)
             return (
                 "I apologize, but I encountered an error processing your question. Please try again.",
                 [],
+                None,
             )
 
     async def generate_response_stream(
@@ -158,7 +166,15 @@ class ChatService:
                 if chunk.text:
                     yield f"event: token\ndata: {json.dumps({'text': chunk.text})}\n\n"
 
-            yield f"event: done\ndata: {json.dumps({'sources_count': len(sources)})}\n\n"
+            tokens_used = None
+            if hasattr(response_stream, "usage_metadata") and response_stream.usage_metadata:
+                tokens_used = {
+                    "input": getattr(response_stream.usage_metadata, "prompt_token_count", 0),
+                    "output": getattr(response_stream.usage_metadata, "candidates_token_count", 0)
+                }
+            
+            yield f"event: done\ndata: {json.dumps({'sources_count': len(sources), 'tokens_used': tokens_used})}\n\n"
+
 
         except Exception as e:
             logger.error(f"Stream generation error: {e}", exc_info=True)

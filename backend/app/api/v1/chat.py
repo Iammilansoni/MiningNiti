@@ -252,7 +252,7 @@ async def send_message(
     chat_service = ChatService()
     
     try:
-        ai_response, sources = await chat_service.generate_response(
+        ai_response, sources, tokens_used = await chat_service.generate_response(
             query=request.content,
             user_id=user_id,
             document_ids=request.document_ids,
@@ -270,7 +270,8 @@ async def send_message(
             content=ai_response,
             sources=sources if request.include_sources else [],
             model_used="gemini-2.0-flash",
-            response_time_ms=response_time_ms
+            response_time_ms=response_time_ms,
+            tokens_used=tokens_used
         )
         db.add(assistant_message)
         
