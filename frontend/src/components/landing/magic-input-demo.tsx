@@ -118,7 +118,7 @@ export function MagicInputDemo() {
         // Render text progressively or instantly based on type
         if (step.type === 'citation') {
           newDisplayed.push(
-            <span key={`cit-${stepIndex}`} className="inline-flex items-center gap-1 bg-[#947AFC]/20 border border-[#947AFC]/30 text-[#947AFC] px-1.5 py-0.5 rounded cursor-pointer hover:bg-[#947AFC]/30 transition-colors">
+            <span key={`cit-${stepIndex}`} className="inline-flex items-center gap-1 bg-purple-400/20 border border-[#947AFC]/30 text-purple-400 px-1.5 py-0.5 rounded cursor-pointer hover:bg-purple-400/30 transition-colors">
               <FileText className="size-3" />
               {step.text}
             </span>
@@ -166,7 +166,7 @@ export function MagicInputDemo() {
       <div className="mx-auto max-w-[1000px] px-6 relative z-10">
         
         <div className="text-center mb-12">
-          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4">
+          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4">
             Interactive Demo
           </p>
           <h2 className="text-[clamp(2rem,3vw,2.5rem)] font-bold tracking-tight text-white mb-4">
@@ -193,8 +193,8 @@ export function MagicInputDemo() {
                 className={cn(
                   "text-left p-4 rounded-xl border transition-all duration-300 group flex flex-col",
                   activeScenario?.id === scenario.id
-                    ? "bg-[#947AFC]/10 border-[#947AFC]/30"
-                    : "bg-white/[0.02] border-white/5 hover:border-white/15 hover:bg-white/[0.04]"
+                    ? "bg-purple-400/10 border-[#947AFC]/30"
+                    : "bg-white/2 border-white/5 hover:border-white/15 hover:bg-white/4"
                 )}
               >
                 <span className="flex items-start justify-between gap-2 w-full">
@@ -206,7 +206,7 @@ export function MagicInputDemo() {
                   </span>
                   <ChevronRight className={cn(
                     "size-4 shrink-0 mt-0.5",
-                    activeScenario?.id === scenario.id ? "text-[#947AFC]" : "text-white/20 group-hover:text-white/40"
+                    activeScenario?.id === scenario.id ? "text-purple-400" : "text-white/20 group-hover:text-white/40"
                   )} />
                 </span>
               </button>
@@ -236,8 +236,8 @@ export function MagicInputDemo() {
                     exit={{ opacity: 0 }}
                     className="h-full flex flex-col items-center justify-center text-center px-8"
                   >
-                    <div className="size-12 rounded-full bg-[#947AFC]/10 flex items-center justify-center mb-4 border border-[#947AFC]/20">
-                      <Sparkles className="size-5 text-[#947AFC]" />
+                    <div className="size-12 rounded-full bg-purple-400/10 flex items-center justify-center mb-4 border border-purple-400/20">
+                      <Sparkles className="size-5 text-purple-400" />
                     </div>
                     <p className="text-white/40 text-sm">Select a query from the left to run a simulated intelligence search.</p>
                   </motion.div>
@@ -255,7 +255,7 @@ export function MagicInputDemo() {
                   <motion.span
                     animate={{ opacity: [1, 0] }}
                     transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                    className="inline-block w-2 h-4 bg-[#947AFC] ml-1 align-middle translate-y-[-2px]"
+                    className="inline-block w-2 h-4 bg-purple-400 ml-1 align-middle translate-y-[-2px]"
                   />
                 )}
               </div>
@@ -272,7 +272,7 @@ export function MagicInputDemo() {
                     <motion.span
                       animate={{ opacity: [1, 0] }}
                       transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                      className="inline-block w-2 h-4 bg-[#947AFC] ml-0.5 align-middle translate-y-[-1px]"
+                      className="inline-block w-2 h-4 bg-purple-400 ml-0.5 align-middle translate-y-[-1px]"
                     />
                   )}
                 </div>

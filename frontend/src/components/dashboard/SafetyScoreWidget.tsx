@@ -32,7 +32,7 @@ export default function SafetyScoreWidget({
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-6">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent" />
       
       <div className="relative">
         <div className="flex items-center justify-between mb-6">
@@ -50,7 +50,7 @@ export default function SafetyScoreWidget({
 
         <div className="flex items-center gap-8">
           {/* Circular progress */}
-          <div className="relative w-32 h-32 flex-shrink-0">
+          <div className="relative w-32 h-32 shrink-0">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               {/* Background circle */}
               <circle
@@ -87,7 +87,7 @@ export default function SafetyScoreWidget({
           </div>
 
           {/* Stats grid */}
-          <div className="flex-grow grid grid-cols-3 gap-4">
+          <div className="grow grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="flex items-center justify-center mb-2">
                 <div className="p-2 rounded-full bg-green-500/10">

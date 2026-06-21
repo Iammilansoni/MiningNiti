@@ -82,12 +82,12 @@ const ROW_2 = TESTIMONIALS.slice(5, 10);
 
 function TestimonialCard({ item }: { item: typeof TESTIMONIALS[0] }) {
   return (
-    <div className="w-[380px] sm:w-[450px] shrink-0 bg-[#0C0C0C]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-7 hover:-translate-y-2 hover:border-[#947AFC]/50 hover:bg-gradient-to-br hover:from-[#110e1a]/90 hover:to-[#0a0812]/90 hover:shadow-[0_10px_40px_-10px_rgba(148,122,252,0.3)] transition-all duration-500 ease-out group relative cursor-default">
-      <Quote className="absolute top-7 right-7 size-8 text-white/5 group-hover:text-[#947AFC] group-hover:drop-shadow-[0_0_10px_rgba(148,122,252,0.4)] transition-all duration-500" />
+    <div className="w-[380px] sm:w-[450px] shrink-0 bg-[#0C0C0C]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-7 hover:-translate-y-2 hover:border-[#947AFC]/50 hover:bg-linear-to-br hover:from-[#110e1a]/90 hover:to-[#0a0812]/90 hover:shadow-[0_10px_40px_-10px_rgba(148,122,252,0.3)] transition-all duration-500 ease-out group relative cursor-default">
+      <Quote className="absolute top-7 right-7 size-8 text-white/5 group-hover:text-purple-400 group-hover:drop-shadow-[0_0_10px_rgba(148,122,252,0.4)] transition-all duration-500" />
       
       <div className="flex gap-1 mb-5">
         {[1, 2, 3, 4, 5].map((star) => (
-          <Star key={star} className="size-3.5 text-[#947AFC] fill-[#947AFC] group-hover:drop-shadow-[0_0_8px_rgba(148,122,252,0.6)] transition-all duration-500" />
+          <Star key={star} className="size-3.5 text-purple-400 fill-[#947AFC] group-hover:drop-shadow-[0_0_8px_rgba(148,122,252,0.6)] transition-all duration-500" />
         ))}
       </div>
       
@@ -96,7 +96,7 @@ function TestimonialCard({ item }: { item: typeof TESTIMONIALS[0] }) {
       </p>
       
       <div className="flex items-center gap-3 mt-auto">
-        <div className="size-10 rounded-full bg-[#947AFC]/20 border border-[#947AFC]/30 flex items-center justify-center text-[#947AFC] font-bold text-sm shrink-0 group-hover:bg-[#947AFC] group-hover:text-white group-hover:shadow-[0_0_20px_rgba(148,122,252,0.6)] transition-all duration-500">
+        <div className="size-10 rounded-full bg-purple-400/20 border border-[#947AFC]/30 flex items-center justify-center text-purple-400 font-bold text-sm shrink-0 group-hover:bg-purple-400 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(148,122,252,0.6)] transition-all duration-500">
           {item.avatar}
         </div>
         <div>
@@ -113,7 +113,7 @@ export function TestimonialsSection() {
     <section className="py-24 sm:py-32 bg-[#05030A] border-y border-white/5 relative overflow-hidden">
       
       <div className="text-center mb-16 relative z-10">
-        <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4">
+        <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4">
           Customer Success
         </p>
         <h2 className="text-[clamp(2rem,3vw,2.5rem)] font-bold tracking-tight text-white px-6">

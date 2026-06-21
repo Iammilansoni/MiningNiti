@@ -30,7 +30,7 @@ export function IndiaMapDeployments() {
       <div className="mx-auto max-w-[1200px] px-6 relative z-10 flex flex-col md:flex-row items-center gap-12 lg:gap-20">
         
         <div className="md:w-1/3 text-left">
-          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4">
+          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4">
             National Scale
           </p>
           <h2 className="text-[clamp(2rem,3vw,2.5rem)] font-bold tracking-tight text-white mb-6 leading-[1.1]">
@@ -42,7 +42,7 @@ export function IndiaMapDeployments() {
           
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <div className="size-2 rounded-full bg-[#947AFC] shadow-[0_0_10px_#947AFC]" />
+              <div className="size-2 rounded-full bg-purple-400 shadow-[0_0_10px_#947AFC]" />
               <span className="text-sm font-mono text-white/70">Centralized Cloud Hub</span>
             </div>
             <div className="flex items-center gap-3">

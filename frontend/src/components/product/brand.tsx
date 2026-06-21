@@ -71,7 +71,7 @@ export function MiningNitiLogo({
     <span className={cn('flex items-center gap-2.5', className)}>
       <MiningNitiMark />
       <span className="text-[15px] font-bold tracking-tight text-white leading-none">
-        Mining<span className="text-[#947AFC]">Niti</span>
+        Mining<span className="text-purple-400">Niti</span>
       </span>
     </span>
   );

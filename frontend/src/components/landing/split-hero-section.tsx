@@ -22,12 +22,12 @@ function ComplianceCard() {
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true }}
       transition={{ duration: 0.7, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute bottom-6 right-6 left-6 sm:left-auto sm:w-[300px] bg-[#0E0C1A]/80 backdrop-blur-xl border border-[#947AFC]/20 rounded-2xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
+      className="absolute bottom-6 right-6 left-6 sm:left-auto sm:w-[300px] bg-[#0E0C1A]/80 backdrop-blur-xl border border-purple-400/20 rounded-2xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.7)]"
     >
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="size-9 rounded-xl bg-[#947AFC]/15 border border-[#947AFC]/25 flex items-center justify-center shrink-0">
-          <ShieldCheck className="size-4 text-[#947AFC]" />
+        <div className="size-9 rounded-xl bg-purple-400/15 border border-[#947AFC]/25 flex items-center justify-center shrink-0">
+          <ShieldCheck className="size-4 text-purple-400" />
         </div>
         <div>
           <div className="text-[13px] font-semibold text-white leading-tight">Compliance Engine</div>
@@ -45,7 +45,7 @@ function ComplianceCard() {
       <div className="mb-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] text-white/40">Readiness score</span>
-          <span className="text-[13px] font-bold text-[#947AFC]">87 / 100</span>
+          <span className="text-[13px] font-bold text-purple-400">87 / 100</span>
         </div>
         <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
           <motion.div
@@ -70,7 +70,7 @@ function ComplianceCard() {
 // ─── Metrics ─────────────────────────────────────────────────────────────────
 
 const metrics = [
-  { icon: FileStack, value: '4.2M+', label: 'Documents Processed', iconColor: 'text-[#947AFC]', iconBg: 'bg-[#947AFC]/10' },
+  { icon: FileStack, value: '4.2M+', label: 'Documents Processed', iconColor: 'text-purple-400', iconBg: 'bg-purple-400/10' },
   { icon: Bell,      value: '12K+',  label: 'Compliance Alerts',   iconColor: 'text-amber-400',  iconBg: 'bg-amber-400/10' },
   { icon: Crosshair, value: '99.2%', label: 'Accuracy Rate',       iconColor: 'text-emerald-400', iconBg: 'bg-emerald-400/10' },
 ];
@@ -107,7 +107,7 @@ export function SplitHeroSection() {
             transition={{ duration: 0.5 }}
             className="flex items-center gap-2.5 mb-10"
           >
-            <div className="size-8 rounded-lg bg-[#947AFC] flex items-center justify-center text-[13px] font-bold text-white shadow-[0_0_20px_rgba(148,122,252,0.5)]">
+            <div className="size-8 rounded-lg bg-purple-400 flex items-center justify-center text-[13px] font-bold text-white shadow-[0_0_20px_rgba(148,122,252,0.5)]">
               M
             </div>
             <span className="text-[16px] font-semibold text-white tracking-tight">MiningNiti</span>
@@ -118,11 +118,11 @@ export function SplitHeroSection() {
             initial={{ opacity: 0, y: 10 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="inline-flex items-center gap-2 w-fit px-3.5 py-1.5 rounded-full bg-[#947AFC]/10 border border-[#947AFC]/25 mb-6"
+            className="inline-flex items-center gap-2 w-fit px-3.5 py-1.5 rounded-full bg-purple-400/10 border border-[#947AFC]/25 mb-6"
           >
             <span className="relative flex size-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#947AFC] opacity-75" />
-              <span className="relative inline-flex rounded-full size-1.5 bg-[#947AFC]" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+              <span className="relative inline-flex rounded-full size-1.5 bg-purple-400" />
             </span>
             <span className="text-[12px] font-medium text-white/70">
               Enterprise onboarding · <span className="text-white font-semibold">4,291</span> documents indexed
@@ -160,7 +160,7 @@ export function SplitHeroSection() {
           >
             {bullets.map((b, i) => (
               <li key={i} className="flex items-center gap-3">
-                <CheckCircle2 className="size-4 text-[#947AFC] shrink-0" />
+                <CheckCircle2 className="size-4 text-purple-400 shrink-0" />
                 <span className="text-[14px] text-white/70">{b}</span>
               </li>
             ))}
@@ -175,7 +175,7 @@ export function SplitHeroSection() {
           >
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 h-11 px-7 rounded-full bg-[#947AFC] text-[14px] font-semibold text-white shadow-[0_0_24px_rgba(148,122,252,0.4)] hover:bg-[#a88ffc] hover:shadow-[0_0_36px_rgba(148,122,252,0.55)] transition-all duration-300 hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 h-11 px-7 rounded-full bg-purple-400 text-[14px] font-semibold text-white shadow-[0_0_24px_rgba(148,122,252,0.4)] hover:bg-[#a88ffc] hover:shadow-[0_0_36px_rgba(148,122,252,0.55)] transition-all duration-300 hover:-translate-y-0.5"
             >
               Get started <ArrowRight className="size-3.5" />
             </Link>
@@ -200,7 +200,7 @@ export function SplitHeroSection() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.5, delay: 0.65 + i * 0.08 }}
-                className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 hover:border-white/15 transition-colors"
+                className="bg-white/4 border border-white/8 rounded-2xl p-4 hover:border-white/15 transition-colors"
               >
                 <div className={`size-8 rounded-xl ${m.iconBg} flex items-center justify-center mb-3`}>
                   <m.icon className={`size-4 ${m.iconColor}`} />
@@ -217,7 +217,7 @@ export function SplitHeroSection() {
           {/* Dark overlay gradient from left */}
           <div className="absolute inset-0 z-10 bg-gradient-to-r from-[#05030A] via-[#05030A]/20 to-transparent pointer-events-none" />
           {/* Dark overlay from bottom */}
-          <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#05030A]/80 via-transparent to-[#05030A]/30 pointer-events-none" />
+          <div className="absolute inset-0 z-10 bg-linear-to-t from-[#05030A]/80 via-transparent to-[#05030A]/30 pointer-events-none" />
           {/* Subtle purple tint overlay */}
           <div className="absolute inset-0 z-10 bg-[#1a0a3a]/30 mix-blend-color pointer-events-none" />
 

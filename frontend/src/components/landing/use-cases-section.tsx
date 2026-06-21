@@ -58,7 +58,7 @@ export function UseCasesSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4"
+            className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4"
           >
             Built for your team
           </motion.p>
@@ -115,7 +115,7 @@ export function UseCasesSection() {
               <p className="text-white/60 text-[16px] leading-relaxed mb-8">
                 {activeCase.description}
               </p>
-              <div className="flex items-start gap-4 p-6 bg-white/[0.04] rounded-2xl border border-white/10">
+              <div className="flex items-start gap-4 p-6 bg-white/4 rounded-2xl border border-white/10">
                 <div className="text-[clamp(2rem,3vw,2.5rem)] font-bold leading-none" style={{ color: activeCase.color }}>
                   {activeCase.stat.value}
                 </div>
@@ -127,8 +127,8 @@ export function UseCasesSection() {
             <div className="bg-[#0A0A0A] rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
               {/* Query input */}
               <div className="border-b border-white/10 p-5 flex items-start gap-3">
-                <div className="size-7 rounded-full bg-[#947AFC]/20 border border-[#947AFC]/30 flex items-center justify-center shrink-0 mt-0.5">
-                  <ChevronRight className="size-3 text-[#947AFC]" />
+                <div className="size-7 rounded-full bg-purple-400/20 border border-[#947AFC]/30 flex items-center justify-center shrink-0 mt-0.5">
+                  <ChevronRight className="size-3 text-purple-400" />
                 </div>
                 <p className="text-sm text-white/80 font-medium leading-relaxed">
                   {activeCase.query}
@@ -147,8 +147,8 @@ export function UseCasesSection() {
                       'block',
                       line.startsWith('⚠') && 'text-amber-400',
                       line.startsWith('✓') && 'text-emerald-400',
-                      line.startsWith('Sources:') && 'text-[#947AFC]',
-                      line.startsWith('See') && 'text-[#947AFC]',
+                      line.startsWith('Sources:') && 'text-purple-400',
+                      line.startsWith('See') && 'text-purple-400',
                     )}
                   >
                     {line || '\u00A0'}
@@ -158,7 +158,7 @@ export function UseCasesSection() {
                 <motion.span
                   animate={{ opacity: [0, 1, 0] }}
                   transition={{ duration: 0.8, repeat: Infinity }}
-                  className="inline-block w-1.5 h-3.5 bg-[#947AFC] ml-1 align-middle"
+                  className="inline-block w-1.5 h-3.5 bg-purple-400 ml-1 align-middle"
                 />
               </div>
             </div>

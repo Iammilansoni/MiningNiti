@@ -41,7 +41,7 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        'rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 flex flex-col gap-3 shadow-lg hover:bg-white/[0.04] transition-colors relative overflow-hidden',
+        'rounded-xl border border-white/8 bg-white/2 p-5 flex flex-col gap-3 shadow-lg hover:bg-white/4 transition-colors relative overflow-hidden',
         className
       )}
     >

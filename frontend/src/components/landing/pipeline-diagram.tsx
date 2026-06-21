@@ -82,7 +82,7 @@ export function PipelineDiagram() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(148,122,252,0.1),transparent_70%)]" />
       {/* Central Core */}
       <div className="relative z-10 size-20 rounded-2xl bg-[#05030A] border border-[#947AFC]/30 shadow-[0_0_30px_rgba(148,122,252,0.2)] flex items-center justify-center">
-        <Database className="size-8 text-[#947AFC]" />
+        <Database className="size-8 text-purple-400" />
       </div>
       {/* Floating Sources */}
       <motion.div animate={{ x: [50, 0], opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute right-[60%] top-[20%]">
@@ -114,10 +114,10 @@ export function PipelineDiagram() {
         />
       </div>
       {/* Extracted Data flying out */}
-      <motion.div animate={{ x: [0, 60], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }} className="absolute right-[20%] text-[#947AFC] font-mono text-xs">
+      <motion.div animate={{ x: [0, 60], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }} className="absolute right-[20%] text-purple-400 font-mono text-xs">
         {`{ "type": "table" }`}
       </motion.div>
-      <motion.div animate={{ x: [0, -60], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 1.2 }} className="absolute left-[20%] text-[#947AFC] font-mono text-xs">
+      <motion.div animate={{ x: [0, -60], opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 1.2 }} className="absolute left-[20%] text-purple-400 font-mono text-xs">
         {`{ "text": "Clause 4.1" }`}
       </motion.div>
     </div>
@@ -134,7 +134,7 @@ export function PipelineDiagram() {
           <line x1="50%" y1="50%" x2="50%" y2="80%" stroke="#947AFC" strokeWidth="2" />
         </svg>
         {/* Center Node */}
-        <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-12 bg-[#947AFC] rounded-full shadow-[0_0_30px_#947AFC]" />
+        <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-12 bg-purple-400 rounded-full shadow-[0_0_30px_#947AFC]" />
         {/* Outer Nodes */}
         <div className="absolute top-[20%] left-[20%] -translate-x-1/2 -translate-y-1/2 size-6 bg-white/20 backdrop-blur-md rounded-full border border-white/30" />
         <div className="absolute top-[20%] right-[20%] translate-x-1/2 -translate-y-1/2 size-6 bg-white/20 backdrop-blur-md rounded-full border border-white/30" />
@@ -184,7 +184,7 @@ export function PipelineDiagram() {
       
       <div className="mx-auto max-w-[var(--landing-max-width)] px-6 relative z-10">
         <div className="text-center max-w-2xl mx-auto mb-20">
-          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4">
+          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4">
             Platform Architecture
           </p>
           <h2 className="text-[clamp(2rem,4vw,3rem)] font-bold tracking-tight mb-4 text-white">Engineered for Industrial Data</h2>
@@ -224,7 +224,7 @@ export function PipelineDiagram() {
                           : "border-white/10 group-hover:border-white/30"
                       )}
                     >
-                      <node.icon className={cn("size-6 transition-colors", isActive ? "text-[#947AFC]" : "text-white/30")} />
+                      <node.icon className={cn("size-6 transition-colors", isActive ? "text-purple-400" : "text-white/30")} />
                       
                       {/* Radial Progress Ring */}
                       {isActive && !isPaused && (
@@ -311,7 +311,7 @@ export function PipelineDiagram() {
                           transition={{ duration: 0.3, delay: i * 0.6 }} // Faster sequential processing delay
                           className="flex items-start text-white/50"
                         >
-                          <span className="text-[#947AFC]/50 select-none w-4 shrink-0">&gt;</span>
+                          <span className="text-purple-400/50 select-none w-4 shrink-0">&gt;</span>
                           <span className="whitespace-pre-wrap leading-[1.6]">
                             {line.includes('[SUCCESS]') || line.includes('[STATUS]') ? (
                                <span className="text-emerald-400">{line}</span>
@@ -320,7 +320,7 @@ export function PipelineDiagram() {
                             ) : line.includes('[ERROR]') ? (
                                <span className="text-red-400">{line}</span>
                             ) : line.includes('[QUERY]') ? (
-                               <span className="text-[#947AFC]">{line}</span>
+                               <span className="text-purple-400">{line}</span>
                             ) : (
                                <span>{line}</span>
                             )}
@@ -332,7 +332,7 @@ export function PipelineDiagram() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: [0, 1, 0] }}
                         transition={{ duration: 0.8, repeat: Infinity, delay: activeData.log.length * 0.6 }}
-                        className="ml-4 w-2 h-3 bg-[#947AFC] mt-1"
+                        className="ml-4 w-2 h-3 bg-purple-400 mt-1"
                       />
                     </motion.div>
                   </AnimatePresence>
