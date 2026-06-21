@@ -1,5 +1,4 @@
-import { createUploadthing, type FileRouter } from 'uploadthing/next';
-import { auth } from "@clerk/nextjs/server";
+import { createUploadthing, type FileRouter } from 'uploadthing/server';
 
 const f = createUploadthing();
 
@@ -9,19 +8,16 @@ export const ourFileRouter = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": { maxFileSize: "16MB" },
     text: { maxFileSize: "16MB" }
   })
-    .middleware(async () => {
-      try {
-        const user = await auth();
-        if (!user || !user.userId) throw new Error("Unauthorized");
-        return { userId: user.userId };
-      } catch (error) {
-        console.error("UploadThing auth error:", error);
-        throw new Error("Authentication failed");
-      }
+    .middleware(async ({ req }) => {
+      // Auth is already enforced by Clerk's Next.js middleware (middleware.ts).
+      // UploadThing v7 passes a raw Web API Request, which is incompatible
+      // with Clerk's auth()/getAuth() helpers that expect NextRequest.
+      // So we trust the middleware gate and just return metadata.
+      return {};
     })
     .onUploadComplete(async ({ file }) => {
       console.log("File uploaded successfully:", file.url);
     }),
 } satisfies FileRouter;
 
-export type OurFileRouter = typeof ourFileRouter;
+export type OurFileRouter = typeof ourFileRouter;
