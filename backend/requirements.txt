@@ -1,5 +1,5 @@
 # =============================================================================
-# MiningNiti Enterprise Backend - Requirements
+# MiningNiti Backend — Requirements
 # AI-Powered Document Intelligence for the Mining Industry
 # =============================================================================
 
@@ -43,9 +43,9 @@ python-docx==1.1.2
 python-magic==0.4.27
 
 # -----------------------------------------------------------------------------
-# Background Jobs (Optional - Celery)
+# Background Jobs (Optional: used for production scaling, BackgroundTasks used in dev)
 # -----------------------------------------------------------------------------
-celery==5.6.2
+# celery==5.6.2  # Uncomment for production Celery workers
 redis==7.1.0
 
 # -----------------------------------------------------------------------------
@@ -56,8 +56,9 @@ aiofiles==24.1.0
 requests==2.32.3
 
 # -----------------------------------------------------------------------------
-# Security & Auth
+# Security, Auth & Rate Limiting
 # -----------------------------------------------------------------------------
+slowapi==0.1.9
 python-jose[cryptography]==3.3.0
 cryptography==46.0.3
 PyJWT==2.9.0

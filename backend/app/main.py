@@ -13,6 +13,11 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi import HTTPException
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.api.v1 import api_router
@@ -43,6 +48,25 @@ async def lifespan(app: FastAPI):
             logger.info("Database tables initialized")
         except Exception as e:
             logger.warning(f"Database table creation warning: {e}")
+
+        # Recovery: reset documents stuck in transient states from a previous crash/restart
+        try:
+            from app.db.session import get_db_context
+            from app.models.document import Document, DocumentStatus
+            with get_db_context() as db:
+                stuck_docs = db.query(Document).filter(
+                    Document.status.in_(['processing', 'analyzing'])
+                ).all()
+                if stuck_docs:
+                    for doc in stuck_docs:
+                        doc.status = DocumentStatus.PENDING
+                        doc.processing_error = "Reset after server restart"
+                    db.commit()
+                    logger.info(f"Recovery: reset {len(stuck_docs)} stuck document(s) to PENDING")
+                else:
+                    logger.info("Recovery: no stuck documents found")
+        except Exception as e:
+            logger.warning(f"Document recovery warning: {e}")
     else:
         logger.warning("Database connection failed - some features may not work")
 
@@ -81,10 +105,19 @@ specifically designed for the coal mining industry.
     lifespan=lifespan
 )
 
+# Rate Limiter
+limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+
 # CORS Configuration
+_EXTRA_ORIGINS = ["http://localhost:3000", "http://localhost:3001"]
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS + ["http://localhost:3000"],
+    allow_origins=settings.CORS_ORIGINS + _EXTRA_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -92,6 +125,35 @@ app.add_middleware(
 
 
 # Exception Handlers
+
+def _get_cors_headers(request: Request) -> dict:
+    """
+    Build CORS headers to attach to error responses.
+    This is needed because FastAPI's HTTPBearer can short-circuit before
+    CORSMiddleware has a chance to add Access-Control-Allow-Origin headers,
+    causing the browser to report a CORS error instead of the real auth error.
+    """
+    origin = request.headers.get("origin", "")
+    allowed_origins = settings.CORS_ORIGINS + _EXTRA_ORIGINS
+    if origin in allowed_origins or any(origin.endswith(o.lstrip("*")) for o in allowed_origins if "*" in o):
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    return {}
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions with CORS headers so auth failures are visible to the browser"""
+    headers = {**(exc.headers or {}), **_get_cors_headers(request)}
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=headers,
+    )
+
+
 @app.exception_handler(MiningNitiException)
 async def miningniti_exception_handler(request: Request, exc: MiningNitiException):
     """Handle custom application exceptions"""
@@ -102,7 +164,8 @@ async def miningniti_exception_handler(request: Request, exc: MiningNitiExceptio
             "code": exc.code,
             "details": exc.details,
             "timestamp": datetime.utcnow().isoformat()
-        }
+        },
+        headers=_get_cors_headers(request),
     )
 
 
@@ -116,7 +179,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "code": "VALIDATION_ERROR",
             "details": exc.errors(),
             "timestamp": datetime.utcnow().isoformat()
-        }
+        },
+        headers=_get_cors_headers(request),
     )
 
 
