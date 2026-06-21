@@ -26,8 +26,8 @@ export default function Page() {
         />
 
         {/* Layered overlays */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#05030A]/85 via-[#1a0a3a]/50 to-[#05030A]/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#05030A] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-br from-[#05030A]/85 via-[#1a0a3a]/50 to-[#05030A]/40" />
+        <div className="absolute inset-0 bg-linear-to-t from-[#05030A] via-transparent to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#05030A]/60" />
 
         {/* Content on top of image */}
@@ -35,7 +35,7 @@ export default function Page() {
 
           {/* Brand */}
           <Link href="/" className="flex items-center gap-2.5 w-fit">
-            <div className="size-8 rounded-lg bg-[#947AFC] flex items-center justify-center text-[13px] font-bold text-white shadow-[0_0_20px_rgba(148,122,252,0.5)]">
+            <div className="size-8 rounded-lg bg-purple-400 flex items-center justify-center text-[13px] font-bold text-white shadow-[0_0_20px_rgba(148,122,252,0.5)]">
               M
             </div>
             <span className="text-[16px] font-semibold text-white tracking-tight">MiningNiti</span>
@@ -44,8 +44,8 @@ export default function Page() {
           {/* Bottom content */}
           <div className="mt-auto">
             {/* Badge */}
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#947AFC]/30 bg-[#947AFC]/10 backdrop-blur-sm px-3.5 py-1.5 text-sm text-white/70">
-              <ShieldCheck className="size-4 text-[#947AFC]" />
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#947AFC]/30 bg-purple-400/10 backdrop-blur-sm px-3.5 py-1.5 text-sm text-white/70">
+              <ShieldCheck className="size-4 text-purple-400" />
               Enterprise workspace
             </div>
 
@@ -64,7 +64,7 @@ export default function Page() {
             <div className="flex flex-col gap-3 mb-10">
               {bullets.map((item) => (
                 <div key={item} className="flex items-center gap-3">
-                  <CheckCircle2 className="size-4 text-[#947AFC] shrink-0" />
+                  <CheckCircle2 className="size-4 text-purple-400 shrink-0" />
                   <span className="text-[13px] text-white/60">{item}</span>
                 </div>
               ))}
@@ -73,7 +73,7 @@ export default function Page() {
             {/* Live stat pills */}
             <div className="flex gap-3">
               <div className="flex items-center gap-2 bg-white/[0.06] backdrop-blur-sm border border-white/10 rounded-xl px-4 py-2.5">
-                <FileText className="size-3.5 text-[#947AFC]" />
+                <FileText className="size-3.5 text-purple-400" />
                 <div>
                   <div className="text-[15px] font-bold text-white leading-none">4.2M+</div>
                   <div className="text-[10px] text-white/40 mt-0.5">Docs Processed</div>
@@ -92,7 +92,7 @@ export default function Page() {
       </section>
 
       {/* ── RIGHT: Sign-in form ── */}
-      <section className="flex items-center justify-center px-6 py-10 bg-[#05030A] border-l border-white/[0.06]">
+      <section className="flex items-center justify-center px-6 py-10 bg-[#05030A] border-l border-white/6">
         <div className="w-full max-w-[400px]">
 
           {/* Mobile back link */}
@@ -106,7 +106,7 @@ export default function Page() {
 
           {/* Mobile brand */}
           <Link href="/" className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="size-7 rounded-md bg-[#947AFC] flex items-center justify-center text-[12px] font-bold text-white">M</div>
+            <div className="size-7 rounded-md bg-purple-400 flex items-center justify-center text-[12px] font-bold text-white">M</div>
             <span className="text-[15px] font-semibold text-white">MiningNiti</span>
           </Link>
 
@@ -138,13 +138,13 @@ export default function Page() {
                 headerSubtitle: 'hidden',
                 header: 'hidden',
                 formButtonPrimary:
-                  'bg-[#947AFC] hover:bg-[#a88ffc] text-white font-semibold shadow-[0_0_20px_rgba(148,122,252,0.3)] hover:shadow-[0_0_28px_rgba(148,122,252,0.45)] transition-all',
+                  'bg-purple-400 hover:bg-[#a88ffc] text-white font-semibold shadow-[0_0_20px_rgba(148,122,252,0.3)] hover:shadow-[0_0_28px_rgba(148,122,252,0.45)] transition-all',
                 formFieldInput:
                   'bg-[#141414] border-white/10 text-white placeholder:text-white/30 focus:border-[#947AFC]/60 focus:ring-[#947AFC]/20',
                 formFieldLabel: 'text-white/60 text-sm',
                 identityPreviewText: 'text-white/70',
-                identityPreviewEditButton: 'text-[#947AFC]',
-                footerActionLink: 'text-[#947AFC] hover:text-[#c4a0f0]',
+                identityPreviewEditButton: 'text-purple-400',
+                footerActionLink: 'text-purple-400 hover:text-[#c4a0f0]',
                 dividerLine: 'bg-white/10',
                 dividerText: 'text-white/30',
                 socialButtonsBlockButton:
@@ -157,7 +157,7 @@ export default function Page() {
           {/* Sign-up link */}
           <p className="mt-6 text-center text-[13px] text-white/40">
             Don't have an account?{' '}
-            <Link href="/sign-up" className="text-[#947AFC] hover:text-[#c4a0f0] font-medium transition-colors">
+            <Link href="/sign-up" className="text-purple-400 hover:text-[#c4a0f0] font-medium transition-colors">
               Create workspace
             </Link>
           </p>

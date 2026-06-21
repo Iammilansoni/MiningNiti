@@ -1,10 +1,17 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
-import { UserButton } from '@clerk/nextjs';
 import { useUIStore } from '@/stores/uiStore';
 import { Menu, Search, Bell } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+
+// Dynamically import UserButton with ssr:false to prevent hydration mismatch.
+// Clerk's UserButton depends on browser auth state which is unavailable during SSR.
+const UserButton = dynamic(
+  () => import('@clerk/nextjs').then((mod) => mod.UserButton),
+  { ssr: false, loading: () => <div className="size-8 rounded-full bg-muted animate-pulse" /> }
+);
 
 export function Header() {
   const pathname = usePathname();
@@ -17,10 +24,11 @@ export function Header() {
     : 'Dashboard';
 
   return (
-    <header className="sticky top-0 z-40 flex h-[var(--header-height)] w-full items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md">
+    <header className="sticky top-0 z-40 flex h-(--header-height) w-full items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md">
       <div className="flex items-center gap-4">
         {/* Mobile Menu Toggle */}
         <button
+          suppressHydrationWarning
           onClick={() => setMobileMenuOpen(true)}
           className="md:hidden flex items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
@@ -38,7 +46,7 @@ export function Header() {
 
       <div className="flex items-center gap-3">
         {/* Command Palette Trigger (Visual only for now) */}
-        <button className="hidden md:flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+        <button suppressHydrationWarning className="hidden md:flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
           <Search className="size-3.5" />
           <span className="mr-6">Search documents...</span>
           <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 text-muted-foreground">
@@ -47,7 +55,7 @@ export function Header() {
         </button>
 
         <div className="flex items-center gap-1">
-          <button className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative">
+          <button suppressHydrationWarning className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative">
             <Bell className="size-4" />
             <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-primary" />
             <span className="sr-only">Notifications</span>
