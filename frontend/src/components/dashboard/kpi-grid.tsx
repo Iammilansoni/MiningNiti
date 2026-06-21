@@ -5,11 +5,12 @@ import { FileText, Search, ShieldCheck, Activity } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardStats } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function KPIGrid() {
   const { getToken } = useAuth();
   
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: () => getDashboardStats(getToken),
   });
@@ -18,8 +19,16 @@ export function KPIGrid() {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-28 rounded-xl bg-muted/50 animate-pulse border border-border" />
+          <Skeleton key={i} className="h-28 rounded-xl border border-border" />
         ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full p-6 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive font-medium mb-8">
+        Failed to load dashboard statistics. Please try refreshing the page.
       </div>
     );
   }

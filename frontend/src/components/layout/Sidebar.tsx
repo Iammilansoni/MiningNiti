@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Search,
 } from 'lucide-react';
 
 const navItems = [
@@ -25,27 +26,32 @@ const navItems = [
   },
   {
     name: 'AI Intelligence',
-    href: '/dashboard/chat',
+    href: '/chat',
     icon: MessageSquare,
   },
   {
     name: 'Documents',
-    href: '/dashboard/documents',
+    href: '/documents',
     icon: FileText,
   },
   {
+    name: 'Semantic Search',
+    href: '/search',
+    icon: Search,
+  },
+  {
     name: 'Prompts',
-    href: '/dashboard/prompts',
+    href: '/prompts',
     icon: Sparkles,
   },
   {
     name: 'Analytics',
-    href: '/dashboard/analytics',
+    href: '/analytics',
     icon: BarChart2,
   },
   {
     name: 'Settings',
-    href: '/dashboard/settings',
+    href: '/settings',
     icon: Settings,
   },
 ];
@@ -58,11 +64,11 @@ export function Sidebar() {
     <aside
       className={cn(
         'group flex h-full flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out',
-        sidebarCollapsed ? 'w-[var(--sidebar-width-collapsed)]' : 'w-[var(--sidebar-width)]'
+        sidebarCollapsed ? 'w-(--sidebar-width-collapsed)' : 'w-(--sidebar-width)'
       )}
     >
       {/* ── Brand ── */}
-      <div className="flex h-[var(--header-height)] shrink-0 items-center px-4 border-b border-sidebar-border">
+      <div className="flex h-(--header-height) shrink-0 items-center px-4 border-b border-sidebar-border">
         <Link href="/" className="flex items-center gap-2 focus-visible:outline-none hover:opacity-80 transition-opacity">
           <MiningNitiMark className="shrink-0" />
           {!sidebarCollapsed && (
@@ -76,7 +82,7 @@ export function Sidebar() {
       {/* ── Workspace Switcher ── */}
       {!sidebarCollapsed && (
         <div className="px-4 py-4">
-          <button className="flex w-full items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent transition-colors shadow-sm">
+          <button suppressHydrationWarning className="flex w-full items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent transition-colors shadow-sm">
             <div className="flex items-center gap-2 truncate">
               <div className="size-5 rounded bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                 M
@@ -137,6 +143,7 @@ export function Sidebar() {
           {!sidebarCollapsed && <span className="truncate">Back to Website</span>}
         </Link>
         <button
+          suppressHydrationWarning
           onClick={toggleSidebar}
           className={cn(
             'flex w-full items-center rounded-lg px-3 py-2 text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',

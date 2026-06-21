@@ -17,6 +17,15 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
+  // Pick up pending prompt from Prompts page "Use Prompt" button
+  useEffect(() => {
+    const pending = sessionStorage.getItem('pendingPrompt');
+    if (pending) {
+      sessionStorage.removeItem('pendingPrompt');
+      setInput(pending);
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
