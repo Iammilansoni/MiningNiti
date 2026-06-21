@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
   '/api/webhook(.*)',
+  '/api/uploadthing(.*)',
 ]);
 
 const isDashboardRoute = createRouteMatcher(['/dashboard(.*)']);

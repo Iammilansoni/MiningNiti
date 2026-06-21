@@ -9,11 +9,12 @@ import { useQuery } from '@tanstack/react-query';
 import { getDocuments } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
 import { formatDistanceToNow } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function RecentDocumentsTable() {
   const { getToken } = useAuth();
   
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['recent-documents'],
     queryFn: () => getDocuments(getToken, { page_size: 5 }),
   });
@@ -42,8 +43,17 @@ export function RecentDocumentsTable() {
           </thead>
           <tbody>
             {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b border-border">
+                  <td className="p-4"><Skeleton className="h-5 w-48" /></td>
+                  <td className="p-4 hidden sm:table-cell"><Skeleton className="h-5 w-24" /></td>
+                  <td className="p-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                  <td className="p-4 hidden md:table-cell"><Skeleton className="h-5 w-24 ml-auto" /></td>
+                </tr>
+              ))
+            ) : isError ? (
               <tr>
-                <td colSpan={4} className="p-4 text-center text-muted-foreground">Loading documents...</td>
+                <td colSpan={4} className="p-4 text-center text-destructive font-medium">Failed to load recent documents. Please try again.</td>
               </tr>
             ) : recentDocs.length === 0 ? (
               <tr>

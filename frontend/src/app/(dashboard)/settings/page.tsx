@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, isError } = useQuery({
     queryKey: ['user-profile'],
     queryFn: () => getUserProfile(getToken),
   });
@@ -101,6 +101,10 @@ export default function SettingsPage() {
                 <div className="h-10 bg-muted rounded-lg w-full"></div>
                 <div className="h-10 bg-muted rounded-lg w-full"></div>
                 <div className="h-10 bg-muted rounded-lg w-full"></div>
+              </div>
+            ) : isError ? (
+              <div className="w-full p-6 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive font-medium">
+                Failed to load profile. Please try refreshing the page.
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
