@@ -1,3 +1,4 @@
+import ColorBends from '@/components/ui/ColorBends';
 import { HeroSection } from '@/components/landing/hero-section';
 import { ScrollTextSection } from '@/components/landing/scroll-text-section';
 import { ProblemSection } from '@/components/landing/problem-section';
@@ -14,6 +15,7 @@ import { MagicInputDemo } from '@/components/landing/magic-input-demo';
 import { RoiCalculator } from '@/components/landing/roi-calculator';
 import { IndiaMapDeployments } from '@/components/landing/india-map-deployments';
 import { Footer } from '@/components/landing/Footer';
+import CurvedLoop from '@/components/ui/CurvedLoop';
 
 export default function LandingPage() {
   return (
@@ -21,7 +23,7 @@ export default function LandingPage() {
       {/* 1. THE HOOK: Hero & Social Proof */}
       <HeroSection />
       
-      <section className="relative z-20 bg-[#0A0A0B] pb-20 border-b border-white/[0.02] overflow-hidden -mt-16">
+      <section className="relative z-20 bg-[#0A0A0B] pb-20 border-b border-white/2 overflow-hidden -mt-16">
         <div className="mx-auto max-w-[1200px] px-6 text-center relative z-10">
           <p className="text-[11px] font-mono font-medium tracking-[0.2em] uppercase text-white/40 mb-10">
             Trusted by compliance teams across the mining sector
@@ -63,6 +65,25 @@ export default function LandingPage() {
       {/* 6. THE CAPABILITIES: Deep dive into features */}
       <FeatureGrid />
 
+      {/* 6.5: ANIMATED SECTION DIVIDER */}
+      <section className="relative overflow-hidden bg-[#05030A] border-t border-b border-white/[0.04] py-2">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            maskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)'
+          }}
+        />
+        <CurvedLoop
+          marqueeText="AI-Powered Mining ✦ Regulatory Compliance ✦ Real-Time Citations ✦ Safety Audits ✦ Document Intelligence ✦ Permit Analysis ✦"
+          speed={1.5}
+          curveAmount={180}
+          direction="left"
+          interactive={true}
+          className="curved-loop-mining"
+        />
+      </section>
+
       {/* 7. THE INTERFACE: Dashboard mockup */}
       <PlatformSection />
 
@@ -87,10 +108,29 @@ export default function LandingPage() {
       <FaqSection />
 
       {/* 14. THE CLOSE: Final CTA */}
-      <section className="py-32 bg-[#05030A] relative overflow-hidden border-t border-white/5">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(148,122,252,0.12),transparent_70%)]" />
+      <section className="py-32 relative overflow-hidden border-t border-white/5" style={{ background: '#05030A' }}>
+        <div className="absolute inset-0 z-0" style={{ width: '100%', height: '100%' }}>
+          <ColorBends
+            // @ts-ignore
+            colors={["#947afc", "#411d9f", "#2b1068"]}
+            rotation={90}
+            speed={0.2}
+            scale={1.5}
+            frequency={1.2}
+            warpStrength={1.5}
+            mouseInfluence={1}
+            noise={0.15}
+            parallax={0.5}
+            iterations={1}
+            intensity={1.2}
+            bandWidth={6}
+            transparent={false}
+            className=""
+            style={{ width: '100%', height: '100%' }}
+          />
+        </div>
         <div className="mx-auto max-w-[1200px] px-6 relative z-10 text-center">
-          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-6">Get started</p>
+          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-6">Get started</p>
           <h2 className="text-[clamp(2.5rem,5vw,4rem)] font-bold tracking-tight mb-6 text-white leading-[1.05]" style={{ letterSpacing: '-0.03em' }}>
             Transform how your team<br />works with mining documents.
           </h2>
@@ -98,7 +138,7 @@ export default function LandingPage() {
             Deploy MiningNiti and turn your unstructured document archives into a secure, queryable intelligence graph your entire team can rely on.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="/sign-up" className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-[15px] font-semibold text-black transition-all hover:bg-[#947AFC] hover:text-white hover:shadow-[0_0_30px_rgba(148,122,252,0.4)] hover:-translate-y-0.5">
+            <a href="/sign-up" className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-[15px] font-semibold text-black transition-all hover:bg-purple-400 hover:text-white hover:shadow-[0_0_30px_rgba(148,122,252,0.4)] hover:-translate-y-0.5">
               Request Access
             </a>
             <a href="mailto:hello@miningniti.com" className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 bg-white/5 px-8 text-[15px] font-medium text-white transition-colors hover:bg-white/10">

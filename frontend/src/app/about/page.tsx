@@ -18,7 +18,7 @@ export default function AboutPage() {
         {/* Header */}
         <section className="relative px-6 py-20 text-center">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[radial-gradient(circle,rgba(148,122,252,0.1)_0%,transparent_60%)] pointer-events-none" />
-          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-6 relative z-10">Our Mission</p>
+          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-6 relative z-10">Our Mission</p>
           <h1 className="text-[clamp(2.5rem,5vw,4.5rem)] font-bold tracking-tight text-white mb-6 leading-[1.05] relative z-10 max-w-4xl mx-auto">
             Bringing structure to the industrial world's dark data.
           </h1>
@@ -28,7 +28,7 @@ export default function AboutPage() {
         </section>
 
         {/* The Story */}
-        <section className="py-20 border-t border-white/[0.08] bg-white/[0.02]">
+        <section className="py-20 border-t border-white/8 bg-white/2">
           <div className="max-w-[1000px] mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
             <div>
               <h2 className="text-3xl font-bold text-white mb-6">The infrastructure gap in heavy industry.</h2>
@@ -45,24 +45,24 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#947AFC]/20 to-transparent rounded-3xl blur-2xl" />
-              <div className="relative bg-[#0A0A0B] border border-white/[0.08] rounded-3xl p-8 h-full flex flex-col justify-center shadow-2xl">
+              <div className="absolute inset-0 bg-linear-to-tr from-purple-400/20 to-transparent rounded-3xl blur-2xl" />
+              <div className="relative bg-[#0A0A0B] border border-white/8 rounded-3xl p-8 h-full flex flex-col justify-center shadow-2xl">
                 <div className="grid grid-cols-2 gap-8">
                   <div>
                     <div className="text-4xl font-bold text-white mb-2">10M+</div>
-                    <div className="text-[11px] font-semibold tracking-wider uppercase text-[#947AFC]">Documents Indexed</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Documents Indexed</div>
                   </div>
                   <div>
                     <div className="text-4xl font-bold text-white mb-2">99.8%</div>
-                    <div className="text-[11px] font-semibold tracking-wider uppercase text-[#947AFC]">Parse Accuracy</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Parse Accuracy</div>
                   </div>
                   <div>
                     <div className="text-4xl font-bold text-white mb-2">0</div>
-                    <div className="text-[11px] font-semibold tracking-wider uppercase text-[#947AFC]">Data Leaks</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Data Leaks</div>
                   </div>
                   <div>
                     <div className="text-4xl font-bold text-white mb-2">14</div>
-                    <div className="text-[11px] font-semibold tracking-wider uppercase text-[#947AFC]">Regulatory Zones</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Regulatory Zones</div>
                   </div>
                 </div>
               </div>
@@ -78,9 +78,9 @@ export default function AboutPage() {
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             {values.map((v, i) => (
-              <div key={i} className="bg-white/[0.02] border border-white/[0.08] p-8 rounded-2xl hover:bg-white/[0.04] transition-colors shadow-lg">
-                <div className="size-10 rounded-xl bg-[#947AFC]/10 border border-[#947AFC]/20 flex items-center justify-center mb-6">
-                  <v.icon className="size-5 text-[#947AFC]" />
+              <div key={i} className="bg-white/2 border border-white/8 p-8 rounded-2xl hover:bg-white/4 transition-colors shadow-lg">
+                <div className="size-10 rounded-xl bg-purple-400/10 border border-purple-400/20 flex items-center justify-center mb-6">
+                  <v.icon className="size-5 text-purple-400" />
                 </div>
                 <h3 className="text-lg font-bold text-white mb-3">{v.title}</h3>
                 <p className="text-[15px] text-white/50 leading-relaxed">{v.desc}</p>
