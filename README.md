@@ -10,6 +10,12 @@
 </div>
 
 <div align="center">
+  <a href="https://miningniti.vercel.app/" target="_blank">
+    <img src="https://img.shields.io/badge/Live_Demo-View_App-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo">
+  </a>
+</div>
+
+<div align="center">
   <h3>🚀 Enterprise-Grade AI Document Intelligence Platform for the Coal Mining Industry</h3>
   <p>Transform mining operations with intelligent document processing, safety compliance analysis, and AI-powered knowledge extraction using a multi-agent system.</p>
 </div>
@@ -63,6 +69,16 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
 - Role-based access control
 - Comprehensive audit logging
 - API rate limiting
+
+---
+
+## 📸 Screenshots
+
+| Dashboard Overview | Document Intelligence |
+|:---:|:---:|
+| <img src="docs/assets/dashboard.png" alt="Dashboard" width="400"/> | <img src="docs/assets/document-detail.png" alt="Document Detail" width="400"/> |
+| RAG Chat Interface | Semantic Search |
+| <img src="docs/assets/chat.png" alt="Chat Interface" width="400"/> | <img src="docs/assets/search.png" alt="Semantic Search" width="400"/> |
 
 ---
 
@@ -325,7 +341,26 @@ pytest tests/ --cov=app --cov-report=html
 
 ## 🚀 Deployment
 
-### Production Docker
+### 1. Frontend (Vercel)
+
+The Next.js frontend is optimized for Vercel deployment:
+1. Connect your GitHub repository to Vercel
+2. Set the `NEXT_PUBLIC_API_URL` environment variable to your backend URL
+3. Set your Clerk publishable key (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`)
+4. Deploy!
+
+### 2. Backend (Render / Railway)
+
+The FastAPI backend can be easily deployed using the provided `Dockerfile`:
+1. Connect your repository to Render or Railway
+2. Choose "Dockerfile" as the deployment method
+3. Set the required environment variables:
+   - `DATABASE_URL` (PostgreSQL with pgvector)
+   - `GEMINI_API_KEY`
+   - `CLERK_JWKS_URL`
+4. Deploy!
+
+### 3. Production Docker (Self-Hosted)
 
 ```bash
 docker-compose -f docker-compose.prod.yml up -d
