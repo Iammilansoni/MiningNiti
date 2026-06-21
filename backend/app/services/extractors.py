@@ -56,7 +56,7 @@ class PDFExtractor:
 
     def extract(self, file_path: str) -> ExtractedDocument:
         from pdfminer.high_level import extract_pages, extract_text
-        from pdfminer.layout import LTTextContainer, LTChar, LTAnon, LTTextBox, LTTextLine
+        from pdfminer.layout import LTTextContainer
 
         pages: List[PageContent] = []
         char_offset = 0

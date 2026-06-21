@@ -27,6 +27,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+import json
+import redis
+from app.config import settings
+
+# Optional Redis client
+try:
+    redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True, socket_timeout=1)
+except Exception:
+    redis_client = None
+
 @router.get("/dashboard", response_model=DashboardStats)
 async def get_dashboard_stats(
     user_id: str = Depends(get_current_user_id),
@@ -36,6 +46,16 @@ async def get_dashboard_stats(
     Get dashboard statistics for the current user.
     Provides overview of documents, chats, and safety metrics.
     """
+    cache_key = f"dashboard_stats:{user_id}"
+    
+    if redis_client:
+        try:
+            cached_data = redis_client.get(cache_key)
+            if cached_data:
+                return DashboardStats.model_validate_json(cached_data)
+        except Exception as e:
+            logger.warning(f"Redis cache read error: {e}")
+
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=7)
@@ -96,7 +116,7 @@ async def get_dashboard_stats(
         ChatSession.user_id == user_id
     ).order_by(ChatSession.updated_at.desc()).first()
     
-    return DashboardStats(
+    stats = DashboardStats(
         total_documents=total_documents,
         processed_documents=processed_documents,
         pending_documents=pending_documents,
@@ -113,6 +133,15 @@ async def get_dashboard_stats(
         last_upload_at=last_doc.created_at if last_doc else None,
         last_chat_at=last_chat.updated_at if last_chat else None,
     )
+
+    if redis_client:
+        try:
+            # Cache for 60 seconds
+            redis_client.setex(cache_key, 60, stats.model_dump_json())
+        except Exception as e:
+            logger.warning(f"Redis cache write error: {e}")
+
+    return stats
 
 
 @router.get("/documents", response_model=DocumentAnalytics)
@@ -255,3 +284,46 @@ async def get_safety_analytics(
         warning_count=warnings,
         violation_count=violations
     )
+
+
+@router.get("/violations")
+async def get_recent_violations(
+    limit: int = Query(20, ge=1, le=100),
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Get recent violations and warnings from analyzed documents.
+    Returns documents with detected hazards, ordered by severity and recency.
+    """
+    # Get documents with violations or warnings that have hazards
+    docs = db.query(Document).filter(
+        Document.user_id == user_id,
+        Document.status == DocumentStatus.COMPLETED,
+        Document.compliance_status.in_([ComplianceStatus.VIOLATION, ComplianceStatus.WARNING]),
+        Document.hazards_detected.isnot(None),
+    ).order_by(Document.created_at.desc()).limit(limit).all()
+
+    violations = []
+    for doc in docs:
+        hazards = doc.hazards_detected or []
+        if isinstance(hazards, list):
+            for h in hazards[:3]:  # Max 3 hazards per doc
+                if isinstance(h, dict):
+                    violations.append({
+                        "document_id": str(doc.id),
+                        "document_title": doc.title,
+                        "file_name": doc.file_name,
+                        "hazard_type": h.get("type", "Unknown Hazard"),
+                        "severity": h.get("severity", "medium"),
+                        "description": h.get("description", ""),
+                        "regulation": h.get("regulation", ""),
+                        "detected_at": doc.processed_at.isoformat() if doc.processed_at else doc.created_at.isoformat(),
+                        "compliance_status": doc.compliance_status.value if doc.compliance_status else "warning",
+                    })
+
+    return {
+        "violations": violations,
+        "total": len(violations),
+    }
+

@@ -5,7 +5,7 @@ User-defined AI prompts for specialized mining document analysis
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Text, Boolean, ForeignKey
+from sqlalchemy import Column, String, DateTime, Text, Boolean, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -36,7 +36,7 @@ class CustomPrompt(Base, UUIDMixin, TimestampMixin):
     is_default = Column(Boolean, default=False, nullable=False)
 
     # Usage tracking
-    use_count = Column(String(20), default="0")  # stored as string for portability
+    use_count = Column(Integer, default=0, nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="custom_prompts")

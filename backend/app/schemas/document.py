@@ -77,6 +77,7 @@ class DocumentAnalysisResult(BaseModel):
     compliance_status: ComplianceStatus = ComplianceStatus.PENDING
     hazards_detected: List[Dict[str, Any]] = []
     safety_recommendations: List[str] = []
+    reasoning: Optional[Dict[str, Any]] = None
     
     # Entities
     entities: Dict[str, List[str]] = Field(
