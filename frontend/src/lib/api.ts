@@ -87,6 +87,7 @@ export interface DocumentAnalysis {
     hazards_detected: HazardItem[];
     safety_recommendations: string[];
     entities: DocumentEntities;
+    reasoning?: Record<string, any> | null;
 }
 
 export interface DocumentAnalysisResponse {
@@ -287,20 +288,23 @@ async function fetchWithAuth(
 // Dashboard / Analytics
 // ─────────────────────────────────────────────
 
-export const getDashboardStats = (getToken: GetToken): Promise<DashboardStats> =>
-    fetchWithAuth(`${API_V1}/analytics/dashboard`, getToken);
+export const getDashboardStats = async (getToken: GetToken): Promise<DashboardStats> => {
+    return fetchWithAuth(`${API_V1}/analytics/dashboard`, getToken);
+};
 
-export const getDocumentAnalytics = (getToken: GetToken, days = 30): Promise<DocumentAnalytics> =>
-    fetchWithAuth(`${API_V1}/analytics/documents?days=${days}`, getToken);
+export const getDocumentAnalytics = async (getToken: GetToken, days = 30): Promise<DocumentAnalytics> => {
+    return fetchWithAuth(`${API_V1}/analytics/documents?days=${days}`, getToken);
+};
 
-export const getSafetyAnalytics = (getToken: GetToken): Promise<SafetyAnalytics> =>
-    fetchWithAuth(`${API_V1}/analytics/safety`, getToken);
+export const getSafetyAnalytics = async (getToken: GetToken): Promise<SafetyAnalytics> => {
+    return fetchWithAuth(`${API_V1}/analytics/safety`, getToken);
+};
 
 // ─────────────────────────────────────────────
 // Documents
 // ─────────────────────────────────────────────
 
-export const getDocuments = (
+export const getDocuments = async (
     getToken: GetToken,
     params?: {
         page?: number;
