@@ -1,24 +1,48 @@
-# 🏔️ MiningNiti - AI Document Intelligence Engine
-
 <div align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/FastAPI-0.115+-green?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
-  <img src="https://img.shields.io/badge/Next.js-15+-black?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js">
-  <img src="https://img.shields.io/badge/PostgreSQL-pgvector-blue?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/AI-Gemini_2.0-orange?style=for-the-badge&logo=google&logoColor=white" alt="AI Powered">
-  <img src="https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+
+```
+███╗   ███╗██╗███╗   ██╗██╗███╗   ██╗ ██████╗     ███╗   ██╗██╗████████╗██╗
+████╗ ████║██║████╗  ██║██║████╗  ██║██╔════╝     ████╗  ██║██║╚══██╔══╝██║
+██╔████╔██║██║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗    ██╔██╗ ██║██║   ██║   ██║
+██║╚██╔╝██║██║██║╚██╗██║██║██║╚██╗██║██║   ██║    ██║╚██╗██║██║   ██║   ██║
+██║ ╚═╝ ██║██║██║ ╚████║██║██║ ╚████║╚██████╔╝    ██║ ╚████║██║   ██║   ██║
+╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝
+```
+
+**AI-powered document intelligence engine for the coal mining industry**
+
+---
+
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Next.js-15+-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![Gemini AI](https://img.shields.io/badge/AI-Gemini_2.0_Flash-FF6D00?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
+[![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-miningniti.vercel.app-000000?style=flat-square&logo=vercel&logoColor=white)](https://miningniti.vercel.app)
+
+---
+
+[Demo](https://miningniti.vercel.app) · [Docs](#-api-endpoints) · [Quick Start](#-quick-start) · [Architecture](#️-architecture) · [Stack](#️-technology-stack)
+
+---
+
+<table>
+  <tr>
+    <td align="center" width="520">
+      <img src="https://img.shields.io/badge/🏆-Smart_India_Hackathon_2023-FFD700?style=for-the-badge&labelColor=1a1a2e" /><br/>
+      <strong>Winning Project</strong><br/>
+      <sub>Recognized by <strong>Coal India Limited</strong> &amp; <strong>CMPDI</strong></sub>
+    </td>
+  </tr>
+</table>
+
 </div>
 
-<div align="center">
-  <a href="https://miningniti.vercel.app/" target="_blank">
-    <img src="https://img.shields.io/badge/Live_Demo-View_App-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo">
-  </a>
-</div>
+---
 
-<div align="center">
-  <h3>🚀 Enterprise-Grade AI Document Intelligence Platform for the Coal Mining Industry</h3>
-  <p>Transform mining operations with intelligent document processing, safety compliance analysis, and AI-powered knowledge extraction using a multi-agent system.</p>
-</div>
+MiningNiti transforms coal mining operations with intelligent document processing, safety compliance analysis, and AI-powered knowledge extraction — built with a production-grade multi-agent system on Google Gemini 2.0.
 
 ---
 
@@ -34,6 +58,7 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
 - 🛡️ **Detect safety hazards** and compliance violations proactively
 - 🔗 **Extract knowledge** linking equipment, incidents, and regulations
 - 💬 **Provide instant answers** with citations through intelligent RAG chat
+- 🔍 **Semantic search** across your entire document corpus via vector similarity
 
 ---
 
@@ -43,42 +68,33 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
 
 | Agent | Purpose | Capabilities |
 |-------|---------|--------------|
-| **Classifier Agent** | Document Categorization | Identifies document type (Safety, Equipment, Regulatory, Geological, etc.) |
-| **Safety Analyzer** | Compliance & Hazard Detection | MSHA/OSHA compliance checking, hazard identification, risk scoring |
-| **Entity Extractor** | Mining NER | Extracts equipment, chemicals, locations, regulations, personnel, dates |
-| **Summarizer Agent** | Executive Summaries | Generates concise summaries with key action items |
+| **Classifier Agent** | Document Categorization | Identifies type: Safety, Equipment, Regulatory, Geological, etc. |
+| **Safety Analyzer** | Compliance & Hazard Detection | MSHA/OSHA compliance, hazard identification, risk scoring |
+| **Entity Extractor** | Mining NER | Equipment, chemicals, locations, regulations, personnel, dates |
+| **Summarizer Agent** | Executive Summaries | Concise summaries with key action items |
 | **Orchestrator** | Pipeline Coordination | Runs agents in parallel for optimal performance |
 
 ### 📊 Enterprise Dashboard
-
 - Real-time document processing status
-- Safety score visualizations
-- Compliance trend analytics
-- Category distribution charts
+- Safety score visualizations & compliance trend analytics
+- Category distribution charts and KPI grid
 
 ### 💬 RAG-Powered Chat
-
-- Context-aware conversations
-- Document citations with sources
+- Context-aware streaming conversations (SSE)
+- Document citations with sources and token usage tracking
 - Mining industry specialized responses
-- Conversation history management
+- Multi-turn session management
+
+### 🔍 Semantic Search
+- Vector similarity search across all document chunks
+- pgvector-powered sub-second retrieval
+- Filter by document, category, or date range
 
 ### 🔒 Enterprise Security
-
 - JWT authentication via Clerk
-- Role-based access control
+- Rate limiting (120 req/min via slowapi)
 - Comprehensive audit logging
-- API rate limiting
-
----
-
-## 📸 Screenshots
-
-| Dashboard Overview | Document Intelligence |
-|:---:|:---:|
-| <img src="docs/assets/dashboard.png" alt="Dashboard" width="400"/> | <img src="docs/assets/document-detail.png" alt="Document Detail" width="400"/> |
-| RAG Chat Interface | Semantic Search |
-| <img src="docs/assets/chat.png" alt="Chat Interface" width="400"/> | <img src="docs/assets/search.png" alt="Semantic Search" width="400"/> |
+- CORS-aware error responses for browser clients
 
 ---
 
@@ -93,13 +109,14 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                       API GATEWAY                                │
-│                FastAPI + JWT Auth + CORS                        │
+│         FastAPI + Clerk JWT Auth + slowapi Rate Limiter         │
 └─────────────────────────────────────────────────────────────────┘
                                 │
             ┌───────────────────┼───────────────────┐
             ▼                   ▼                   ▼
     ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-    │  Document API │   │   Chat API    │   │ Analytics API │
+    │  Document API │   │   Chat API    │   │  Search API   │
+    │  + Uploadthing│   │   (SSE)       │   │  (pgvector)   │
     └───────────────┘   └───────────────┘   └───────────────┘
             │                   │                   │
             └───────────────────┼───────────────────┘
@@ -111,15 +128,14 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
 │  │Classifier│ │ Safety   │ │ Entity   │ │Summarizer│           │
 │  │  Agent   │ │ Analyzer │ │ Extractor│ │  Agent   │           │
 │  └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
-│                     ▲                                            │
-│                     │ Orchestrator                               │
+│                     ▲ Orchestrator                               │
 └─────────────────────┼───────────────────────────────────────────┘
                       │
         ┌─────────────┼─────────────┐
         ▼             ▼             ▼
 ┌───────────┐  ┌───────────┐  ┌───────────┐
 │PostgreSQL │  │   Redis   │  │  Gemini   │
-│ + pgvector│  │   Queue   │  │    AI     │
+│ + pgvector│  │   Cache   │  │  2.0 Flash│
 └───────────┘  └───────────┘  └───────────┘
 ```
 
@@ -130,12 +146,14 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
 | Layer | Technology | Version |
 |-------|------------|---------|
 | **Frontend** | Next.js + TypeScript | 15.x |
-| **UI Components** | shadcn/ui + Tailwind | Latest |
+| **UI Components** | shadcn/ui + Tailwind CSS | v4 |
 | **Backend** | FastAPI + Python | 3.11+ |
 | **Database** | PostgreSQL + pgvector | 16+ |
-| **AI/LLM** | Google Gemini | 2.0 Flash |
+| **AI / LLM** | Google Gemini | 2.0 Flash |
 | **Auth** | Clerk | 6.x |
-| **Queue** | Redis + Celery | 7.x |
+| **Rate Limiting** | slowapi | 0.1.9 |
+| **File Uploads** | UploadThing | Latest |
+| **Cache / Queue** | Redis | 7.x |
 | **Container** | Docker + Docker Compose | Latest |
 
 ---
@@ -147,20 +165,20 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
 - Python 3.11+
 - Node.js 18+
 - Docker & Docker Compose
-- Google Cloud account (for Gemini API)
-- Clerk account (for authentication)
+- Google Cloud account (Gemini API key)
+- Clerk account (authentication)
 
 ### 1. Clone and Setup
 
 ```bash
 git clone https://github.com/Iammilansoni/MiningNiti.git
-cd miningniti
+cd MiningNiti
 
 # Copy environment files
 cp backend/.env.example backend/.env
 cp frontend/.env.local.example frontend/.env.local
 
-# Update with your API keys
+# Fill in your API keys in both files
 ```
 
 ### 2. Backend Setup
@@ -170,7 +188,7 @@ cd backend
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate      # Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -184,23 +202,20 @@ uvicorn app.main:app --reload --port 8000
 ```bash
 cd frontend
 
-# Install dependencies
 npm install
-
-# Run development server
 npm run dev
 ```
 
-### 4. Docker Deployment (Recommended)
+### 4. Docker (Recommended)
 
 ```bash
-# Start all services
+# Start all services (postgres, redis, backend, frontend)
 docker-compose up -d
 
 # View logs
 docker-compose logs -f
 
-# Stop services
+# Stop
 docker-compose down
 ```
 
@@ -210,42 +225,50 @@ docker-compose down
 
 ### Health & Status
 ```
-GET  /                    # Application info
-GET  /health              # Health check
-GET  /api/v1/health       # Detailed health with service status
+GET  /                          # Application info
+GET  /health                    # Health check
+GET  /api/v1/health             # Detailed health with service status
 ```
 
 ### Documents
 ```
-GET    /api/v1/documents              # List documents
-POST   /api/v1/documents              # Upload document
-GET    /api/v1/documents/{id}         # Get document
-DELETE /api/v1/documents/{id}         # Delete document
-GET    /api/v1/documents/{id}/analysis # Get AI analysis
-POST   /api/v1/documents/{id}/reanalyze # Trigger re-analysis
+GET    /api/v1/documents                    # List documents (paginated)
+POST   /api/v1/documents                    # Upload document
+GET    /api/v1/documents/{id}               # Get document
+DELETE /api/v1/documents/{id}               # Delete document
+GET    /api/v1/documents/{id}/analysis      # Get AI analysis
+POST   /api/v1/documents/{id}/reanalyze     # Trigger re-analysis
 ```
 
-### Chat
+### Chat (Streaming)
 ```
-GET    /api/v1/chat/sessions              # List sessions
-POST   /api/v1/chat/sessions              # Create session
-GET    /api/v1/chat/sessions/{id}         # Get session with messages
-PATCH  /api/v1/chat/sessions/{id}         # Update session
-DELETE /api/v1/chat/sessions/{id}         # Delete session
-POST   /api/v1/chat/send                  # Send message (with RAG)
+GET    /api/v1/chat/sessions                # List sessions
+POST   /api/v1/chat/sessions                # Create session
+GET    /api/v1/chat/sessions/{id}           # Get session with messages
+PATCH  /api/v1/chat/sessions/{id}           # Update session
+DELETE /api/v1/chat/sessions/{id}           # Delete session
+POST   /api/v1/chat/send                    # Send message (RAG)
+POST   /api/v1/chat/stream                  # Stream response (SSE)
+```
+
+### Semantic Search
+```
+GET    /api/v1/search?q={query}             # Vector similarity search
 ```
 
 ### Analytics
 ```
-GET  /api/v1/analytics/dashboard    # Dashboard stats
-GET  /api/v1/analytics/documents    # Document analytics
-GET  /api/v1/analytics/safety       # Safety compliance analytics
+GET  /api/v1/analytics/dashboard            # Dashboard stats
+GET  /api/v1/analytics/documents            # Document analytics
+GET  /api/v1/analytics/safety               # Safety compliance analytics
 ```
 
-### Jobs
+### Prompts & Jobs
 ```
-GET  /api/v1/jobs              # List active jobs
-GET  /api/v1/jobs/{id}         # Get job status
+GET  /api/v1/prompts                        # List saved prompts
+POST /api/v1/prompts                        # Save prompt template
+GET  /api/v1/jobs                           # List active jobs
+GET  /api/v1/jobs/{id}                      # Get job status
 ```
 
 ---
@@ -256,39 +279,56 @@ GET  /api/v1/jobs/{id}         # Get job status
 MiningNiti/
 ├── backend/
 │   ├── app/
-│   │   ├── api/               # REST API endpoints
-│   │   │   └── v1/            # API version 1
+│   │   ├── api/v1/            # REST API endpoints
+│   │   │   ├── chat.py        # Chat (sync)
+│   │   │   ├── chat_stream.py # Chat (SSE streaming)
+│   │   │   ├── documents.py   # Document CRUD
+│   │   │   ├── search.py      # Semantic search
+│   │   │   ├── analytics.py   # Analytics
+│   │   │   └── prompts.py     # Prompt templates
 │   │   ├── agents/            # AI agents
-│   │   │   ├── base.py        # Base agent class
-│   │   │   ├── classifier.py  # Document classifier
+│   │   │   ├── classifier.py
 │   │   │   ├── safety_analyzer.py
 │   │   │   ├── entity_extractor.py
 │   │   │   ├── summarizer.py
 │   │   │   └── orchestrator.py
-│   │   ├── core/              # Security, exceptions
-│   │   ├── db/                # Database session
+│   │   ├── db/                # Database session & pgvector init
 │   │   ├── models/            # SQLAlchemy models
 │   │   ├── schemas/           # Pydantic schemas
 │   │   ├── services/          # Business logic
-│   │   ├── config.py          # Settings
-│   │   └── main.py            # FastAPI app
+│   │   └── main.py            # FastAPI app + rate limiter
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── app/               # Next.js pages
-│   │   ├── components/        # React components
-│   │   └── lib/               # Utilities
+│   │   ├── app/
+│   │   │   ├── (dashboard)/   # Protected dashboard routes
+│   │   │   │   ├── chat/      # AI chat
+│   │   │   │   ├── documents/ # Document management + [id] detail
+│   │   │   │   ├── search/    # Semantic search
+│   │   │   │   ├── analytics/ # Analytics
+│   │   │   │   ├── prompts/   # Prompt templates
+│   │   │   │   └── settings/
+│   │   │   └── (auth)/        # Sign-in / Sign-up
+│   │   ├── components/
+│   │   │   ├── dashboard/     # KPI grid, StatCard, ActivityFeed
+│   │   │   ├── documents/     # UploadModal, AskDocumentAI
+│   │   │   ├── landing/       # Hero, Navbar, FAQ, etc.
+│   │   │   ├── layout/        # Header, Sidebar
+│   │   │   └── ui/            # shadcn + custom animated components
+│   │   ├── hooks/
+│   │   │   └── use-chat-stream.ts  # SSE streaming hook
+│   │   └── lib/
+│   │       └── api.ts         # Typed API client
 │   └── package.json
 ├── docker-compose.yml
+├── ARCHITECTURE.md
 └── README.md
 ```
 
 ---
 
 ## 📊 Document Categories
-
-The AI automatically classifies documents into:
 
 | Category | Description |
 |----------|-------------|
@@ -306,12 +346,51 @@ The AI automatically classifies documents into:
 
 ## 🔒 Security
 
-- **Authentication**: Clerk JWT verification with JWKS
-- **Authorization**: User-based resource access control
+- **Authentication**: Clerk JWT verification with JWKS endpoint
+- **Rate Limiting**: 120 requests/minute per IP via slowapi
+- **Authorization**: User-scoped resource access control
 - **Audit Logging**: All actions logged for compliance
-- **CORS**: Configured for frontend domains
-- **Input Validation**: Pydantic models for all requests
-- **SQL Injection Prevention**: SQLAlchemy ORM
+- **CORS**: CORS headers propagated on auth errors so browsers see real error codes
+- **Input Validation**: Pydantic v2 models for all requests
+- **SQL Injection Prevention**: SQLAlchemy ORM with parameterized queries
+
+---
+
+## 📈 Performance
+
+- **Async Processing**: Document analysis runs in background tasks
+- **Parallel Agents**: AI agents execute concurrently via asyncio
+- **SSE Streaming**: Token-by-token streaming response (no waiting for full answer)
+- **Token Tracking**: Input/output token usage recorded per message
+- **Connection Pooling**: SQLAlchemy database connection optimization
+- **pgvector**: Sub-second semantic search over millions of document chunks
+- **Crash Recovery**: Stuck documents auto-reset to `PENDING` on server restart
+
+---
+
+## 🚀 Deployment
+
+### Frontend → Vercel
+1. Connect your GitHub repository to Vercel
+2. Set `NEXT_PUBLIC_API_BASE_URL` → your backend URL
+3. Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+4. Deploy!
+
+### Backend → Render / Railway
+1. Connect repository, choose **Dockerfile** deployment
+2. Set environment variables:
+   ```
+   DATABASE_URL=postgresql+psycopg2://...
+   GEMINI_API_KEY=...
+   CLERK_JWKS_URL=...
+   REDIS_URL=redis://...
+   ```
+3. Deploy!
+
+### Self-Hosted (Production Docker)
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
 
 ---
 
@@ -329,72 +408,24 @@ pytest tests/ --cov=app --cov-report=html
 
 ---
 
-## 📈 Performance
-
-- **Async Processing**: Document analysis runs in background
-- **Parallel Agents**: AI agents execute concurrently
-- **Connection Pooling**: Database connection optimization
-- **Embedding Cache**: Vector embeddings cached in database
-- **Redis Queue**: Celery for distributed task processing
-
----
-
-## 🚀 Deployment
-
-### 1. Frontend (Vercel)
-
-The Next.js frontend is optimized for Vercel deployment:
-1. Connect your GitHub repository to Vercel
-2. Set the `NEXT_PUBLIC_API_URL` environment variable to your backend URL
-3. Set your Clerk publishable key (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`)
-4. Deploy!
-
-### 2. Backend (Render / Railway)
-
-The FastAPI backend can be easily deployed using the provided `Dockerfile`:
-1. Connect your repository to Render or Railway
-2. Choose "Dockerfile" as the deployment method
-3. Set the required environment variables:
-   - `DATABASE_URL` (PostgreSQL with pgvector)
-   - `GEMINI_API_KEY`
-   - `CLERK_JWKS_URL`
-4. Deploy!
-
-### 3. Production Docker (Self-Hosted)
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### Environment Variables (Production)
-
-```env
-ENVIRONMENT=production
-DEBUG=false
-DATABASE_URL=postgresql://...
-GEMINI_API_KEY=...
-CLERK_JWKS_URL=...
-REDIS_URL=redis://redis:6379/0
-```
-
----
-
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
+2. Create a feature branch (`git checkout -b feature/amazing`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 4. Push to branch (`git push origin feature/amazing`)
-5. Open Pull Request
+5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
 <div align="center">
-  <strong>Built for the Mining Industry 🏔️ | Powered by AI 🤖 | Enterprise Ready 🚀</strong>
+  <strong>Built for the Mining Industry 🏔️ &nbsp;·&nbsp; Powered by Gemini AI 🤖 &nbsp;·&nbsp; Enterprise Ready 🚀</strong>
+  <br/><br/>
+  <sub>🏆 Smart India Hackathon 2023 — Winning Project &nbsp;|&nbsp; Recognized by Coal India Limited &amp; CMPDI</sub>
 </div>
