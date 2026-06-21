@@ -54,9 +54,9 @@ export default function CaseStudiesPage() {
         {/* Grid */}
         <div className="max-w-[1200px] mx-auto px-6 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {studies.map((study, i) => (
-            <div key={i} className="group bg-white/[0.02] border border-white/[0.08] rounded-3xl p-8 hover:bg-white/[0.04] transition-all flex flex-col shadow-lg">
+            <div key={i} className="group bg-white/2 border border-white/8 rounded-3xl p-8 hover:bg-white/4 transition-all flex flex-col shadow-lg">
               <div className="flex items-center gap-3 mb-8">
-                <div className="size-10 rounded-full bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-xs font-bold text-white/70">
+                <div className="size-10 rounded-full bg-white/4 border border-white/8 flex items-center justify-center text-xs font-bold text-white/70">
                   {study.logo}
                 </div>
                 <span className="text-sm font-medium text-white/50">{study.company}</span>
@@ -64,8 +64,8 @@ export default function CaseStudiesPage() {
               
               <div className="mb-8">
                 <div className="flex items-end gap-2 mb-2">
-                  <div className="text-4xl font-bold text-[#947AFC]">{study.metric}</div>
-                  <study.icon className="size-6 text-[#947AFC] mb-1.5 opacity-50" />
+                  <div className="text-4xl font-bold text-purple-400">{study.metric}</div>
+                  <study.icon className="size-6 text-purple-400 mb-1.5 opacity-50" />
                 </div>
                 <div className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">{study.metricLabel}</div>
               </div>
@@ -75,15 +75,15 @@ export default function CaseStudiesPage() {
                 {study.desc}
               </p>
 
-              <div className="mt-auto pt-6 border-t border-white/[0.08]">
+              <div className="mt-auto pt-6 border-t border-white/8">
                 <div className="flex flex-wrap gap-2 mb-6">
                   {study.tags.map(tag => (
-                    <span key={tag} className="px-2.5 py-1 rounded bg-white/[0.04] border border-white/[0.08] text-[11px] text-white/50">
+                    <span key={tag} className="px-2.5 py-1 rounded bg-white/4 border border-white/8 text-[11px] text-white/50">
                       {tag}
                     </span>
                   ))}
                 </div>
-                <Link href="#" className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-[#947AFC] transition-colors">
+                <Link href="#" className="inline-flex items-center gap-2 text-sm font-semibold text-white group-hover:text-purple-400 transition-colors">
                   Read full study <ArrowRight className="size-4" />
                 </Link>
               </div>

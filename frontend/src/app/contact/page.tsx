@@ -11,7 +11,7 @@ export default function ContactPage() {
         <p className="text-lg text-white/50 max-w-xl mx-auto mb-8">
           Get in touch with our enterprise team to discuss deploying MiningNiti in your operation.
         </p>
-        <a href="mailto:hello@miningniti.com" className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-[15px] font-semibold text-black hover:bg-[#947AFC] hover:text-white transition-all">
+        <a href="mailto:hello@miningniti.com" className="inline-flex h-12 items-center justify-center rounded-full bg-white px-8 text-[15px] font-semibold text-black hover:bg-purple-400 hover:text-white transition-all">
           hello@miningniti.com
         </a>
       </main>

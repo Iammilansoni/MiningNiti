@@ -8,13 +8,13 @@ export default function PrivacyPage() {
       <main className="flex-1 pt-32 pb-24">
         
         <div className="max-w-[800px] mx-auto px-6">
-          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-[#947AFC] mb-4">Legal & Compliance</p>
+          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4">Legal & Compliance</p>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Privacy Policy</h1>
           <p className="text-white/50 mb-12">Last updated: May 29, 2026</p>
 
-          <div className="prose prose-invert prose-p:text-white/60 prose-p:leading-relaxed prose-headings:text-white prose-headings:font-bold prose-a:text-[#947AFC] max-w-none">
+          <div className="prose prose-invert prose-p:text-white/60 prose-p:leading-relaxed prose-headings:text-white prose-headings:font-bold prose-a:text-purple-400 max-w-none">
             
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/[0.08] mb-10 shadow-lg">
+            <div className="p-6 rounded-2xl bg-white/2 border border-white/8 mb-10 shadow-lg">
               <h3 className="text-lg font-bold text-white mt-0 mb-2">Our Zero-Training Guarantee</h3>
               <p className="text-sm text-white/60 m-0">
                 MiningNiti is an enterprise AI infrastructure company. <strong>We do not use your operational data, documents, or queries to train our foundational models.</strong> Your data remains strictly within your isolated tenant or on-premise deployment.

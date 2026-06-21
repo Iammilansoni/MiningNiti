@@ -10,7 +10,7 @@ export default function BlogPage() {
       category: 'Engineering',
       date: 'May 28, 2026',
       readTime: '8 min read',
-      image: 'bg-gradient-to-br from-blue-900 to-[#05030A]'
+      image: 'bg-linear-to-br from-blue-900 to-[#05030A]'
     },
     {
       title: 'Announcing MiningNiti OS 2.0: Automated DGMS Compliance',
@@ -18,7 +18,7 @@ export default function BlogPage() {
       category: 'Product Updates',
       date: 'May 15, 2026',
       readTime: '4 min read',
-      image: 'bg-gradient-to-br from-[#947AFC]/40 to-[#05030A]'
+      image: 'bg-linear-to-br from-[#947AFC]/40 to-[#05030A]'
     },
     {
       title: 'Why Cloud Security Matters for Mining Operators',
@@ -26,7 +26,7 @@ export default function BlogPage() {
       category: 'Security',
       date: 'April 22, 2026',
       readTime: '6 min read',
-      image: 'bg-gradient-to-br from-emerald-900 to-[#05030A]'
+      image: 'bg-linear-to-br from-emerald-900 to-[#05030A]'
     },
     {
       title: 'The Hidden Cost of Paper in Modern Mining',
@@ -34,7 +34,7 @@ export default function BlogPage() {
       category: 'Industry',
       date: 'April 05, 2026',
       readTime: '5 min read',
-      image: 'bg-gradient-to-br from-amber-900 to-[#05030A]'
+      image: 'bg-linear-to-br from-amber-900 to-[#05030A]'
     }
   ];
 
@@ -53,17 +53,17 @@ export default function BlogPage() {
 
         {/* Featured Post (First one) */}
         <div className="max-w-[1200px] mx-auto px-6 mb-16">
-          <Link href="#" className="group block bg-white/[0.02] border border-white/[0.08] rounded-3xl overflow-hidden hover:bg-white/[0.04] transition-all shadow-lg">
+          <Link href="#" className="group block bg-white/2 border border-white/8 rounded-3xl overflow-hidden hover:bg-white/4 transition-all shadow-lg">
             <div className="grid md:grid-cols-2">
               <div className={`h-[300px] md:h-auto ${posts[0].image} relative overflow-hidden`}>
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
               </div>
               <div className="p-8 md:p-12 flex flex-col justify-center">
                 <div className="flex items-center gap-3 text-xs font-mono mb-4">
-                  <span className="text-[#947AFC] px-2 py-1 rounded bg-[#947AFC]/10">{posts[0].category}</span>
+                  <span className="text-purple-400 px-2 py-1 rounded bg-purple-400/10">{posts[0].category}</span>
                   <span className="text-white/40">{posts[0].date}</span>
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 group-hover:text-[#947AFC] transition-colors">{posts[0].title}</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 group-hover:text-purple-400 transition-colors">{posts[0].title}</h2>
                 <p className="text-white/50 leading-relaxed mb-6">{posts[0].excerpt}</p>
                 <span className="text-sm font-semibold text-white mt-auto">Read Article →</span>
               </div>
@@ -74,7 +74,7 @@ export default function BlogPage() {
         {/* Grid of remaining posts */}
         <div className="max-w-[1200px] mx-auto px-6 grid md:grid-cols-3 gap-6">
           {posts.slice(1).map((post, i) => (
-            <Link key={i} href="#" className="group bg-white/[0.02] border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.04] transition-all flex flex-col shadow-lg">
+            <Link key={i} href="#" className="group bg-white/2 border border-white/8 rounded-2xl overflow-hidden hover:bg-white/4 transition-all flex flex-col shadow-lg">
               <div className={`h-[180px] ${post.image} relative overflow-hidden`}>
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
               </div>
@@ -84,7 +84,7 @@ export default function BlogPage() {
                   <span className="text-white/30">•</span>
                   <span className="text-white/40">{post.date}</span>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-3 leading-snug group-hover:text-[#947AFC] transition-colors">{post.title}</h3>
+                <h3 className="text-lg font-bold text-white mb-3 leading-snug group-hover:text-purple-400 transition-colors">{post.title}</h3>
                 <p className="text-[14px] text-white/50 leading-relaxed mb-6 line-clamp-3">{post.excerpt}</p>
               </div>
             </Link>
