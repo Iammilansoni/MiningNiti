@@ -84,6 +84,7 @@ async def stream_chat(
     async def event_generator():
         full_response = []
         sources = []
+        tokens_used = None
 
         try:
             async for event in chat_service.generate_response_stream(
@@ -112,6 +113,14 @@ async def stream_chat(
                     except Exception:
                         pass
 
+                elif event.startswith("event: done\n"):
+                    data_line = event.split("data: ", 1)[-1].strip()
+                    try:
+                        done_data = json.loads(data_line)
+                        tokens_used = done_data.get("tokens_used")
+                    except Exception:
+                        pass
+
         except Exception as e:
             logger.error(f"Streaming error: {e}", exc_info=True)
             yield f"event: error\ndata: {json.dumps({'message': str(e)})}\n\n"
@@ -126,6 +135,7 @@ async def stream_chat(
                     content=response_text,
                     sources=sources if request.include_sources else [],
                     model_used="gemini-2.0-flash",
+                    tokens_used=tokens_used,
                 )
                 db.add(assistant_message)
 
