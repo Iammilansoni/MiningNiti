@@ -9,8 +9,10 @@ RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Runtime stage — minimal image
@@ -26,10 +28,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy installed packages from builder stage
-COPY --from=builder /root/.local /root/.local
+COPY --from=builder /opt/venv /opt/venv
 
-# Ensure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+# Ensure scripts in venv are usable
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Create non-root user for security
 RUN groupadd --gid 1001 appgroup \
