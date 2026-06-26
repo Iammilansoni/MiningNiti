@@ -27,10 +27,10 @@ class TestChatSessions:
     @pytest.mark.integration
     def test_create_session_returns_201_or_200(self, client: TestClient):
         """Creating a session returns success status."""
-        response = client.post("/api/v1/chat/sessions", json={
-            "title": "Test Mining Chat",
-            "document_ids": []
-        })
+        response = client.post(
+            "/api/v1/chat/sessions",
+            json={"title": "Test Mining Chat", "document_ids": []},
+        )
         assert response.status_code in (200, 201)
 
     @pytest.mark.integration
@@ -51,7 +51,9 @@ class TestChatSessions:
         assert response.status_code == 200
 
     @pytest.mark.integration
-    def test_get_session_has_messages_list(self, client: TestClient, sample_chat_session):
+    def test_get_session_has_messages_list(
+        self, client: TestClient, sample_chat_session
+    ):
         """Session detail response includes messages list."""
         response = client.get(f"/api/v1/chat/sessions/{sample_chat_session.id}")
         data = response.json()
@@ -70,7 +72,7 @@ class TestChatSessions:
         """PATCH session updates title."""
         response = client.patch(
             f"/api/v1/chat/sessions/{sample_chat_session.id}",
-            json={"title": "Updated Title"}
+            json={"title": "Updated Title"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -84,7 +86,9 @@ class TestChatSessions:
         assert response.json()["success"] is True
 
     @pytest.mark.integration
-    def test_delete_makes_session_not_found(self, client: TestClient, sample_chat_session):
+    def test_delete_makes_session_not_found(
+        self, client: TestClient, sample_chat_session
+    ):
         """After deletion, GET returns 404."""
         session_id = str(sample_chat_session.id)
         client.delete(f"/api/v1/chat/sessions/{session_id}")
@@ -100,15 +104,21 @@ class TestSendMessage:
         """Sending without session_id creates a new session."""
         from unittest.mock import AsyncMock, patch
 
-        with patch("app.services.chat_service.ChatService.generate_response", new_callable=AsyncMock) as mock_gen:
+        with patch(
+            "app.services.chat_service.ChatService.generate_response",
+            new_callable=AsyncMock,
+        ) as mock_gen:
             mock_gen.return_value = (
                 "According to [Mining_site.pdf, Page 12], methane limits are below 1%.",
-                []
+                [],
             )
-            response = client.post("/api/v1/chat/send", json={
-                "content": "What are the methane limits?",
-                "include_sources": True
-            })
+            response = client.post(
+                "/api/v1/chat/send",
+                json={
+                    "content": "What are the methane limits?",
+                    "include_sources": True,
+                },
+            )
 
         assert response.status_code == 200
         data = response.json()
@@ -120,26 +130,40 @@ class TestSendMessage:
         """AI response message has role='assistant'."""
         from unittest.mock import AsyncMock, patch
 
-        with patch("app.services.chat_service.ChatService.generate_response", new_callable=AsyncMock) as mock_gen:
+        with patch(
+            "app.services.chat_service.ChatService.generate_response",
+            new_callable=AsyncMock,
+        ) as mock_gen:
             mock_gen.return_value = ("Test answer with [doc.pdf, Page 5] citation.", [])
-            response = client.post("/api/v1/chat/send", json={
-                "content": "Test question",
-            })
+            response = client.post(
+                "/api/v1/chat/send",
+                json={
+                    "content": "Test question",
+                },
+            )
 
         data = response.json()
         assert data["message"]["role"] == "assistant"
 
     @pytest.mark.integration
-    def test_send_message_with_existing_session(self, client: TestClient, sample_chat_session):
+    def test_send_message_with_existing_session(
+        self, client: TestClient, sample_chat_session
+    ):
         """Sending with existing session_id appends to that session."""
         from unittest.mock import AsyncMock, patch
 
-        with patch("app.services.chat_service.ChatService.generate_response", new_callable=AsyncMock) as mock_gen:
+        with patch(
+            "app.services.chat_service.ChatService.generate_response",
+            new_callable=AsyncMock,
+        ) as mock_gen:
             mock_gen.return_value = ("Response text.", [])
-            response = client.post("/api/v1/chat/send", json={
-                "content": "Question about mining",
-                "session_id": str(sample_chat_session.id),
-            })
+            response = client.post(
+                "/api/v1/chat/send",
+                json={
+                    "content": "Question about mining",
+                    "session_id": str(sample_chat_session.id),
+                },
+            )
 
         assert response.status_code == 200
         data = response.json()
