@@ -79,7 +79,7 @@ export function AnnouncementBanner() {
             {/* CTA */}
             <div className="ml-4 sm:ml-6 flex shrink-0 items-center justify-center relative pr-8 sm:pr-10">
               <Link 
-                href="/dashboard/documents"
+                href="/announcement"
                 className="relative z-10 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-[rgba(148,122,252,0.32)] bg-[color-mix(in_srgb,var(--color-purple-400)_11%,#FAF7F2)] px-4 py-2 text-[13px] font-medium text-primary no-underline transition-colors hover:border-[rgba(148,122,252,0.55)] hover:bg-[color-mix(in_srgb,var(--color-purple-400)_20%,#FAF7F2)]"
               >
                 Read Announcement
