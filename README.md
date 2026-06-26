@@ -1,39 +1,33 @@
 <div align="center">
 
 ```
-███╗   ███╗██╗███╗   ██╗██╗███╗   ██╗ ██████╗     ███╗   ██╗██╗████████╗██╗
-████╗ ████║██║████╗  ██║██║████╗  ██║██╔════╝     ████╗  ██║██║╚══██╔══╝██║
-██╔████╔██║██║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗    ██╔██╗ ██║██║   ██║   ██║
-██║╚██╔╝██║██║██║╚██╗██║██║██║╚██╗██║██║   ██║    ██║╚██╗██║██║   ██║   ██║
-██║ ╚═╝ ██║██║██║ ╚████║██║██║ ╚████║╚██████╔╝    ██║ ╚████║██║   ██║   ██║
-╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝
+ ███╗   ███╗██╗███╗   ██╗██╗███╗   ██╗ ██████╗     ███╗   ██╗██╗████████╗██╗
+ ████╗ ████║██║████╗  ██║██║████╗  ██║██╔════╝     ████╗  ██║██║╚══██╔══╝██║
+ ██╔████╔██║██║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗    ██╔██╗ ██║██║   ██║   ██║
+ ██║╚██╔╝██║██║██║╚██╗██║██║██║╚██╗██║██║   ██║    ██║╚██╗██║██║   ██║   ██║
+ ██║ ╚═╝ ██║██║██║ ╚████║██║██║ ╚████║╚██████╔╝    ██║ ╚████║██║   ██║   ██║
+ ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝
 ```
 
-**AI-powered document intelligence engine for the coal mining industry**
+### AI-Powered Document Intelligence for the Mining Industry
 
----
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.128+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Next.js-16+-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+pgvector-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-miningniti.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://miningniti.vercel.app)
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Next.js-15+-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
-[![Gemini AI](https://img.shields.io/badge/AI-Gemini_2.5_Flash-FF6D00?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
-[![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
-[![Live Demo](https://img.shields.io/badge/Live_Demo-miningniti.vercel.app-000000?style=flat-square&logo=vercel&logoColor=white)](https://miningniti.vercel.app)
-
----
-
-[Demo](https://miningniti.vercel.app) · [Docs](#-api-endpoints) · [Quick Start](#-quick-start) · [Architecture](#️-architecture) · [Stack](#️-technology-stack)
+[Architecture](#architecture) · [Quick Start](#quick-start) · [API Reference](#api-endpoints) · [Deploy](#deployment) · [Contributing](#contributing)
 
 ---
 
 <table>
   <tr>
     <td align="center" width="520">
-      <img src="https://img.shields.io/badge/🏆-Smart_India_Hackathon_2023-FFD700?style=for-the-badge&labelColor=1a1a2e" /><br/>
-      <strong>Winning Project</strong><br/>
-      <sub>Recognized by <strong>Coal India Limited</strong> &amp; <strong>CMPDI</strong></sub>
+      <img src="https://img.shields.io/badge/Smart_India_Hackathon_2023-Winning_Project-FFD700?style=for-the-badge&labelColor=1a1a2e" /><br/>
+      <strong>Recognized by Coal India Limited & CMPDI</strong>
     </td>
   </tr>
 </table>
@@ -42,410 +36,563 @@
 
 ---
 
-MiningNiti transforms coal mining operations with intelligent document processing, safety compliance analysis, and AI-powered knowledge extraction — built with a production-grade multi-agent system on Google Gemini 2.5 and other leading AI providers.
+MiningNiti is a full-stack AI platform that transforms how coal mining organizations manage safety documentation, regulatory compliance, and institutional knowledge. It combines a **multi-agent AI pipeline** (6 specialized agents across 4 AI providers) with **RAG-powered conversational search** and **real-time compliance auditing** — turning thousands of fragmented PDFs into an instantly queryable, citation-backed source of truth.
 
 ---
 
-## 🎯 The Problem
+## Table of Contents
 
-Coal mining operations handle **thousands of critical documents**: MSHA regulations, equipment manuals, safety protocols, environmental reports, and incident investigations. Finding specific information quickly can be the difference between **compliance and violation**, or even **life and death**.
-
-## 💡 The Solution
-
-MiningNiti uses **Agentic AI** with specialized mining domain agents to:
-
-- 📄 **Automatically classify** and extract insights from mining documents
-- 🛡️ **Detect safety hazards** and compliance violations proactively
-- 🔗 **Extract knowledge** linking equipment, incidents, and regulations
-- 💬 **Provide instant answers** with citations through intelligent RAG chat
-- 🔍 **Semantic search** across your entire document corpus via vector similarity
-
----
-
-## ✨ Key Features
-
-### 🤖 Multi-Agent AI System
-
-| Agent | Purpose | Capabilities |
-|-------|---------|--------------|
-| **Classifier Agent** | Document Categorization | Identifies type: Safety, Equipment, Regulatory, Geological, etc. |
-| **Safety Analyzer** | Compliance & Hazard Detection | MSHA/OSHA compliance, hazard identification, risk scoring |
-| **Entity Extractor** | Mining NER | Equipment, chemicals, locations, regulations, personnel, dates |
-| **Summarizer Agent** | Executive Summaries | Concise summaries with key action items |
-| **Orchestrator** | Pipeline Coordination | Runs agents in parallel for optimal performance |
-
-### 🧠 AI Providers & Models
-> ⚠ **Gemini 2.0 Flash deprecated June 1 2026 — this project uses 2.5 Flash**
-
-| Agent / Service | Provider | Model |
-|-----------------|----------|-------|
-| Embeddings | Gemini | `text-embedding-004` |
-| Chat Service | Gemini | `gemini-2.5-flash` |
-| Summarizer Agent | Gemini | `gemini-2.5-flash-lite` |
-| Classifier Agent | Groq | `llama-3.3-70b-versatile` |
-| Entity Extractor | Cerebras | `llama-4-scout` |
-| Safety Analyzer | Mistral | `magistral-small-latest` |
-| Fallback | OpenRouter | `deepseek/deepseek-r1:free` |
-
-#### Free Tier Providers Used
-- **Cerebras**: 1M tokens/day free limit (excellent for high-volume extraction)
-- **Groq**: Free tier for fast Classification
-- **Mistral**: Free tier for Safety Analysis
-- **OpenRouter**: Free tier for DeepSeek Fallback
-
-### 📊 Enterprise Dashboard
-- Real-time document processing status
-- Safety score visualizations & compliance trend analytics
-- Category distribution charts and KPI grid
-
-### 💬 RAG-Powered Chat
-- Context-aware streaming conversations (SSE)
-- Document citations with sources and token usage tracking
-- Mining industry specialized responses
-- Multi-turn session management
-
-### 🔍 Semantic Search
-- Vector similarity search across all document chunks
-- pgvector-powered sub-second retrieval
-- Filter by document, category, or date range
-
-### 🔒 Enterprise Security
-- JWT authentication via Clerk
-- Rate limiting (120 req/min via slowapi)
-- Comprehensive audit logging
-- CORS-aware error responses for browser clients
+- [The Problem](#the-problem)
+- [The Solution](#the-solution)
+- [Key Features](#key-features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [API Endpoints](#api-endpoints)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Deployment](#deployment)
+- [Security](#security)
+- [Performance](#performance)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## 🏗️ Architecture
+## The Problem
+
+Coal mining operations generate **thousands of critical documents** — MSHA regulations, equipment manuals, safety protocols, environmental impact assessments, and incident investigations. The core challenges:
+
+- **Fragmentation**: Information is scattered across PDFs, scanned forms, and siloed databases
+- **Compliance risk**: Missing a regulation update can mean violations, fines, or worse — lives
+- **Slow retrieval**: Finding a specific clause across 500 pages of safety protocols takes hours
+- **Knowledge drain**: Expertise leaves when experienced personnel retire
+
+## The Solution
+
+MiningNiti deploys **specialized AI agents** that understand mining domain context:
+
+| Capability | How |
+|---|---|
+| **Auto-classify** documents into safety, equipment, regulatory, and geological categories | Classifier Agent (Groq / Llama 3.3) |
+| **Detect hazards** and flag compliance violations against MSHA/OSHA standards | Safety Analyzer (Mistral / Magistral) |
+| **Extract entities** — equipment names, chemicals, regulations, personnel, locations | Entity Extractor (Cerebras / Llama 4 Scout) |
+| **Summarize** long documents with actionable key points | Summarizer Agent (Gemini 2.5 Flash) |
+| **Audit compliance** by cross-referencing operational docs against regulations | Compliance Auditor Agent (Gemini) |
+| **Answer questions** with page-level citations from your document corpus | RAG Chat with pgvector search |
+
+---
+
+## Key Features
+
+### Multi-Agent AI Pipeline
+
+Six specialized agents orchestrated in parallel for maximum throughput:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         FRONTEND                                 │
-│                    Next.js 15 + shadcn/ui                       │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       API GATEWAY                                │
-│         FastAPI + Clerk JWT Auth + slowapi Rate Limiter         │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-            ┌───────────────────┼───────────────────┐
-            ▼                   ▼                   ▼
-    ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-    │  Document API │   │   Chat API    │   │  Search API   │
-    │  + Uploadthing│   │   (SSE)       │   │  (pgvector)   │
-    └───────────────┘   └───────────────┘   └───────────────┘
-            │                   │                   │
-            └───────────────────┼───────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    AI AGENT LAYER                                │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
-│  │Classifier│ │ Safety   │ │ Entity   │ │Summarizer│           │
-│  │  Agent   │ │ Analyzer │ │ Extractor│ │  Agent   │           │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘           │
-│                     ▲ Orchestrator                               │
-└─────────────────────┼───────────────────────────────────────────┘
-                      │
-        ┌─────────────┼─────────────┐
-        ▼             ▼             ▼
-┌───────────┐  ┌───────────┐  ┌───────────┐
-│PostgreSQL │  │   Redis   │  │  Gemini   │
-│ + pgvector│  │   Cache   │  │  2.0 Flash│
-└───────────┘  └───────────┘  └───────────┘
+Document Upload
+       │
+       ▼
+  ┌─────────────┐
+  │ Orchestrator │──── Runs 6 agents concurrently via asyncio
+  └──────┬──────┘
+         │
+   ┌─────┼─────┬──────────┬──────────┬────────────┐
+   ▼     ▼     ▼          ▼          ▼            ▼
+Classifier Safety  Entity    Summarizer  Compliance
+  Agent   Analyzer Extractor   Agent      Auditor
+(Groq)  (Mistral) (Cerebras) (Gemini)   (Gemini)
+   │     │     │          │          │            │
+   └─────┴─────┴──────────┴──────────┴────────────┘
+         │
+         ▼
+  Chunks + Embeddings → pgvector (HNSW index)
+```
+
+### RAG-Powered Conversational Search
+
+- Semantic vector search via pgvector cosine similarity (sub-5ms retrieval)
+- Streaming responses token-by-token via Server-Sent Events (SSE)
+- Every answer cites `[Document, Page X]` — no hallucination without source
+- Multi-turn session management with full conversation history
+
+### Compliance Auto-Auditor
+
+- Cross-references operational documents against regulatory documents
+- Generates per-clause compliance matrices (Pass / Fail / Not Addressed)
+- Tracks audit status: Pending → In Progress → Completed
+- Frontend dashboard with audit detail views
+
+### Enterprise Dashboard
+
+- Real-time document processing status with background task tracking
+- Safety score visualizations and compliance trend analytics
+- Category distribution charts powered by Recharts
+- KPI grid, activity feed, and recent documents table
+
+### Document Management
+
+- Drag-and-drop upload with PDF, DOCX, TXT support
+- UploadThing integration for reliable file storage
+- In-document AI chat — ask questions about a specific document
+- PDF viewer modal for inline document review
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          CLIENT LAYER                                │
+│            Next.js 16 · React 19 · Tailwind v4 · shadcn/ui         │
+│    Clerk Auth · Framer Motion · Recharts · React-PDF               │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │ HTTPS
+┌──────────────────────────▼──────────────────────────────────────────┐
+│                        API GATEWAY                                   │
+│          FastAPI 0.128 · Clerk JWT Auth · slowapi Rate Limiter      │
+│          Pydantic v2 Validation · CORS · Audit Logging              │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+         ┌─────────────────┼──────────────────┐
+         ▼                 ▼                  ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│  Documents   │  │  Chat (SSE)  │  │  Compliance  │
+│  CRUD + AI   │  │  RAG Pipeline│  │  Audit APIs  │
+└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+       │                 │                  │
+       └─────────────────┼──────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                       AI AGENT LAYER                                 │
+│                                                                     │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐           │
+│  │Classifier │ │  Safety   │ │  Entity   │ │Summarizer │           │
+│  │  (Groq)   │ │ (Mistral) │ │(Cerebras) │ │ (Gemini)  │           │
+│  └───────────┘ └───────────┘ └───────────┘ └───────────┘           │
+│                  ┌───────────┐ ┌───────────┐                        │
+│                  │Compliance │ │ Orchestrator│                       │
+│                  │ (Gemini)  │ │ (parallel) │                       │
+│                  └───────────┘ └───────────┘                        │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           │
+         ┌─────────────────┼──────────────────┐
+         ▼                 ▼                  ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│  PostgreSQL   │  │    Redis      │  │  AI Providers │
+│  + pgvector   │  │  (Cache/Queue)│  │               │
+│  (HNSW index) │  │               │  │ Gemini · Groq │
+└───────────────┘  └───────────────┘  │ Mistral       │
+                                      │ Cerebras      │
+                                      └───────────────┘
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## Tech Stack
 
-| Layer | Technology | Version |
-|-------|------------|---------|
-| **Frontend** | Next.js + TypeScript | 15.x |
-| **UI Components** | shadcn/ui + Tailwind CSS | v4 |
-| **Backend** | FastAPI + Python | 3.11+ |
-| **Database** | PostgreSQL + pgvector | 16+ |
-| **AI / LLM** | Google Gemini, Cerebras, Groq, Mistral | 2.5 Flash, Llama, Magistral |
-| **Auth** | Clerk | 6.x |
-| **Rate Limiting** | slowapi | 0.1.9 |
-| **File Uploads** | UploadThing | Latest |
-| **Cache / Queue** | Redis | 7.x |
-| **Container** | Docker + Docker Compose | Latest |
+### Frontend
+
+| Category | Technology | Version |
+|---|---|---|
+| Framework | Next.js (App Router, Turbopack) | 16.x |
+| UI Library | React | 19.x |
+| Language | TypeScript | 5.x |
+| Styling | Tailwind CSS + tw-animate-css | v4 |
+| Components | shadcn/ui (Radix primitives) | Latest |
+| Auth | Clerk | 6.x |
+| State | Zustand + TanStack React Query | 5.x |
+| Animation | Framer Motion + Lenis | 12.x |
+| Charts | Recharts | 2.15 |
+| PDF | react-pdf | 10.x |
+| Uploads | UploadThing | 7.x |
+| Forms | React Hook Form + Zod | 7.x / 3.x |
+
+### Backend
+
+| Category | Technology | Version |
+|---|---|---|
+| Framework | FastAPI + Uvicorn | 0.128 |
+| Language | Python | 3.11+ |
+| ORM | SQLAlchemy (async-capable) | 2.0 |
+| Database | PostgreSQL + pgvector | 16+ |
+| Validation | Pydantic | v2.9 |
+| Auth | Clerk JWT (JWKS) | - |
+| Rate Limiting | slowapi | 0.1.9 |
+| Background Tasks | FastAPI BackgroundTasks / Celery | - |
+| HTTP Client | httpx | 0.28 |
+| Process Server | Gunicorn | 23.x |
+
+### AI Providers
+
+| Agent / Service | Provider | Model | Free Tier |
+|---|---|---|---|
+| Embeddings | Google Gemini | `text-embedding-004` | 1,500 req/day |
+| RAG Chat | Google Gemini | `gemini-2.5-flash` | 1,500 req/day |
+| Summarizer | Google Gemini | `gemini-2.5-flash-lite` | 1,500 req/day |
+| Classifier | Groq | `llama-3.3-70b-versatile` | 14,400 req/day |
+| Entity Extractor | Cerebras | `llama-4-scout` | 1M tokens/day |
+| Safety Analyzer | Mistral | `magistral-small-latest` | Free tier |
+| Compliance Auditor | Google Gemini | `gemini-2.5-flash` | 1,500 req/day |
+| Fallback | OpenRouter | `deepseek/deepseek-r1:free` | Free tier |
+
+> All agents run on free tiers — zero cost for development and moderate production usage.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- Python 3.11+
-- Node.js 18+
-- Docker & Docker Compose
-- Google Cloud account (Gemini API key)
-- Clerk account (authentication)
+- **Python 3.11+** and **Node.js 18+**
+- **Docker & Docker Compose** (recommended)
+- **API Keys**: Gemini, Groq, Mistral, Cerebras (all have free tiers)
+- **Clerk Account** for authentication
 
-### 1. Clone and Setup
+### 1. Clone & Configure
 
 ```bash
 git clone https://github.com/Iammilansoni/MiningNiti.git
 cd MiningNiti
 
-# Copy environment files
 cp backend/.env.example backend/.env
-cp frontend/.env.local.example frontend/.env.local
-
-# Fill in your Required API Keys in both files
-# You will need: GEMINI_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY, and CEREBRAS_API_KEY
+# Edit backend/.env with your API keys
 ```
 
-### 2. Backend Setup
+### 2. Docker (Recommended)
 
 ```bash
+docker-compose up -d
+```
+
+This starts PostgreSQL (with pgvector), Redis, backend, and frontend.
+
+### 3. Manual Setup
+
+**Backend:**
+```bash
 cd backend
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
-
-# Install dependencies
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# Run development server
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 3. Frontend Setup
-
+**Frontend:**
 ```bash
 cd frontend
-
 npm install
-npm run dev
+npm run dev                     # http://localhost:3000
 ```
 
-### 4. Docker (Recommended)
+### Environment Variables
 
-```bash
-# Start all services (postgres, redis, backend, frontend)
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop
-docker-compose down
-```
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `GEMINI_API_KEY` | Yes | Google Gemini API key |
+| `GROQ_API_KEY` | Yes | Groq API key |
+| `MISTRAL_API_KEY` | Yes | Mistral API key |
+| `CEREBRAS_API_KEY` | No | Cerebras API key (enables faster entity extraction) |
+| `CLERK_JWKS_URL` | Yes | Clerk JWKS endpoint for JWT verification |
+| `REDIS_URL` | No | Redis connection (defaults to localhost) |
+| `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend (defaults to localhost:8000) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key for frontend auth |
 
 ---
 
-## 📚 API Endpoints
+## API Endpoints
 
-### Health & Status
-```
-GET  /                          # Application info
-GET  /health                    # Health check
-GET  /api/v1/health             # Detailed health with service status
-```
+All endpoints are prefixed with `/api/v1`.
+
+### Health
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/` | Application info |
+| GET | `/api/v1/health` | Health check with service status |
 
 ### Documents
-```
-GET    /api/v1/documents                    # List documents (paginated)
-POST   /api/v1/documents                    # Upload document
-GET    /api/v1/documents/{id}               # Get document
-DELETE /api/v1/documents/{id}               # Delete document
-GET    /api/v1/documents/{id}/analysis      # Get AI analysis
-POST   /api/v1/documents/{id}/reanalyze     # Trigger re-analysis
-```
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/documents` | List documents (paginated) |
+| POST | `/api/v1/documents` | Upload & process document |
+| GET | `/api/v1/documents/{id}` | Get document detail |
+| DELETE | `/api/v1/documents/{id}` | Delete document |
+| GET | `/api/v1/documents/{id}/analysis` | Get AI analysis results |
+| POST | `/api/v1/documents/{id}/reanalyze` | Trigger re-analysis |
 
 ### Chat (Streaming)
-```
-GET    /api/v1/chat/sessions                # List sessions
-POST   /api/v1/chat/sessions                # Create session
-GET    /api/v1/chat/sessions/{id}           # Get session with messages
-PATCH  /api/v1/chat/sessions/{id}           # Update session
-DELETE /api/v1/chat/sessions/{id}           # Delete session
-POST   /api/v1/chat/send                    # Send message (RAG)
-POST   /api/v1/chat/stream                  # Stream response (SSE)
-```
 
-### Semantic Search
-```
-GET    /api/v1/search?q={query}             # Vector similarity search
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/chat/sessions` | List chat sessions |
+| POST | `/api/v1/chat/sessions` | Create new session |
+| GET | `/api/v1/chat/sessions/{id}` | Get session with messages |
+| PATCH | `/api/v1/chat/sessions/{id}` | Update session |
+| DELETE | `/api/v1/chat/sessions/{id}` | Delete session |
+| POST | `/api/v1/chat/send` | Send message (synchronous RAG) |
+| POST | `/api/v1/chat/stream` | Stream response (SSE) |
 
-### Analytics
-```
-GET  /api/v1/analytics/dashboard            # Dashboard stats
-GET  /api/v1/analytics/documents            # Document analytics
-GET  /api/v1/analytics/safety               # Safety compliance analytics
-```
+### Compliance Audit
 
-### Prompts & Jobs
-```
-GET  /api/v1/prompts                        # List saved prompts
-POST /api/v1/prompts                        # Save prompt template
-GET  /api/v1/jobs                           # List active jobs
-GET  /api/v1/jobs/{id}                      # Get job status
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/compliance/audits` | List audits |
+| POST | `/api/v1/compliance/audits` | Create compliance audit |
+| GET | `/api/v1/compliance/audits/{id}` | Get audit detail + matrix |
+| PATCH | `/api/v1/compliance/audits/{id}` | Update audit status |
+
+### Search, Analytics & More
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/search?q={query}` | Semantic vector search |
+| GET | `/api/v1/analytics/dashboard` | Dashboard statistics |
+| GET | `/api/v1/analytics/documents` | Document analytics |
+| GET | `/api/v1/analytics/safety` | Safety compliance analytics |
+| GET | `/api/v1/prompts` | List saved prompt templates |
+| POST | `/api/v1/prompts` | Save prompt template |
+| GET | `/api/v1/jobs` | List active background jobs |
+| GET | `/api/v1/jobs/{id}` | Get job status |
+| GET | `/api/v1/user/profile` | Get user profile |
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 MiningNiti/
 ├── backend/
 │   ├── app/
-│   │   ├── api/v1/            # REST API endpoints
-│   │   │   ├── chat.py        # Chat (sync)
-│   │   │   ├── chat_stream.py # Chat (SSE streaming)
-│   │   │   ├── documents.py   # Document CRUD
-│   │   │   ├── search.py      # Semantic search
-│   │   │   ├── analytics.py   # Analytics
-│   │   │   └── prompts.py     # Prompt templates
-│   │   ├── agents/            # AI agents
-│   │   │   ├── classifier.py
-│   │   │   ├── safety_analyzer.py
-│   │   │   ├── entity_extractor.py
-│   │   │   ├── summarizer.py
-│   │   │   └── orchestrator.py
-│   │   ├── db/                # Database session & pgvector init
-│   │   ├── models/            # SQLAlchemy models
-│   │   ├── schemas/           # Pydantic schemas
-│   │   ├── services/          # Business logic
-│   │   └── main.py            # FastAPI app + rate limiter
+│   │   ├── api/
+│   │   │   ├── deps.py                # Dependency injection (auth, DB)
+│   │   │   └── v1/
+│   │   │       ├── router.py          # Unified API router
+│   │   │       ├── documents.py       # Document CRUD + processing
+│   │   │       ├── chat.py            # RAG chat (sync)
+│   │   │       ├── chat_stream.py     # RAG chat (SSE streaming)
+│   │   │       ├── compliance.py      # Compliance audit endpoints
+│   │   │       ├── analytics.py       # Dashboard analytics
+│   │   │       ├── search.py          # Semantic vector search
+│   │   │       ├── prompts.py         # Prompt template management
+│   │   │       ├── jobs.py            # Background job tracking
+│   │   │       ├── user.py            # User profile
+│   │   │       └── health.py          # Health check
+│   │   ├── agents/
+│   │   │   ├── base.py                # Base agent interface
+│   │   │   ├── classifier.py          # Document classification (Groq)
+│   │   │   ├── safety_analyzer.py     # Hazard detection (Mistral)
+│   │   │   ├── entity_extractor.py    # Mining NER (Cerebras)
+│   │   │   ├── summarizer.py          # Executive summaries (Gemini)
+│   │   │   ├── compliance_auditor.py  # Compliance cross-reference (Gemini)
+│   │   │   └── orchestrator.py        # Parallel agent coordination
+│   │   ├── models/
+│   │   │   ├── document.py            # Document + DocumentEmbedding (pgvector)
+│   │   │   ├── chat.py                # ChatSession + ChatMessage
+│   │   │   ├── compliance.py          # ComplianceAudit + ComplianceMatrixRow
+│   │   │   ├── audit.py               # Audit logging
+│   │   │   ├── prompt.py              # Prompt templates
+│   │   │   └── user.py                # User model
+│   │   ├── schemas/                   # Pydantic request/response schemas
+│   │   ├── services/
+│   │   │   ├── chat_service.py        # RAG pipeline (embed → search → generate)
+│   │   │   ├── document_service.py    # Upload, extract, chunk, embed
+│   │   │   ├── compliance_service.py  # Compliance audit logic
+│   │   │   ├── chunking.py            # Text chunking with overlap
+│   │   │   ├── extractors.py          # PDF/DOCX/TXT text extraction
+│   │   │   ├── llm_provider.py        # Multi-provider AI client setup
+│   │   │   └── queue.py               # Task queue management
+│   │   ├── core/
+│   │   │   ├── security.py            # JWT verification, CORS
+│   │   │   └── exceptions.py          # Custom error handlers
+│   │   ├── db/
+│   │   │   ├── session.py             # SQLAlchemy engine + pgvector init
+│   │   │   └── __init__.py
+│   │   └── main.py                    # FastAPI app factory
+│   ├── tests/
+│   │   ├── unit/                      # 47 unit tests (SQLite in-memory)
+│   │   └── integration/               # Integration tests (PostgreSQL + Redis)
 │   ├── requirements.txt
+│   ├── pyproject.toml                 # black + isort config
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── (dashboard)/   # Protected dashboard routes
-│   │   │   │   ├── chat/      # AI chat
-│   │   │   │   ├── documents/ # Document management + [id] detail
-│   │   │   │   ├── search/    # Semantic search
-│   │   │   │   ├── analytics/ # Analytics
-│   │   │   │   ├── prompts/   # Prompt templates
-│   │   │   │   └── settings/
-│   │   │   └── (auth)/        # Sign-in / Sign-up
+│   │   │   ├── (auth)/                # Sign-in / Sign-up (Clerk)
+│   │   │   ├── (dashboard)/           # Protected routes
+│   │   │   │   ├── dashboard/         # Main dashboard
+│   │   │   │   ├── chat/              # RAG chat interface
+│   │   │   │   ├── documents/         # Document management + [id] detail
+│   │   │   │   ├── compliance/        # Compliance audits + [id] detail
+│   │   │   │   ├── analytics/         # Analytics dashboard
+│   │   │   │   ├── prompts/           # Prompt template manager
+│   │   │   │   └── settings/          # Profile, notifications, security
+│   │   │   ├── about/                 # About page
+│   │   │   ├── announcement/          # Announcement page
+│   │   │   ├── api-reference/         # API documentation
+│   │   │   ├── blog/                  # Blog
+│   │   │   ├── careers/               # Careers
+│   │   │   ├── case-studies/          # Case studies
+│   │   │   ├── contact/               # Contact
+│   │   │   └── privacy/               # Privacy policy
 │   │   ├── components/
-│   │   │   ├── dashboard/     # KPI grid, StatCard, ActivityFeed
-│   │   │   ├── documents/     # UploadModal, AskDocumentAI
-│   │   │   ├── landing/       # Hero, Navbar, FAQ, etc.
-│   │   │   ├── layout/        # Header, Sidebar
-│   │   │   └── ui/            # shadcn + custom animated components
+│   │   │   ├── landing/               # 22 landing page components
+│   │   │   ├── chat/                  # ChatMessage, PDFViewerModal
+│   │   │   ├── documents/             # UploadModal, AskDocumentAI
+│   │   │   ├── dashboard/             # KPI grid, StatCard, QuickActions
+│   │   │   ├── analytics/             # Charts and visualizations
+│   │   │   ├── settings/              # ProfileSettings, NotificationSettings
+│   │   │   ├── layout/                # Header, Sidebar
+│   │   │   ├── ui/                    # shadcn/ui + custom animated components
+│   │   │   └── prompts/               # Prompt management UI
 │   │   ├── hooks/
-│   │   │   └── use-chat-stream.ts  # SSE streaming hook
+│   │   │   ├── use-chat-stream.ts     # SSE streaming hook
+│   │   │   └── useApi.ts              # Typed API client hook
 │   │   └── lib/
-│   │       └── api.ts         # Typed API client
-│   └── package.json
+│   │       └── api.ts                 # API client with auth headers
+│   ├── package.json
+│   └── next.config.ts
 ├── docker-compose.yml
+├── docker-compose.prod.yml
 ├── ARCHITECTURE.md
-└── README.md
+├── AGENTS.md
+└── LICENSE
 ```
 
 ---
 
-## 📊 Document Categories
+## Testing
 
-| Category | Description |
-|----------|-------------|
-| `safety_protocol` | Safety procedures, guidelines, emergency protocols |
-| `equipment_manual` | Equipment operation guides, maintenance manuals |
-| `regulatory` | MSHA, OSHA, EPA regulations, compliance documents |
-| `incident_report` | Accident reports, incident investigations |
-| `geological` | Drill logs, assay reports, geological surveys |
-| `environmental` | Environmental impact assessments, monitoring |
-| `training` | Training materials, certifications |
-| `permit` | Mining permits, licenses, applications |
-| `maintenance` | Maintenance schedules, repair logs |
+```bash
+cd backend
 
----
+# Unit tests (fast, SQLite in-memory, no external services)
+pytest tests/unit/ -v -m unit
 
-## 🔒 Security
+# Integration tests (requires running PostgreSQL + Redis)
+pytest tests/integration/ -v -m integration
 
-- **Authentication**: Clerk JWT verification with JWKS endpoint
-- **Rate Limiting**: 120 requests/minute per IP via slowapi
-- **Authorization**: User-scoped resource access control
-- **Audit Logging**: All actions logged for compliance
-- **CORS**: CORS headers propagated on auth errors so browsers see real error codes
-- **Input Validation**: Pydantic v2 models for all requests
-- **SQL Injection Prevention**: SQLAlchemy ORM with parameterized queries
+# With coverage
+pytest tests/unit/ --cov=app --cov-report=html
+```
 
----
+**47 unit tests** covering:
+- All 5 AI agents (mocked LLM responses)
+- RAG chat service (context formatting, prompt building, source citations)
+- Text chunking (sequential indices, page tracking, overlap, edge cases)
+- Document extractors (plain text processing)
 
-## 📈 Performance
+**Linting:**
+```bash
+cd backend
+python -m isort app/ tests/     # Sort imports
+python -m black app/ tests/     # Format code
+python -m black --check app/ tests/   # Verify formatting
+```
 
-- **Async Processing**: Document analysis runs in background tasks
-- **Parallel Agents**: AI agents execute concurrently via asyncio
-- **SSE Streaming**: Token-by-token streaming response (no waiting for full answer)
-- **Token Tracking**: Input/output token usage recorded per message
-- **Connection Pooling**: SQLAlchemy database connection optimization
-- **pgvector**: Sub-second semantic search over millions of document chunks
-- **Crash Recovery**: Stuck documents auto-reset to `PENDING` on server restart
+**Frontend:**
+```bash
+cd frontend
+npm run lint          # ESLint
+npm run build         # Production build
+```
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### Frontend → Vercel
-1. Connect your GitHub repository to Vercel
-2. Set `NEXT_PUBLIC_API_BASE_URL` → your backend URL
-3. Set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-4. Deploy!
 
-### Backend → Render / Railway
-1. Connect repository, choose **Dockerfile** deployment
+1. Connect GitHub repo to [Vercel](https://vercel.com)
 2. Set environment variables:
-   ```
-   DATABASE_URL=postgresql+psycopg2://...
-   GEMINI_API_KEY=...
-   CLERK_JWKS_URL=...
-   REDIS_URL=redis://...
-   ```
-3. Deploy!
+   - `NEXT_PUBLIC_API_BASE_URL` → your backend URL
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+3. Deploy (auto-builds on push to `main`)
 
-### Self-Hosted (Production Docker)
+### Backend → AWS ECS (Production)
+
+The project uses GitHub Actions CI/CD:
+
+```
+Push to main → Build Docker image → Push to AWS ECR → Deploy to ECS
+```
+
+**Required secrets in GitHub:**
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+- `ECR_REPOSITORY`, `ECS_CLUSTER`, `ECS_SERVICE`
+
+### Self-Hosted (Docker)
+
 ```bash
+# Development
+docker-compose up -d
+
+# Production
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ---
 
-## 🧪 Testing
+## Security
 
-```bash
-cd backend
-
-# Run tests
-pytest tests/ -v
-
-# With coverage
-pytest tests/ --cov=app --cov-report=html
-```
+| Layer | Implementation |
+|---|---|
+| **Authentication** | Clerk JWT verified via JWKS endpoint; user ID from `sub` claim |
+| **Authorization** | User-scoped resource access — no cross-user data leakage |
+| **Rate Limiting** | 120 requests/minute per IP (slowapi) |
+| **Input Validation** | Pydantic v2 models on all request/response schemas |
+| **SQL Injection** | SQLAlchemy ORM with parameterized queries |
+| **Audit Logging** | All mutations logged with action, user, and timestamp |
+| **CORS** | Configurable origins; auth errors propagate CORS headers |
+| **Secrets** | Never committed; `.env` gitignored; Docker secrets for production |
 
 ---
 
-## 🤝 Contributing
+## Performance
+
+| Optimization | Detail |
+|---|---|
+| **Parallel agents** | 6 AI agents run concurrently via `asyncio.gather()` |
+| **pgvector HNSW** | Sub-5ms nearest-neighbor search over document embeddings |
+| **SSE streaming** | Token-by-token response delivery (no wait for full answer) |
+| **Background tasks** | Document processing runs asynchronously via FastAPI BackgroundTasks |
+| **Crash recovery** | Stuck documents auto-reset to PENDING on server restart |
+| **Connection pooling** | SQLAlchemy pool with configurable size/overflow |
+| **Turbopack** | Frontend dev builds and production bundling via Next.js 16 Turbopack |
+
+---
+
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing`)
-5. Open a Pull Request
+2. Create a feature branch: `git checkout -b feat/amazing-feature`
+3. Make your changes following the code style:
+   - **Backend**: Run `isort` then `black` before committing
+   - **Frontend**: Run `npm run lint` to check
+4. Add tests for new functionality
+5. Ensure all unit tests pass: `pytest tests/unit/ -v -m unit`
+6. Commit with a descriptive message: `feat(backend): add amazing feature`
+7. Push and open a Pull Request
 
 ---
 
-## 📄 License
+## License
 
 MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
 <div align="center">
-  <strong>Built for the Mining Industry 🏔️ &nbsp;·&nbsp; Powered by Gemini AI 🤖 &nbsp;·&nbsp; Enterprise Ready 🚀</strong>
-  <br/><br/>
-  <sub>🏆 Smart India Hackathon 2023 — Winning Project &nbsp;|&nbsp; Recognized by Coal India Limited &amp; CMPDI</sub>
+
+**Built for the Mining Industry** · **Powered by 4 AI Providers** · **Enterprise Ready**
+
+<br/>
+
+[![Twitter](https://img.shields.io/badge/Twitter-@Iammilansoni-1DA1F2?style=flat-square&logo=twitter&logoColor=white)](https://twitter.com/Iammilansoni)
+[![GitHub](https://img.shields.io/badge/GitHub-Iammilansoni-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Iammilansoni)
+
+Smart India Hackathon 2023 — Winning Project · Recognized by Coal India Limited & CMPDI
+
 </div>

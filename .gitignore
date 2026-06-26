@@ -114,6 +114,12 @@ celerybeat.pid
 backend/uploads/*
 !backend/uploads/.gitkeep
 
+# ── Ad-hoc test scripts (keep them out of repo) ────────────────────────────
+backend/test_*.py
+backend/check_*.py
+backend/verify_*.py
+backend/seed_*.py
+
 # ── Misc ────────────────────────────────────────────────────────────────────
 .vercel
 .netlify
