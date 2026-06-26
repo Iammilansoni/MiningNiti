@@ -4,9 +4,9 @@ Tests for context-aware RAG answer generation.
 """
 
 import json
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 
 SAMPLE_CHUNKS = [
     {
@@ -39,6 +39,7 @@ class TestContextFormatting:
     def test_format_context_includes_file_name(self):
         """Formatted context includes the file name."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         context = service._format_context(SAMPLE_CHUNKS)
         assert "Mining_site.pdf" in context
@@ -47,6 +48,7 @@ class TestContextFormatting:
     def test_format_context_includes_page_numbers(self):
         """Formatted context includes page number information."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         context = service._format_context(SAMPLE_CHUNKS)
         assert "12" in context or "Page" in context
@@ -55,6 +57,7 @@ class TestContextFormatting:
     def test_format_context_includes_section_title(self):
         """Formatted context includes section title."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         context = service._format_context(SAMPLE_CHUNKS)
         assert "Ventilation Requirements" in context
@@ -63,6 +66,7 @@ class TestContextFormatting:
     def test_format_context_empty_returns_fallback(self):
         """Empty chunks returns a no-context fallback string."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         context = service._format_context([])
         assert "No relevant" in context or len(context) > 0
@@ -71,6 +75,7 @@ class TestContextFormatting:
     def test_format_multi_page_shows_range(self):
         """Multi-page chunk shows Pages X-Y format."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         context = service._format_context([SAMPLE_CHUNKS[0]])  # pages [12, 13]
         assert "12" in context
@@ -84,6 +89,7 @@ class TestBuildSources:
     def test_build_sources_returns_list(self):
         """_build_sources returns a list."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         sources = service._build_sources(SAMPLE_CHUNKS)
         assert isinstance(sources, list)
@@ -93,6 +99,7 @@ class TestBuildSources:
     def test_build_sources_has_required_keys(self):
         """Each source dict has all required keys."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         sources = service._build_sources(SAMPLE_CHUNKS)
         for source in sources:
@@ -107,6 +114,7 @@ class TestBuildSources:
     def test_build_sources_page_numbers_preserved(self):
         """Page numbers from chunks are preserved in source output."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         sources = service._build_sources(SAMPLE_CHUNKS)
         assert sources[0]["page_numbers"] == [12, 13]
@@ -116,6 +124,7 @@ class TestBuildSources:
     def test_build_sources_chunk_text_truncated(self):
         """Long chunk text is truncated to 300 chars."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         long_chunk = SAMPLE_CHUNKS[0].copy()
         long_chunk["text"] = "x" * 1000
@@ -126,6 +135,7 @@ class TestBuildSources:
     def test_build_sources_empty_input(self):
         """Empty input returns empty list."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         sources = service._build_sources([])
         assert sources == []
@@ -138,6 +148,7 @@ class TestBuildPrompt:
     def test_prompt_includes_system_prompt(self):
         """Generated prompt includes the system prompt with citation instructions."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         prompt = service._build_prompt("What is ventilation?", "Some context")
         assert "Citation" in prompt or "cite" in prompt.lower()
@@ -146,6 +157,7 @@ class TestBuildPrompt:
     def test_prompt_includes_query(self):
         """Generated prompt includes the user's question."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         query = "What are the methane limits?"
         prompt = service._build_prompt(query, "Context here")
@@ -155,6 +167,7 @@ class TestBuildPrompt:
     def test_prompt_includes_context(self):
         """Generated prompt includes the document context."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         context = "Source 1: Mining_site.pdf, Page 12"
         prompt = service._build_prompt("question?", context)
@@ -164,6 +177,7 @@ class TestBuildPrompt:
     def test_prompt_includes_file_citation_format(self):
         """System prompt instructs LLM to use [FileName, Page X] format."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         prompt = service._build_prompt("question?", "context")
         assert "Page" in prompt or "page" in prompt
@@ -176,6 +190,7 @@ class TestGetMiningeSuggestions:
     def test_suggestions_is_nonempty_list(self):
         """Returns a non-empty list of suggestion strings."""
         from app.services.chat_service import ChatService
+
         service = ChatService()
         suggestions = service.get_mining_suggestions()
         assert isinstance(suggestions, list)

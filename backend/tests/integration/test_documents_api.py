@@ -35,7 +35,9 @@ class TestDocumentList:
         assert data["documents"] == []
 
     @pytest.mark.integration
-    def test_list_documents_with_completed_doc(self, client: TestClient, sample_document):
+    def test_list_documents_with_completed_doc(
+        self, client: TestClient, sample_document
+    ):
         """Lists documents after one is created."""
         response = client.get("/api/v1/documents")
         data = response.json()
@@ -123,7 +125,9 @@ class TestDocumentAnalysis:
     """GET /api/v1/documents/{id}/analysis"""
 
     @pytest.mark.integration
-    def test_get_analysis_for_completed_document(self, client: TestClient, sample_document):
+    def test_get_analysis_for_completed_document(
+        self, client: TestClient, sample_document
+    ):
         """Analysis endpoint returns analysis data for completed document."""
         response = client.get(f"/api/v1/documents/{sample_document.id}/analysis")
         assert response.status_code == 200

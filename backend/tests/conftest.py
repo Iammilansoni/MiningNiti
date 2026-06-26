@@ -12,23 +12,30 @@ import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 # ── Test database (SQLite in-memory for unit tests) ────────────────────────────
 SQLITE_URL = "sqlite:///./test.db"
 
 # We need to patch settings BEFORE importing app modules
 import os
+
 os.environ.setdefault("DATABASE_URL", SQLITE_URL)
 os.environ.setdefault("GEMINI_API_KEY", "test-api-key-000000000000000000000000")
 os.environ.setdefault("CLERK_JWKS_URL", "https://test.clerk.com/.well-known/jwks.json")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
+from app.models import (  # noqa: F401 — register tables
+    audit,
+    chat,
+    document,
+    prompt,
+    user,
+)
 from app.models.base import Base
-from app.models import user, document, chat, audit, prompt  # noqa: F401 — register tables
-
 
 # ── Database fixtures ─────────────────────────────────────────────────────────
+
 
 @pytest.fixture(scope="session")
 def test_engine():
@@ -51,7 +58,9 @@ def db_session(test_engine) -> Generator[Session, None, None]:
     connection = test_engine.connect()
     transaction = connection.begin()
 
-    TestingSessionLocal = sessionmaker(bind=connection, autocommit=False, autoflush=False)
+    TestingSessionLocal = sessionmaker(
+        bind=connection, autocommit=False, autoflush=False
+    )
     session = TestingSessionLocal()
 
     yield session
@@ -63,14 +72,15 @@ def db_session(test_engine) -> Generator[Session, None, None]:
 
 # ── Test client fixtures ───────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="function")
 def client(db_session: Session):
     """
     FastAPI test client with auth mocked and DB injected.
     """
-    from app.main import app
-    from app.db.session import get_db
     from app.api.deps import get_current_user_id
+    from app.db.session import get_db
+    from app.main import app
 
     def override_get_db():
         yield db_session
@@ -89,6 +99,7 @@ def client(db_session: Session):
 
 # ── Model factory fixtures ─────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def sample_user_id() -> str:
     return "test_user_001"
@@ -97,7 +108,7 @@ def sample_user_id() -> str:
 @pytest.fixture
 def sample_document(db_session: Session, sample_user_id: str):
     """Create a sample document for tests."""
-    from app.models.document import Document, DocumentStatus, DocumentCategory
+    from app.models.document import Document, DocumentCategory, DocumentStatus
 
     doc = Document(
         user_id=sample_user_id,
@@ -113,6 +124,7 @@ def sample_document(db_session: Session, sample_user_id: str):
         summary="A comprehensive guide to mining safety.",
         key_points=["Wear PPE", "Check ventilation", "Follow evacuation plan"],
         safety_score=82.5,
+        classification_confidence=0.95,
     )
     db_session.add(doc)
     db_session.commit()
@@ -129,7 +141,7 @@ def sample_embedding(db_session: Session, sample_document):
         document_id=sample_document.id,
         chunk_index=0,
         chunk_text="Underground coal mines require adequate ventilation to prevent methane buildup.",
-        embedding=[0.1] * 768,          # Mock 768-dim vector
+        embedding=[0.1] * 768,  # Mock 768-dim vector
         page_numbers=[12, 13],
         section_title="Ventilation Requirements",
         start_page=12,
@@ -157,6 +169,7 @@ def sample_chat_session(db_session: Session, sample_user_id: str):
 
 
 # ── Gemini mock fixtures ───────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def mock_gemini_response():
@@ -210,6 +223,7 @@ All personnel entering underground areas must wear:
 Evacuation routes must be clearly marked and tested quarterly.
 Emergency drills must be conducted at least twice per year per MSHA regulation.
 """
+
 
 @pytest.fixture
 def sample_mining_text():
