@@ -17,12 +17,19 @@ from typing import List
 
 import google.generativeai as genai
 
+from app.agents.base import QuotaExceededError
+from app.agents.orchestrator import AgentOrchestrator
 from app.config import settings
 from app.db.session import get_db_context
-from app.models.document import Document, DocumentEmbedding, DocumentStatus, DocumentCategory, ComplianceStatus
-from app.services.extractors import download_and_extract, ExtractedDocument
+from app.models.document import (
+    ComplianceStatus,
+    Document,
+    DocumentCategory,
+    DocumentEmbedding,
+    DocumentStatus,
+)
 from app.services.chunking import ChunkingService, DocumentChunk
-from app.agents.orchestrator import AgentOrchestrator
+from app.services.extractors import ExtractedDocument, download_and_extract
 
 logger = logging.getLogger(__name__)
 
@@ -96,17 +103,21 @@ class DocumentService:
                 for chunk in chunks:
                     embedding_values = await self._embed(chunk.text)
                     if embedding_values is None:
-                        logger.warning(f"Skipping chunk {chunk.chunk_index} — embedding failed")
+                        logger.warning(
+                            f"Skipping chunk {chunk.chunk_index} — embedding failed"
+                        )
                         continue
 
                     doc_embedding = DocumentEmbedding(
                         document_id=document.id,
                         chunk_index=chunk.chunk_index,
                         chunk_text=chunk.text,
-                        embedding=embedding_values,          # stored as vector(768)
-                        page_numbers=chunk.page_numbers,     # e.g. [12, 13]
-                        section_title=chunk.section_title,   # e.g. "Safety Procedures"
-                        start_page=chunk.page_numbers[0] if chunk.page_numbers else None,
+                        embedding=embedding_values,  # stored as vector(768)
+                        page_numbers=chunk.page_numbers,  # e.g. [12, 13]
+                        section_title=chunk.section_title,  # e.g. "Safety Procedures"
+                        start_page=(
+                            chunk.page_numbers[0] if chunk.page_numbers else None
+                        ),
                         end_page=chunk.page_numbers[-1] if chunk.page_numbers else None,
                         embedding_model=self.embedding_model,
                     )
@@ -156,7 +167,11 @@ class DocumentService:
                     "warning": ComplianceStatus.WARNING,
                     "violation": ComplianceStatus.VIOLATION,
                 }
-                document.safety_score = float(safety.get("score", 50)) if safety.get("score") is not None else None
+                document.safety_score = (
+                    float(safety.get("score", 50))
+                    if safety.get("score") is not None
+                    else None
+                )
                 document.compliance_status = status_map.get(
                     safety.get("status"), ComplianceStatus.PENDING
                 )
@@ -176,8 +191,27 @@ class DocumentService:
                 logger.info(f"Document processing completed: {document_id}")
                 return True
 
+            except QuotaExceededError as qe:
+                # Quota hit: text extraction + embeddings already succeeded.
+                # Mark COMPLETED with partial data so re-analyze is available.
+                logger.error(
+                    f"Gemini quota exceeded during agent analysis for {document_id}: {qe}"
+                )
+                document.status = DocumentStatus.COMPLETED
+                document.processing_error = (
+                    "AI analysis incomplete: Gemini API quota exceeded. "
+                    "Click Re-analyze to run the full analysis when quota resets."
+                )
+                document.summary = "Summary not available — Gemini quota exceeded. Re-analyze to generate."
+                document.key_points = []
+                document.processed_at = datetime.now(timezone.utc)
+                db.commit()
+                return False
+
             except Exception as e:
-                logger.error(f"Document processing failed: {document_id} — {e}", exc_info=True)
+                logger.error(
+                    f"Document processing failed: {document_id} — {e}", exc_info=True
+                )
                 document.status = DocumentStatus.FAILED
                 document.processing_error = str(e)
                 db.commit()
@@ -190,6 +224,7 @@ class DocumentService:
                 model=self.embedding_model,
                 content=text,
                 task_type="retrieval_document",
+                output_dimensionality=768,
             )
             return result["embedding"]
         except Exception as e:
@@ -198,6 +233,7 @@ class DocumentService:
 
 
 # ── Background task wrapper ────────────────────────────────────────────────────
+
 
 async def process_document_async(document_id: str) -> None:
     """Async wrapper used with FastAPI BackgroundTasks."""

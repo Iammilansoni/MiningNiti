@@ -3,8 +3,9 @@ Celery Tasks
 Background processing tasks for document analysis
 """
 
-import logging
 import asyncio
+import logging
+
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)

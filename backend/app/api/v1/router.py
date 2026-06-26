@@ -5,60 +5,38 @@ Combines all endpoint routers into single API router
 
 from fastapi import APIRouter
 
-from app.api.v1 import documents, chat, chat_stream, analytics, jobs, health, prompts, user, search
+from app.api.v1 import (
+    analytics,
+    chat,
+    chat_stream,
+    compliance,
+    documents,
+    health,
+    jobs,
+    prompts,
+    search,
+    user,
+)
 
 api_router = APIRouter()
 
 # Include all routers
-api_router.include_router(
-    health.router,
-    tags=["Health"]
-)
+api_router.include_router(health.router, tags=["Health"])
 
-api_router.include_router(
-    documents.router,
-    prefix="/documents",
-    tags=["Documents"]
-)
+api_router.include_router(documents.router, prefix="/documents", tags=["Documents"])
 
-api_router.include_router(
-    chat.router,
-    prefix="/chat",
-    tags=["Chat"]
-)
+api_router.include_router(chat.router, prefix="/chat", tags=["Chat"])
 
-api_router.include_router(
-    chat_stream.router,
-    prefix="/chat",
-    tags=["Chat"]
-)
+api_router.include_router(chat_stream.router, prefix="/chat", tags=["Chat"])
 
-api_router.include_router(
-    analytics.router,
-    prefix="/analytics",
-    tags=["Analytics"]
-)
+api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 
-api_router.include_router(
-    jobs.router,
-    prefix="/jobs",
-    tags=["Jobs"]
-)
+api_router.include_router(jobs.router, prefix="/jobs", tags=["Jobs"])
 
-api_router.include_router(
-    prompts.router,
-    prefix="/prompts",
-    tags=["Prompts"]
-)
+api_router.include_router(prompts.router, prefix="/prompts", tags=["Prompts"])
 
-api_router.include_router(
-    user.router,
-    prefix="/user",
-    tags=["User"]
-)
+api_router.include_router(user.router, prefix="/user", tags=["User"])
 
-api_router.include_router(
-    search.router,
-    prefix="/search",
-    tags=["Search"]
-)
+api_router.include_router(search.router, prefix="/search", tags=["Search"])
+
+api_router.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])

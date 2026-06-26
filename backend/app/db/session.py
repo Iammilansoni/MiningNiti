@@ -4,14 +4,15 @@ SQLAlchemy engine and session configuration with connection pooling
 """
 
 import logging
-from typing import Generator
 from contextlib import contextmanager
+from typing import Generator
 
 from sqlalchemy import create_engine, event, text
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from app.config import settings
+
 # Use the single canonical Base so all models share the same metadata
 from app.models.base import Base  # noqa: F401 - re-exported for convenience
 
@@ -22,8 +23,8 @@ engine_args = {
     "pool_size": settings.DB_POOL_SIZE,
     "max_overflow": settings.DB_MAX_OVERFLOW,
     "pool_pre_ping": True,  # Verify connections before use
-    "pool_recycle": 3600,   # Recycle connections after 1 hour
-    "echo": settings.DEBUG,  # Log SQL in debug mode
+    "pool_recycle": 3600,  # Recycle connections after 1 hour
+    "echo": False,  # Suppress excessive SQL query logging
 }
 
 # Add SSL config if certificate path provided
@@ -33,18 +34,11 @@ if settings.SSL_CERT_PATH:
     connect_args["sslrootcert"] = settings.SSL_CERT_PATH
 
 engine = create_engine(
-    settings.DATABASE_URL,
-    poolclass=QueuePool,
-    connect_args=connect_args,
-    **engine_args
+    settings.DATABASE_URL, poolclass=QueuePool, connect_args=connect_args, **engine_args
 )
 
 # Session factory
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 # Connection event listeners for debugging
@@ -62,7 +56,7 @@ def get_db() -> Generator[Session, None, None]:
     """
     Dependency for FastAPI endpoints.
     Yields a database session and ensures cleanup.
-    
+
     Usage:
         @app.get("/items")
         def get_items(db: Session = Depends(get_db)):
@@ -80,7 +74,7 @@ def get_db_context() -> Generator[Session, None, None]:
     """
     Context manager for database sessions outside of FastAPI.
     Useful for background workers and scripts.
-    
+
     Usage:
         with get_db_context() as db:
             db.query(...)
@@ -99,7 +93,7 @@ def get_db_context() -> Generator[Session, None, None]:
 def init_db():
     """Initialize database tables using the canonical Base from models.base"""
     # Import all models so they register their tables with Base.metadata
-    from app.models import user, document, chat, audit, prompt  # noqa: F401
+    from app.models import audit, chat, document, prompt, user  # noqa: F401
     from app.models.base import Base as ModelBase
 
     # Ensure pgvector extension exists before creating tables that use VECTOR columns

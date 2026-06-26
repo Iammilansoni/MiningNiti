@@ -4,7 +4,7 @@ Document summarization for mining documents
 """
 
 import logging
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 from app.agents.base import BaseAgent
 
@@ -14,13 +14,17 @@ logger = logging.getLogger(__name__)
 class SummarizerAgent(BaseAgent):
     """
     Document Summarization Agent.
-    
+
     Creates concise, actionable summaries of mining documents:
     - Executive summary
     - Key points extraction
     - Action items identification
     """
-    
+
+    def __init__(self):
+        # Shift to Cerebras (gpt-oss-120b) to bypass Gemini API rate limits and avoid Groq parallel execution rate limits
+        super().__init__(model_name="gpt-oss-120b", provider="cerebras")
+
     @property
     def system_prompt(self) -> str:
         return """You are a document summarization agent for the mining industry.
@@ -44,8 +48,10 @@ Prioritize:
 - Equipment status
 - Personnel responsibilities
 """
-    
-    async def analyze(self, text: str, context: Optional[Dict] = None) -> Dict[str, Any]:
+
+    async def analyze(
+        self, text: str, context: Optional[Dict] = None
+    ) -> Dict[str, Any]:
         """
         Generate document summary and key points.
 

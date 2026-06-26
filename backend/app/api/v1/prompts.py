@@ -5,14 +5,20 @@ CRUD operations for user-defined AI prompts
 
 import logging
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
-from app.api.deps import get_current_user_id, get_current_user
-from app.models.prompt import CustomPrompt
-from app.schemas.prompt import PromptCreate, PromptUpdate, PromptResponse, PromptListResponse
+from app.api.deps import get_current_user, get_current_user_id
 from app.core.exceptions import NotFoundError
+from app.db.session import get_db
+from app.models.prompt import CustomPrompt
+from app.schemas.prompt import (
+    PromptCreate,
+    PromptListResponse,
+    PromptResponse,
+    PromptUpdate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,10 +101,14 @@ async def get_prompt(
     """
     Get a specific prompt by ID.
     """
-    prompt = db.query(CustomPrompt).filter(
-        CustomPrompt.id == prompt_id,
-        CustomPrompt.user_id == user_id,
-    ).first()
+    prompt = (
+        db.query(CustomPrompt)
+        .filter(
+            CustomPrompt.id == prompt_id,
+            CustomPrompt.user_id == user_id,
+        )
+        .first()
+    )
 
     if not prompt:
         raise NotFoundError("Prompt", prompt_id)
@@ -125,10 +135,14 @@ async def update_prompt(
     """
     Update a custom prompt.
     """
-    prompt = db.query(CustomPrompt).filter(
-        CustomPrompt.id == prompt_id,
-        CustomPrompt.user_id == user_id,
-    ).first()
+    prompt = (
+        db.query(CustomPrompt)
+        .filter(
+            CustomPrompt.id == prompt_id,
+            CustomPrompt.user_id == user_id,
+        )
+        .first()
+    )
 
     if not prompt:
         raise NotFoundError("Prompt", prompt_id)
@@ -166,10 +180,14 @@ async def delete_prompt(
     """
     Delete a custom prompt.
     """
-    prompt = db.query(CustomPrompt).filter(
-        CustomPrompt.id == prompt_id,
-        CustomPrompt.user_id == user_id,
-    ).first()
+    prompt = (
+        db.query(CustomPrompt)
+        .filter(
+            CustomPrompt.id == prompt_id,
+            CustomPrompt.user_id == user_id,
+        )
+        .first()
+    )
 
     if not prompt:
         raise NotFoundError("Prompt", prompt_id)

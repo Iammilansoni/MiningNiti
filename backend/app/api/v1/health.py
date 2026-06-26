@@ -4,11 +4,12 @@ System health and status monitoring
 """
 
 from datetime import datetime
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.db.session import get_db, check_db_connection
+from app.db.session import check_db_connection, get_db
 from app.schemas.common import HealthResponse
 
 router = APIRouter()
@@ -21,7 +22,7 @@ async def root():
         status="healthy",
         version=settings.APP_VERSION,
         environment=settings.ENVIRONMENT,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.utcnow(),
     )
 
 
@@ -31,24 +32,22 @@ async def health_check(db: Session = Depends(get_db)):
     Detailed health check with service status.
     Checks database connectivity and other services.
     """
-    services = {
-        "database": "unknown",
-        "redis": "unknown",
-        "ai": "unknown"
-    }
-    
+    services = {"database": "unknown", "redis": "unknown", "ai": "unknown"}
+
     # Check database
     try:
         from sqlalchemy import text
+
         db.execute(text("SELECT 1"))
         services["database"] = "healthy"
     except Exception as e:
         services["database"] = f"unhealthy: {str(e)}"
-    
+
     # Check Redis (if configured)
     r = None
     try:
         import redis
+
         r = redis.from_url(settings.REDIS_URL)
         r.ping()
         services["redis"] = "healthy"
@@ -57,24 +56,25 @@ async def health_check(db: Session = Depends(get_db)):
     finally:
         if r is not None:
             r.close()
-    
+
     # Check AI service (Gemini)
     try:
         import google.generativeai as genai
+
         genai.configure(api_key=settings.GEMINI_API_KEY)
         services["ai"] = "healthy"
     except Exception:
         services["ai"] = "not_configured"
-    
+
     # Overall status
     overall = "healthy"
     if services["database"] != "healthy":
         overall = "degraded"
-    
+
     return HealthResponse(
         status=overall,
         version=settings.APP_VERSION,
         environment=settings.ENVIRONMENT,
         timestamp=datetime.utcnow(),
-        services=services
+        services=services,
     )

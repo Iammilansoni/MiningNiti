@@ -22,14 +22,16 @@ logger = logging.getLogger(__name__)
 
 # ── Data structures ────────────────────────────────────────────────────────────
 
+
 @dataclass
 class DocumentChunk:
     """A single text chunk with full provenance metadata."""
+
     chunk_index: int
     text: str
-    page_numbers: List[int]            # Pages this chunk spans, e.g. [12, 13]
-    section_title: Optional[str]       # Nearest detected heading, e.g. "Safety Procedures"
-    char_start: int = 0                # Character offset in full_text
+    page_numbers: List[int]  # Pages this chunk spans, e.g. [12, 13]
+    section_title: Optional[str]  # Nearest detected heading, e.g. "Safety Procedures"
+    char_start: int = 0  # Character offset in full_text
     char_end: int = 0
 
 
@@ -37,9 +39,11 @@ class DocumentChunk:
 
 # Matches ALL-CAPS lines (≥4 chars), numbered sections (1.2.3), or markdown headings
 _HEADING_PATTERNS = [
-    re.compile(r"^#{1,4}\s+(.+)$", re.MULTILINE),                      # Markdown headings
-    re.compile(r"^(\d+(?:\.\d+)*)\s+([A-Z][^\n]{3,60})$", re.MULTILINE),  # Numbered: "1.2 Section"
-    re.compile(r"^([A-Z][A-Z\s\-]{4,60})$", re.MULTILINE),             # ALL-CAPS headings
+    re.compile(r"^#{1,4}\s+(.+)$", re.MULTILINE),  # Markdown headings
+    re.compile(
+        r"^(\d+(?:\.\d+)*)\s+([A-Z][^\n]{3,60})$", re.MULTILINE
+    ),  # Numbered: "1.2 Section"
+    re.compile(r"^([A-Z][A-Z\s\-]{4,60})$", re.MULTILINE),  # ALL-CAPS headings
 ]
 
 # Sentence boundary: period/question/exclamation followed by space and capital (or end)
@@ -60,11 +64,11 @@ class ChunkingService:
 
     def __init__(
         self,
-        chunk_size: int = None,      # words per chunk
-        chunk_overlap: int = None,   # words of overlap
-        min_chunk_words: int = 20,   # skip chunks smaller than this
+        chunk_size: int = None,  # words per chunk
+        chunk_overlap: int = None,  # words of overlap
+        min_chunk_words: int = 20,  # skip chunks smaller than this
     ):
-        self.chunk_size = chunk_size or settings.CHUNK_SIZE          # default: 1000
+        self.chunk_size = chunk_size or settings.CHUNK_SIZE  # default: 1000
         self.chunk_overlap = chunk_overlap or settings.CHUNK_OVERLAP  # default: 200
         self.min_chunk_words = min_chunk_words
 
@@ -112,14 +116,16 @@ class ChunkingService:
             page_nums = self._get_page_numbers(char_start, char_end, page_map)
             section = self._get_section_title(char_start, headings)
 
-            chunks.append(DocumentChunk(
-                chunk_index=idx,
-                text=chunk_text.strip(),
-                page_numbers=page_nums,
-                section_title=section,
-                char_start=char_start,
-                char_end=char_end,
-            ))
+            chunks.append(
+                DocumentChunk(
+                    chunk_index=idx,
+                    text=chunk_text.strip(),
+                    page_numbers=page_nums,
+                    section_title=section,
+                    char_start=char_start,
+                    char_end=char_end,
+                )
+            )
 
         logger.info(
             f"Chunked document: {len(sentences)} sentences → {len(chunks)} chunks "
@@ -132,13 +138,17 @@ class ChunkingService:
     def _split_sentences(self, text: str) -> List[str]:
         """Split text into sentences using regex boundary detection."""
         # Replace common abbreviations that fool period detection
-        text = re.sub(r"\b(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|vs|etc|No|Vol|Fig)\.", r"\1<ABBR>", text)
+        text = re.sub(
+            r"\b(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|vs|etc|No|Vol|Fig)\.", r"\1<ABBR>", text
+        )
 
         # Split on sentence boundaries
         raw_sentences = _SENTENCE_BOUNDARY.split(text)
 
         # Restore abbreviation dots
-        sentences = [s.replace("<ABBR>", ".").strip() for s in raw_sentences if s.strip()]
+        sentences = [
+            s.replace("<ABBR>", ".").strip() for s in raw_sentences if s.strip()
+        ]
         return sentences
 
     def _group_into_chunks(
@@ -198,7 +208,9 @@ class ChunkingService:
 
         return chunks
 
-    def _get_overlap_sentences(self, sentences: List[str], target_words: int) -> List[str]:
+    def _get_overlap_sentences(
+        self, sentences: List[str], target_words: int
+    ) -> List[str]:
         """Return the tail sentences that total approximately target_words words."""
         result = []
         word_count = 0
@@ -228,7 +240,10 @@ class ChunkingService:
 
     def _build_page_map(self, pages: List[PageContent]) -> List[tuple]:
         """Build sorted list of (char_start, char_end, page_number) for binary search."""
-        return [(p.char_start, p.char_end, p.page_number) for p in sorted(pages, key=lambda p: p.char_start)]
+        return [
+            (p.char_start, p.char_end, p.page_number)
+            for p in sorted(pages, key=lambda p: p.char_start)
+        ]
 
     def _get_page_numbers(
         self, char_start: int, char_end: int, page_map: List[tuple]
@@ -251,8 +266,10 @@ class ChunkingService:
             for match in pattern.finditer(text):
                 heading_text = match.group(0).strip()
                 # Clean up heading text
-                heading_text = re.sub(r"^#+\s*", "", heading_text)          # Remove markdown #
-                heading_text = re.sub(r"^\d+(?:\.\d+)*\s*", "", heading_text)  # Remove numbering
+                heading_text = re.sub(r"^#+\s*", "", heading_text)  # Remove markdown #
+                heading_text = re.sub(
+                    r"^\d+(?:\.\d+)*\s*", "", heading_text
+                )  # Remove numbering
                 if 3 <= len(heading_text) <= 100:
                     headings.append((match.start(), heading_text))
 

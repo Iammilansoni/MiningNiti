@@ -4,7 +4,7 @@ Mining-specific Named Entity Recognition
 """
 
 import logging
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 from app.agents.base import BaseAgent
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class EntityExtractorAgent(BaseAgent):
     """
     Named Entity Recognition Agent for Mining Documents.
-    
+
     Extracts mining-specific entities:
     - Equipment names and models
     - Chemical compounds and gases
@@ -23,7 +23,11 @@ class EntityExtractorAgent(BaseAgent):
     - Dates and schedules
     - Regulatory references
     """
-    
+
+    def __init__(self):
+        # Cerebras: 1M tokens/day free, 2600+ TPS, 60K TPM — better for high-volume extraction than Groq
+        super().__init__(model_name="gpt-oss-120b", provider="cerebras")
+
     @property
     def system_prompt(self) -> str:
         return """You are a named entity extraction agent specialized in mining documents.
@@ -71,8 +75,10 @@ Extract the following entity types:
 
 Be precise and avoid duplicates. Extract exactly as written in the document.
 """
-    
-    async def analyze(self, text: str, context: Optional[Dict] = None) -> Dict[str, Any]:
+
+    async def analyze(
+        self, text: str, context: Optional[Dict] = None
+    ) -> Dict[str, Any]:
         """
         Extract named entities from document.
 
@@ -112,7 +118,7 @@ Notes:
         }
         entities["entity_count"] = sum(len(v) for v in entities.values())
         return entities
-    
+
     def _deduplicate(self, items: List[str]) -> List[str]:
         """Remove duplicates while preserving order"""
         seen = set()
