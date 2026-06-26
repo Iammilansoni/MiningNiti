@@ -1,14 +1,21 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo, useState, useCallback } from 'react';
 import { useChatStream } from '@/hooks/use-chat-stream';
 import { MessageSquare, Send, StopCircle, Sparkles, User, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Citation } from '@/components/ui/citation';
 import ReactMarkdown from 'react-markdown';
+import dynamic from 'next/dynamic';
+
+const PDFViewerModal = dynamic(() => import('@/components/chat/PDFViewerModal').then(mod => mod.PDFViewerModal), {
+  ssr: false,
+});
 
 interface Props {
   documentId: string;
   documentTitle: string;
+  fileUrl?: string;
 }
 
 const SUGGESTIONS = [
@@ -18,11 +25,23 @@ const SUGGESTIONS = [
   'What actions are recommended?',
 ];
 
-export function AskDocumentAI({ documentId, documentTitle }: Props) {
+export function AskDocumentAI({ documentId, documentTitle, fileUrl }: Props) {
   const { messages, isLoading, error, sendMessage, stopGeneration } = useChatStream();
   const [input, setInput] = React.useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // PDF Viewer State
+  const [pdfViewerProps, setPdfViewerProps] = useState<{
+    isOpen: boolean;
+    fileUrl: string;
+    initialPage: number;
+    exactTextChunk: string;
+  }>({ isOpen: false, fileUrl: '', initialPage: 1, exactTextChunk: '' });
+
+  const handleCitationClick = useCallback((fUrl: string, page: number, exactTextChunk: string) => {
+    setPdfViewerProps({ isOpen: true, fileUrl: fUrl, initialPage: page, exactTextChunk });
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,7 +67,6 @@ export function AskDocumentAI({ documentId, documentTitle }: Props) {
   if (messages.length === 0) {
     return (
       <div className="flex flex-col gap-6">
-        {/* Intro */}
         <div className="rounded-xl border border-border bg-card p-6 text-center">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <MessageSquare className="w-6 h-6 text-primary" />
@@ -59,7 +77,6 @@ export function AskDocumentAI({ documentId, documentTitle }: Props) {
           </p>
         </div>
 
-        {/* Suggestions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {SUGGESTIONS.map((s) => (
             <button
@@ -73,7 +90,6 @@ export function AskDocumentAI({ documentId, documentTitle }: Props) {
           ))}
         </div>
 
-        {/* Input */}
         <InputBar
           value={input}
           onChange={setInput}
@@ -83,20 +99,26 @@ export function AskDocumentAI({ documentId, documentTitle }: Props) {
           isLoading={isLoading}
           inputRef={inputRef}
         />
+
+        <PDFViewerModal
+          isOpen={pdfViewerProps.isOpen}
+          onClose={() => setPdfViewerProps(prev => ({ ...prev, isOpen: false }))}
+          fileUrl={pdfViewerProps.fileUrl}
+          initialPage={pdfViewerProps.initialPage}
+          exactTextChunk={pdfViewerProps.exactTextChunk}
+        />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Context badge */}
       <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 border border-primary/15 rounded-lg text-sm">
         <FileText className="w-4 h-4 text-primary shrink-0" />
         <span className="text-muted-foreground">Answering based on:</span>
         <span className="font-medium text-foreground truncate">{documentTitle}</span>
       </div>
 
-      {/* Messages */}
       <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -115,9 +137,12 @@ export function AskDocumentAI({ documentId, documentTitle }: Props) {
               {msg.role === 'assistant' ? (
                 <>
                   {msg.content ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-1">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
+                    <AskMessageContent
+                      content={msg.content}
+                      sources={msg.sources}
+                      fileUrl={fileUrl}
+                      onCitationClick={handleCitationClick}
+                    />
                   ) : (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <div className="flex gap-1">
@@ -128,15 +153,24 @@ export function AskDocumentAI({ documentId, documentTitle }: Props) {
                       Thinking...
                     </div>
                   )}
-                  {/* Sources */}
                   {msg.sources && msg.sources.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-border/50">
-                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Sources</p>
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Sources Cited</p>
                       <div className="flex flex-wrap gap-1.5">
                         {msg.sources.map((src, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-background border border-border rounded text-[10px] text-muted-foreground font-medium">
-                            {src.file_name} • p.{src.page_numbers?.[0] ?? '?'}
-                          </span>
+                          <Citation
+                            key={i}
+                            fileName={src.file_name}
+                            documentId={src.document_id}
+                            pageNumbers={src.page_numbers}
+                            onClick={() => {
+                              handleCitationClick(
+                                src.file_url || fileUrl || '',
+                                src.page_numbers?.[0] || 1,
+                                src.exact_text_chunk || ''
+                              );
+                            }}
+                          />
                         ))}
                       </div>
                     </div>
@@ -161,7 +195,6 @@ export function AskDocumentAI({ documentId, documentTitle }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <InputBar
         value={input}
         onChange={setInput}
@@ -171,9 +204,97 @@ export function AskDocumentAI({ documentId, documentTitle }: Props) {
         isLoading={isLoading}
         inputRef={inputRef}
       />
+
+      <PDFViewerModal
+        isOpen={pdfViewerProps.isOpen}
+        onClose={() => setPdfViewerProps(prev => ({ ...prev, isOpen: false }))}
+        fileUrl={pdfViewerProps.fileUrl}
+        initialPage={pdfViewerProps.initialPage}
+        exactTextChunk={pdfViewerProps.exactTextChunk}
+      />
     </div>
   );
 }
+
+// ── Inline citation rendering (same pattern as ChatMessage.tsx) ─────────────
+
+function AskMessageContent({
+  content,
+  sources,
+  fileUrl: docFileUrl,
+  onCitationClick,
+}: {
+  content: string;
+  sources?: any[];
+  fileUrl?: string;
+  onCitationClick: (fileUrl: string, page: number, exactTextChunk: string) => void;
+}) {
+  const processedContent = useMemo(() => {
+    if (!content) return '';
+    return content.replace(
+      /\[(.*?)\]/g,
+      (match, contentStr) => {
+        const parts = contentStr.split(',');
+        const fileCandidate = parts[0].trim();
+        let page = 1;
+
+        if (parts.length > 1) {
+          const pageMatch = parts[1].match(/\d+/);
+          if (pageMatch) page = parseInt(pageMatch[0], 10);
+        }
+
+        const source = sources?.find((s: any) =>
+          s.file_name.toLowerCase() === fileCandidate.toLowerCase() ||
+          s.document_title.toLowerCase() === fileCandidate.toLowerCase() ||
+          fileCandidate.toLowerCase().includes(s.file_name.toLowerCase())
+        );
+
+        if (source) {
+          return `[${contentStr}](citation://${encodeURIComponent(source.file_name)}/${page})`;
+        }
+        return match;
+      }
+    );
+  }, [content, sources]);
+
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-1">
+      <ReactMarkdown
+        urlTransform={(value) => value}
+        components={{
+          a: ({ href, children, ...props }) => {
+            if (href?.startsWith('citation://')) {
+              const parts = href.replace('citation://', '').split('/');
+              const file = decodeURIComponent(parts[0]);
+              const page = parseInt(parts[1], 10);
+
+              const source = sources?.find((s: any) => s.file_name.toLowerCase() === file.toLowerCase());
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = source?.file_url || docFileUrl || '';
+                    if (url) onCitationClick(url, page, source?.exact_text_chunk || '');
+                  }}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium transition-all duration-200 mx-1 border cursor-pointer align-baseline bg-primary/20 text-blue-300 border-primary/30 hover:bg-primary/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:-translate-y-[1px]"
+                  title="View in document"
+                >
+                  {children}
+                </button>
+              );
+            }
+            return <a className="text-blue-500 hover:underline font-medium" target="_blank" rel="noopener noreferrer" href={href} {...props}>{children}</a>;
+          },
+        }}
+      >
+        {processedContent}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+// ── Input Bar ──────────────────────────────────────────────────────────────
 
 function InputBar({
   value, onChange, onKeyDown, onSend, onStop, isLoading, inputRef,

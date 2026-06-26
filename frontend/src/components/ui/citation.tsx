@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface CitationProps extends React.HTMLAttributes<HTMLSpanElement> {
@@ -15,12 +15,10 @@ export function Citation({
   className,
   ...props
 }: CitationProps) {
-  // Format page numbers like "Pages 12-13" or "Page 5"
   const formatPages = (pages: number[]) => {
     if (!pages || pages.length === 0) return '';
-    if (pages.length === 1) return `p. ${pages[0]}`;
-    
-    // Check if contiguous
+    if (pages.length === 1) return `p.${pages[0]}`;
+
     const sorted = [...pages].sort((a, b) => a - b);
     let contiguous = true;
     for (let i = 1; i < sorted.length; i++) {
@@ -29,34 +27,37 @@ export function Citation({
         break;
       }
     }
-    
+
     if (contiguous && sorted.length > 1) {
-      return `pp. ${sorted[0]}-${sorted[sorted.length - 1]}`;
+      return `pp.${sorted[0]}-${sorted[sorted.length - 1]}`;
     }
-    
-    return `pp. ${sorted.join(', ')}`;
+
+    return `pp.${sorted.join(', ')}`;
   };
 
   const pageStr = formatPages(pageNumbers);
 
   return (
-    <span 
+    <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium cursor-pointer transition-colors",
-        "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary-foreground border border-primary/20 hover:border-primary/40",
-        "hover-lift shadow-sm",
+        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all duration-150",
+        "bg-primary/10 text-primary border border-primary/15",
+        "hover:bg-primary/20 hover:border-primary/30 hover:shadow-sm",
+        "active:scale-[0.97]",
         className
       )}
       title={`Source: ${fileName}${pageNumbers.length ? ` (Pages: ${pageNumbers.join(', ')})` : ''}`}
-      onClick={() => {
-        // Future: Trigger a viewer modal or side-panel with the specific document and page
-        console.log(`View citation: ${fileName}`, pageNumbers);
+      onClick={(e) => {
+        if (props.onClick) {
+          props.onClick(e as any);
+        }
       }}
       {...props}
     >
-      <FileText className="w-3 h-3" />
-      <span className="max-w-[120px] truncate">{fileName.replace(/\.pdf$/i, '')}</span>
-      {pageStr && <span className="opacity-75">{pageStr}</span>}
+      <FileText className="w-3 h-3 opacity-70" />
+      <span className="max-w-[140px] truncate">{fileName.replace(/\.pdf$/i, '')}</span>
+      {pageStr && <span className="opacity-60 text-[10px]">{pageStr}</span>}
+      <ExternalLink className="w-2.5 h-2.5 opacity-40" />
     </span>
   );
 }
