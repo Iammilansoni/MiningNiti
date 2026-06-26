@@ -17,7 +17,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-15+-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
-[![Gemini AI](https://img.shields.io/badge/AI-Gemini_2.0_Flash-FF6D00?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev)
+[![Gemini AI](https://img.shields.io/badge/AI-Gemini_2.5_Flash-FF6D00?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-miningniti.vercel.app-000000?style=flat-square&logo=vercel&logoColor=white)](https://miningniti.vercel.app)
@@ -42,7 +42,7 @@
 
 ---
 
-MiningNiti transforms coal mining operations with intelligent document processing, safety compliance analysis, and AI-powered knowledge extraction — built with a production-grade multi-agent system on Google Gemini 2.0.
+MiningNiti transforms coal mining operations with intelligent document processing, safety compliance analysis, and AI-powered knowledge extraction — built with a production-grade multi-agent system on Google Gemini 2.5 and other leading AI providers.
 
 ---
 
@@ -73,6 +73,25 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
 | **Entity Extractor** | Mining NER | Equipment, chemicals, locations, regulations, personnel, dates |
 | **Summarizer Agent** | Executive Summaries | Concise summaries with key action items |
 | **Orchestrator** | Pipeline Coordination | Runs agents in parallel for optimal performance |
+
+### 🧠 AI Providers & Models
+> ⚠ **Gemini 2.0 Flash deprecated June 1 2026 — this project uses 2.5 Flash**
+
+| Agent / Service | Provider | Model |
+|-----------------|----------|-------|
+| Embeddings | Gemini | `text-embedding-004` |
+| Chat Service | Gemini | `gemini-2.5-flash` |
+| Summarizer Agent | Gemini | `gemini-2.5-flash-lite` |
+| Classifier Agent | Groq | `llama-3.3-70b-versatile` |
+| Entity Extractor | Cerebras | `llama-4-scout` |
+| Safety Analyzer | Mistral | `magistral-small-latest` |
+| Fallback | OpenRouter | `deepseek/deepseek-r1:free` |
+
+#### Free Tier Providers Used
+- **Cerebras**: 1M tokens/day free limit (excellent for high-volume extraction)
+- **Groq**: Free tier for fast Classification
+- **Mistral**: Free tier for Safety Analysis
+- **OpenRouter**: Free tier for DeepSeek Fallback
 
 ### 📊 Enterprise Dashboard
 - Real-time document processing status
@@ -149,7 +168,7 @@ MiningNiti uses **Agentic AI** with specialized mining domain agents to:
 | **UI Components** | shadcn/ui + Tailwind CSS | v4 |
 | **Backend** | FastAPI + Python | 3.11+ |
 | **Database** | PostgreSQL + pgvector | 16+ |
-| **AI / LLM** | Google Gemini | 2.0 Flash |
+| **AI / LLM** | Google Gemini, Cerebras, Groq, Mistral | 2.5 Flash, Llama, Magistral |
 | **Auth** | Clerk | 6.x |
 | **Rate Limiting** | slowapi | 0.1.9 |
 | **File Uploads** | UploadThing | Latest |
@@ -178,7 +197,8 @@ cd MiningNiti
 cp backend/.env.example backend/.env
 cp frontend/.env.local.example frontend/.env.local
 
-# Fill in your API keys in both files
+# Fill in your Required API Keys in both files
+# You will need: GEMINI_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY, and CEREBRAS_API_KEY
 ```
 
 ### 2. Backend Setup
