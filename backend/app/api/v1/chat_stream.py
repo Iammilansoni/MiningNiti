@@ -12,15 +12,16 @@ Delivers three event types to the client:
 import json
 import logging
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
 from app.api.deps import get_current_user_id
-from app.models.chat import ChatSession, ChatMessage
+from app.config import settings
+from app.db.session import get_db
+from app.models.chat import ChatMessage, ChatSession
 from app.schemas.chat import ChatRequest
 
 logger = logging.getLogger(__name__)
@@ -57,12 +58,16 @@ async def stream_chat(
 
     # Get or create session
     if request.session_id:
-        session = db.query(ChatSession).filter(
-            ChatSession.id == request.session_id,
-            ChatSession.user_id == user_id
-        ).first()
+        session = (
+            db.query(ChatSession)
+            .filter(
+                ChatSession.id == request.session_id, ChatSession.user_id == user_id
+            )
+            .first()
+        )
         if not session:
             from app.core.exceptions import NotFoundError
+
             raise NotFoundError("Chat session", request.session_id)
     else:
         session = ChatSession(user_id=user_id, title="New Chat")
@@ -134,15 +139,17 @@ async def stream_chat(
                     role="assistant",
                     content=response_text,
                     sources=sources if request.include_sources else [],
-                    model_used="gemini-2.0-flash",
+                    model_used=settings.GEMINI_MODEL,
                     tokens_used=tokens_used,
                 )
                 db.add(assistant_message)
 
                 # Auto-title on first message
-                msg_count = db.query(ChatMessage).filter(
-                    ChatMessage.session_id == session.id
-                ).count()
+                msg_count = (
+                    db.query(ChatMessage)
+                    .filter(ChatMessage.session_id == session.id)
+                    .count()
+                )
                 if msg_count <= 2:
                     session.title = request.content[:50] + (
                         "..." if len(request.content) > 50 else ""

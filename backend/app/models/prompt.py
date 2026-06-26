@@ -5,11 +5,12 @@ User-defined AI prompts for specialized mining document analysis
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Text, Boolean, ForeignKey, Integer
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.models.base import Base, UUIDMixin, TimestampMixin
+from app.models.base import Base, TimestampMixin, UUIDMixin
 
 
 class CustomPrompt(Base, UUIDMixin, TimestampMixin):
@@ -22,7 +23,9 @@ class CustomPrompt(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "custom_prompts"
 
     # Owner
-    user_id = Column(String(255), ForeignKey("users.clerk_user_id"), nullable=False, index=True)
+    user_id = Column(
+        String(255), ForeignKey("users.clerk_user_id"), nullable=False, index=True
+    )
 
     # Prompt info
     name = Column(String(255), nullable=False)
@@ -30,7 +33,9 @@ class CustomPrompt(Base, UUIDMixin, TimestampMixin):
     description = Column(Text, nullable=True)
 
     # Category/type for UI grouping
-    category = Column(String(100), nullable=True)  # e.g., "safety", "compliance", "equipment"
+    category = Column(
+        String(100), nullable=True
+    )  # e.g., "safety", "compliance", "equipment"
 
     # Whether this is a default/system prompt
     is_default = Column(Boolean, default=False, nullable=False)

@@ -4,6 +4,7 @@ Background task queue for async document processing
 """
 
 import logging
+
 from celery import Celery
 
 from app.config import settings

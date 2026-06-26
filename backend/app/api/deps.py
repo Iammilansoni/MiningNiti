@@ -6,15 +6,16 @@ Shared dependencies for FastAPI endpoints
 import hashlib
 import logging
 from typing import Optional
+
 from fastapi import Depends, Header, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db, SessionLocal
-from app.core.security import verify_jwt_token, extract_user_id, extract_user_email
 from app.core.exceptions import AuthenticationError
+from app.core.security import extract_user_email, extract_user_id, verify_jwt_token
+from app.db.session import SessionLocal, get_db
+from app.models.audit import AuditAction, create_audit_log
 from app.models.user import User
-from app.models.audit import create_audit_log, AuditAction
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +24,13 @@ def _anonymize_user_id(user_id: str) -> str:
     """Create a truncated hash of user_id for safe logging."""
     return hashlib.sha256(user_id.encode()).hexdigest()[:12]
 
+
 # Security scheme
 security = HTTPBearer()
 
 
 async def get_current_user_id(
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
     """
     Dependency to extract and verify user ID from JWT.
@@ -40,26 +42,22 @@ async def get_current_user_id(
 
 
 async def get_current_user(
-    user_id: str = Depends(get_current_user_id),
-    db: Session = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)
 ) -> User:
     """
     Dependency to get current user model from database.
     Creates user record if it doesn't exist (first login).
     """
     user = db.query(User).filter(User.clerk_user_id == user_id).first()
-    
+
     if not user:
         # Auto-create user on first access
-        user = User(
-            clerk_user_id=user_id,
-            is_active=True
-        )
+        user = User(clerk_user_id=user_id, is_active=True)
         db.add(user)
         db.commit()
         db.refresh(user)
         logger.info(f"Created new user: {_anonymize_user_id(user_id)}")
-    
+
     return user
 
 
@@ -67,7 +65,7 @@ async def get_optional_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(
         HTTPBearer(auto_error=False)
     ),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> Optional[User]:
     """
     Dependency for endpoints that work with or without auth.
@@ -75,7 +73,7 @@ async def get_optional_user(
     """
     if not credentials:
         return None
-    
+
     try:
         token = credentials.credentials
         payload = await verify_jwt_token(token)
@@ -99,8 +97,7 @@ def get_user_agent(request: Request) -> str:
 
 
 async def audit_middleware(
-    request: Request,
-    user_id: str = Depends(get_current_user_id)
+    request: Request, user_id: str = Depends(get_current_user_id)
 ):
     """
     Middleware-like dependency to log API access.
@@ -111,5 +108,5 @@ async def audit_middleware(
     return {
         "user_id": user_id,
         "ip_address": get_client_ip(request),
-        "user_agent": get_user_agent(request)
+        "user_agent": get_user_agent(request),
     }

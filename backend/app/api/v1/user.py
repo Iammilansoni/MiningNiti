@@ -4,13 +4,14 @@ User profile management endpoints
 """
 
 import logging
-from typing import Optional, List
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user, get_current_user_id
 from app.db.session import get_db
-from app.api.deps import get_current_user_id, get_current_user
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ router = APIRouter()
 
 class UserProfileResponse(BaseModel):
     """User profile response"""
+
     clerk_user_id: str
     email: Optional[str] = None
     full_name: Optional[str] = None
@@ -36,6 +38,7 @@ class UserProfileResponse(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     """User profile update request"""
+
     full_name: Optional[str] = None
     company_name: Optional[str] = None
     company_role: Optional[str] = None

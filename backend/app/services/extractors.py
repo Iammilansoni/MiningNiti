@@ -21,18 +21,21 @@ logger = logging.getLogger(__name__)
 
 # ── Data structures ────────────────────────────────────────────────────────────
 
+
 @dataclass
 class PageContent:
     """Text content of a single page."""
-    page_number: int       # 1-indexed
-    text: str              # raw text of this page
-    char_start: int = 0    # character offset where this page starts in full_text
-    char_end: int = 0      # character offset where this page ends
+
+    page_number: int  # 1-indexed
+    text: str  # raw text of this page
+    char_start: int = 0  # character offset where this page starts in full_text
+    char_end: int = 0  # character offset where this page ends
 
 
 @dataclass
 class ExtractedDocument:
     """Result of text extraction from a document file."""
+
     full_text: str
     pages: List[PageContent]
     total_pages: int
@@ -46,75 +49,56 @@ class ExtractedDocument:
 
 # ── Extractors ─────────────────────────────────────────────────────────────────
 
+
 class PDFExtractor:
     """
-    Page-aware PDF text extraction using pdfminer.
+    Page-aware PDF text extraction using pypdf.
 
     Iterates page-by-page to build a per-page text map, which is then used
     by ChunkingService to annotate each chunk with its page numbers.
     """
 
     def extract(self, file_path: str) -> ExtractedDocument:
-        from pdfminer.high_level import extract_pages, extract_text
-        from pdfminer.layout import LTTextContainer
+        from pypdf import PdfReader
 
         pages: List[PageContent] = []
         char_offset = 0
 
         try:
-            for page_num, page_layout in enumerate(extract_pages(file_path), start=1):
-                page_text_parts = []
-                for element in page_layout:
-                    if isinstance(element, LTTextContainer):
-                        page_text_parts.append(element.get_text())
-
-                page_text = "".join(page_text_parts)
-                pages.append(PageContent(
-                    page_number=page_num,
-                    text=page_text,
-                    char_start=char_offset,
-                    char_end=char_offset + len(page_text),
-                ))
+            reader = PdfReader(file_path)
+            for page_num, page in enumerate(reader.pages, start=1):
+                page_text = page.extract_text() or ""
+                pages.append(
+                    PageContent(
+                        page_number=page_num,
+                        text=page_text,
+                        char_start=char_offset,
+                        char_end=char_offset + len(page_text),
+                    )
+                )
                 char_offset += len(page_text)
 
+            full_text = "".join(p.text for p in pages)
+
+            # Extract PDF metadata
+            metadata = {}
+            if reader.metadata:
+                for key, val in reader.metadata.items():
+                    if val:
+                        clean_key = key.lstrip("/").lower()
+                        metadata[clean_key] = str(val)
+
+            return ExtractedDocument(
+                full_text=full_text,
+                pages=pages,
+                total_pages=len(pages),
+                file_type="application/pdf",
+                metadata=metadata,
+            )
+
         except Exception as e:
-            logger.warning(f"Page-by-page extraction failed ({e}), falling back to full extraction")
-            # Fallback: extract full text without page boundaries
-            from pdfminer.high_level import extract_text as pdfminer_extract
-            full_text = pdfminer_extract(file_path) or ""
-            pages = [PageContent(page_number=1, text=full_text, char_start=0, char_end=len(full_text))]
-
-        full_text = "".join(p.text for p in pages)
-
-        # Extract PDF metadata
-        metadata = {}
-        try:
-            from pdfminer.pdfparser import PDFParser
-            from pdfminer.pdfdocument import PDFDocument
-            with open(file_path, "rb") as f:
-                parser = PDFParser(f)
-                doc = PDFDocument(parser)
-                if doc.info:
-                    raw_meta = doc.info[0]
-                    for key in ("Author", "Title", "CreationDate", "Subject"):
-                        if key in raw_meta:
-                            val = raw_meta[key]
-                            if isinstance(val, bytes):
-                                try:
-                                    val = val.decode("utf-8", errors="ignore")
-                                except Exception:
-                                    val = str(val)
-                            metadata[key.lower()] = val
-        except Exception:
-            pass  # metadata is nice-to-have, not required
-
-        return ExtractedDocument(
-            full_text=full_text,
-            pages=pages,
-            total_pages=len(pages),
-            file_type="application/pdf",
-            metadata=metadata,
-        )
+            logger.error(f"pypdf extraction failed: {e}", exc_info=True)
+            raise ValueError(f"Failed to extract text from PDF: {e}")
 
 
 class DocxExtractor:
@@ -139,17 +123,23 @@ class DocxExtractor:
             metadata={},
         )
 
-    def _approximate_pages(self, text: str, chars_per_page: int = 3000) -> List[PageContent]:
+    def _approximate_pages(
+        self, text: str, chars_per_page: int = 3000
+    ) -> List[PageContent]:
         pages = []
         for i in range(0, max(1, len(text)), chars_per_page):
-            page_text = text[i:i + chars_per_page]
-            pages.append(PageContent(
-                page_number=len(pages) + 1,
-                text=page_text,
-                char_start=i,
-                char_end=i + len(page_text),
-            ))
-        return pages or [PageContent(page_number=1, text=text, char_start=0, char_end=len(text))]
+            page_text = text[i : i + chars_per_page]
+            pages.append(
+                PageContent(
+                    page_number=len(pages) + 1,
+                    text=page_text,
+                    char_start=i,
+                    char_end=i + len(page_text),
+                )
+            )
+        return pages or [
+            PageContent(page_number=1, text=text, char_start=0, char_end=len(text))
+        ]
 
 
 class PlainTextExtractor:
@@ -163,17 +153,24 @@ class PlainTextExtractor:
         chars_per_page = 3000
         pages = []
         for i in range(0, max(1, len(full_text)), chars_per_page):
-            page_text = full_text[i:i + chars_per_page]
-            pages.append(PageContent(
-                page_number=len(pages) + 1,
-                text=page_text,
-                char_start=i,
-                char_end=i + len(page_text),
-            ))
+            page_text = full_text[i : i + chars_per_page]
+            pages.append(
+                PageContent(
+                    page_number=len(pages) + 1,
+                    text=page_text,
+                    char_start=i,
+                    char_end=i + len(page_text),
+                )
+            )
 
         return ExtractedDocument(
             full_text=full_text,
-            pages=pages or [PageContent(page_number=1, text=full_text, char_start=0, char_end=len(full_text))],
+            pages=pages
+            or [
+                PageContent(
+                    page_number=1, text=full_text, char_start=0, char_end=len(full_text)
+                )
+            ],
             total_pages=max(1, len(pages)),
             file_type="text/plain",
         )
@@ -213,6 +210,7 @@ async def download_and_extract(file_url: str, file_type: str) -> ExtractedDocume
 
     # Validate URL scheme before downloading (SSRF prevention)
     from urllib.parse import urlparse
+
     parsed = urlparse(file_url)
     if parsed.scheme not in ("https", "http"):
         raise ValueError(f"Unsupported URL scheme: {parsed.scheme}")

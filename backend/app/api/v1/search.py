@@ -11,18 +11,18 @@ Supports:
 
 import asyncio
 import logging
-from typing import Optional, List
 from datetime import datetime
-
-from fastapi import APIRouter, Depends, Query as FastAPIQuery
-from sqlalchemy.orm import Session
-from sqlalchemy import text
+from typing import List, Optional
 
 import google.generativeai as genai
+from fastapi import APIRouter, Depends
+from fastapi import Query as FastAPIQuery
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from app.db.session import get_db
 from app.api.deps import get_current_user_id
 from app.config import settings
+from app.db.session import get_db
 from app.models.document import DocumentCategory
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,9 @@ async def _get_query_embedding(text_input: str) -> List[float]:
 
 @router.get("")
 async def semantic_search(
-    q: str = FastAPIQuery(..., min_length=2, description="Natural language search query"),
+    q: str = FastAPIQuery(
+        ..., min_length=2, description="Natural language search query"
+    ),
     limit: int = FastAPIQuery(default=20, ge=1, le=50),
     category: Optional[str] = FastAPIQuery(default=None),
     user_id: str = Depends(get_current_user_id),
@@ -98,7 +100,8 @@ async def semantic_search(
         params["category"] = category
 
     # pgvector cosine similarity search with relevance threshold
-    sql = text(f"""
+    sql = text(
+        f"""
         SELECT
             de.id AS chunk_id,
             de.chunk_text,
@@ -121,7 +124,8 @@ async def semantic_search(
           AND (1 - (de.embedding <=> CAST(:embedding AS vector))) >= :threshold
         ORDER BY de.embedding <=> CAST(:embedding AS vector)
         LIMIT :limit
-    """)
+    """
+    )
 
     try:
         rows = db.execute(sql, params).fetchall()
@@ -134,24 +138,26 @@ async def semantic_search(
     for row in rows:
         pages = row.page_numbers or ([row.start_page] if row.start_page else [])
         page_str = (
-            f"Pages {pages[0]}–{pages[-1]}" if len(pages) > 1
-            else f"Page {pages[0]}" if pages
-            else "Unknown page"
+            f"Pages {pages[0]}–{pages[-1]}"
+            if len(pages) > 1
+            else f"Page {pages[0]}" if pages else "Unknown page"
         )
-        results.append({
-            "chunk_id": str(row.chunk_id),
-            "document_id": str(row.document_id),
-            "document_title": row.document_title,
-            "file_name": row.file_name,
-            "category": row.category,
-            "safety_score": row.safety_score,
-            "chunk_text": row.chunk_text,
-            "section_title": row.section_title,
-            "page_numbers": pages,
-            "page_label": page_str,
-            "relevance_score": round(float(row.similarity), 4),
-            "relevance_percent": round(float(row.similarity) * 100, 1),
-        })
+        results.append(
+            {
+                "chunk_id": str(row.chunk_id),
+                "document_id": str(row.document_id),
+                "document_title": row.document_title,
+                "file_name": row.file_name,
+                "category": row.category,
+                "safety_score": row.safety_score,
+                "chunk_text": row.chunk_text,
+                "section_title": row.section_title,
+                "page_numbers": pages,
+                "page_label": page_str,
+                "relevance_score": round(float(row.similarity), 4),
+                "relevance_percent": round(float(row.similarity) * 100, 1),
+            }
+        )
 
     return {
         "query": q,

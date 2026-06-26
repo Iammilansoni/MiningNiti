@@ -3,8 +3,9 @@ Common Schemas
 Shared response models and utilities
 """
 
-from typing import Optional, List, Generic, TypeVar, Any
 from datetime import datetime
+from typing import Any, Generic, List, Optional, TypeVar
+
 from pydantic import BaseModel, Field
 
 T = TypeVar("T")
@@ -12,6 +13,7 @@ T = TypeVar("T")
 
 class HealthResponse(BaseModel):
     """Health check response"""
+
     status: str = "healthy"
     version: str
     environment: str
@@ -21,6 +23,7 @@ class HealthResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Standard error response"""
+
     error: str
     code: str
     details: Optional[dict] = None
@@ -29,6 +32,7 @@ class ErrorResponse(BaseModel):
 
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response wrapper"""
+
     items: List[T]
     total: int
     page: int = 1
@@ -40,6 +44,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
 class JobStatusResponse(BaseModel):
     """Background job status response"""
+
     job_id: str
     status: str  # pending, processing, completed, failed
     progress: Optional[int] = None  # 0-100
@@ -52,6 +57,7 @@ class JobStatusResponse(BaseModel):
 
 class SuccessResponse(BaseModel):
     """Generic success response"""
+
     success: bool = True
     message: str = "Operation completed successfully"
     data: Optional[Any] = None

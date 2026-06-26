@@ -9,27 +9,35 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from fastapi import HTTPException
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 
-from app.config import settings
 from app.api.v1 import api_router
-from app.db.session import init_db, check_db_connection
+from app.config import settings
 from app.core.exceptions import MiningNitiException
+from app.db.session import check_db_connection, init_db
 
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+# Suppress SQLAlchemy's extremely verbose SQL echo in debug mode —
+# it drowns out real application logs. Set to WARNING to only see errors.
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.dialects").setLevel(logging.WARNING)
+# Also suppress httpcore connection-level debug spam
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.INFO)
 
 
 @asynccontextmanager
@@ -38,6 +46,13 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
+
+    import asyncio
+
+    from app.services.queue import compliance_worker, document_worker
+
+    worker_task = asyncio.create_task(document_worker())
+    compliance_worker_task = asyncio.create_task(compliance_worker())
 
     # Check database connection
     if check_db_connection():
@@ -53,20 +68,46 @@ async def lifespan(app: FastAPI):
         try:
             from app.db.session import get_db_context
             from app.models.document import Document, DocumentStatus
+
             with get_db_context() as db:
-                stuck_docs = db.query(Document).filter(
-                    Document.status.in_(['processing', 'analyzing'])
-                ).all()
+                stuck_docs = (
+                    db.query(Document)
+                    .filter(Document.status.in_(["processing", "analyzing"]))
+                    .all()
+                )
                 if stuck_docs:
                     for doc in stuck_docs:
                         doc.status = DocumentStatus.PENDING
                         doc.processing_error = "Reset after server restart"
                     db.commit()
-                    logger.info(f"Recovery: reset {len(stuck_docs)} stuck document(s) to PENDING")
+                    logger.info(
+                        f"Recovery: reset {len(stuck_docs)} stuck document(s) to PENDING"
+                    )
                 else:
                     logger.info("Recovery: no stuck documents found")
         except Exception as e:
             logger.warning(f"Document recovery warning: {e}")
+
+        # Recovery: reset compliance audits stuck in running state
+        try:
+            from app.models.compliance import AuditStatus, ComplianceAudit
+
+            with get_db_context() as db:
+                stuck_audits = (
+                    db.query(ComplianceAudit)
+                    .filter(ComplianceAudit.status.in_(["running"]))
+                    .all()
+                )
+                if stuck_audits:
+                    for audit in stuck_audits:
+                        audit.status = AuditStatus.PENDING
+                        audit.processing_error = "Reset after server restart"
+                    db.commit()
+                    logger.info(
+                        f"Recovery: reset {len(stuck_audits)} stuck audit(s) to PENDING"
+                    )
+        except Exception as e:
+            logger.warning(f"Audit recovery warning: {e}")
     else:
         logger.warning("Database connection failed - some features may not work")
 
@@ -74,6 +115,16 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down application")
+    worker_task.cancel()
+    compliance_worker_task.cancel()
+    try:
+        await worker_task
+    except asyncio.CancelledError:
+        pass
+    try:
+        await compliance_worker_task
+    except asyncio.CancelledError:
+        pass
 
 
 # Create FastAPI application
@@ -102,7 +153,7 @@ specifically designed for the coal mining industry.
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Rate Limiter
@@ -126,6 +177,7 @@ app.add_middleware(
 
 # Exception Handlers
 
+
 def _get_cors_headers(request: Request) -> dict:
     """
     Build CORS headers to attach to error responses.
@@ -135,7 +187,9 @@ def _get_cors_headers(request: Request) -> dict:
     """
     origin = request.headers.get("origin", "")
     allowed_origins = settings.CORS_ORIGINS + _EXTRA_ORIGINS
-    if origin in allowed_origins or any(origin.endswith(o.lstrip("*")) for o in allowed_origins if "*" in o):
+    if origin in allowed_origins or any(
+        origin.endswith(o.lstrip("*")) for o in allowed_origins if "*" in o
+    ):
         return {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
@@ -163,7 +217,7 @@ async def miningniti_exception_handler(request: Request, exc: MiningNitiExceptio
             "error": exc.message,
             "code": exc.code,
             "details": exc.details,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         },
         headers=_get_cors_headers(request),
     )
@@ -178,7 +232,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error": "Validation failed",
             "code": "VALIDATION_ERROR",
             "details": exc.errors(),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         },
         headers=_get_cors_headers(request),
     )
@@ -193,8 +247,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={
             "error": "Internal server error",
             "code": "INTERNAL_SERVER_ERROR",
-            "timestamp": datetime.utcnow().isoformat()
-        }
+            "timestamp": datetime.utcnow().isoformat(),
+        },
+        headers=_get_cors_headers(request),
     )
 
 
@@ -211,7 +266,7 @@ async def root():
         "version": settings.APP_VERSION,
         "description": "AI Document Intelligence for Mining Industry",
         "docs": "/docs",
-        "health": f"{settings.API_V1_PREFIX}/health"
+        "health": f"{settings.API_V1_PREFIX}/health",
     }
 
 
@@ -224,9 +279,5 @@ async def health():
 # Run with: uvicorn app.main:app --reload
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.DEBUG
-    )
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)

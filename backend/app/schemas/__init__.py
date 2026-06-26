@@ -3,30 +3,26 @@ Pydantic Schemas
 Request and response models for API validation
 """
 
-from app.schemas.document import (
-    DocumentCreate,
-    DocumentResponse,
-    DocumentListResponse,
-    DocumentUploadResponse,
-    DocumentAnalysisResponse,
-)
+from app.schemas.analytics import DashboardStats, DocumentAnalytics, SafetyAnalytics
 from app.schemas.chat import (
+    ChatMessageResponse,
     ChatRequest,
     ChatResponse,
     ChatSessionCreate,
     ChatSessionResponse,
-    ChatMessageResponse,
-)
-from app.schemas.analytics import (
-    DashboardStats,
-    DocumentAnalytics,
-    SafetyAnalytics,
 )
 from app.schemas.common import (
-    HealthResponse,
     ErrorResponse,
-    PaginatedResponse,
+    HealthResponse,
     JobStatusResponse,
+    PaginatedResponse,
+)
+from app.schemas.document import (
+    DocumentAnalysisResponse,
+    DocumentCreate,
+    DocumentListResponse,
+    DocumentResponse,
+    DocumentUploadResponse,
 )
 
 __all__ = [

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class ClassifierAgent(BaseAgent):
     """
     Document Classification Agent.
-    
+
     Categorizes mining documents into predefined categories:
     - Safety protocols
     - Equipment manuals
@@ -28,7 +28,10 @@ class ClassifierAgent(BaseAgent):
     - Permits
     - Maintenance logs
     """
-    
+
+    def __init__(self):
+        super().__init__(model_name="llama-3.3-70b-versatile", provider="groq")
+
     @property
     def system_prompt(self) -> str:
         return """You are a document classification agent specialized in the mining industry.
@@ -53,8 +56,10 @@ Consider:
 - Purpose and intended audience
 - Regulatory references
 """
-    
-    async def analyze(self, text: str, context: Optional[Dict] = None) -> Dict[str, Any]:
+
+    async def analyze(
+        self, text: str, context: Optional[Dict] = None
+    ) -> Dict[str, Any]:
         """
         Classify document into mining category.
 

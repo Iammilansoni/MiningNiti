@@ -7,7 +7,7 @@ Processes up to 15000 chars of document content (vs 5000 in v1).
 """
 
 import logging
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 from app.agents.base import BaseAgent
 
@@ -24,6 +24,11 @@ class SafetyAnalyzerAgent(BaseAgent):
     - Missing safety requirements
     - Recommendations for improvement
     """
+
+    def __init__(self):
+        # magistral-small-latest is a reasoning model, not a standard chat model.
+        # It uses chain-of-thought internally for compliance scoring.
+        super().__init__(model_name="magistral-small-latest", provider="mistral")
 
     @property
     def system_prompt(self) -> str:
@@ -52,7 +57,9 @@ Analyze documents for:
 Be thorough but practical. Focus on actionable findings.
 """
 
-    async def analyze(self, text: str, context: Optional[Dict] = None) -> Dict[str, Any]:
+    async def analyze(
+        self, text: str, context: Optional[Dict] = None
+    ) -> Dict[str, Any]:
         """
         Analyze document for safety compliance and hazards.
 
@@ -76,33 +83,33 @@ Be thorough but practical. Focus on actionable findings.
             f"{self._prepare_text(text)}\n\n"
             "Evaluate and respond with a JSON object:\n"
             "{\n"
-            "  \"score\": <0-100 overall safety score>,\n"
-            "  \"status\": \"<compliant|warning|violation>\",\n"
-            "  \"confidence\": <0.0-1.0>,\n"
-            "  \"hazards\": [\n"
+            '  "score": <0-100 overall safety score>,\n'
+            '  "status": "<compliant|warning|violation>",\n'
+            '  "confidence": <0.0-1.0>,\n'
+            '  "hazards": [\n'
             "    {\n"
-            "      \"type\": \"<hazard category>\",\n"
-            "      \"severity\": \"<low|medium|high|critical>\",\n"
-            "      \"description\": \"<specific hazard details>\",\n"
-            "      \"regulation\": \"<relevant MSHA/OSHA/DGMS regulation if applicable>\"\n"
+            '      "type": "<hazard category>",\n'
+            '      "severity": "<low|medium|high|critical>",\n'
+            '      "description": "<specific hazard details>",\n'
+            '      "regulation": "<relevant MSHA/OSHA/DGMS regulation if applicable>"\n'
             "    }\n"
             "  ],\n"
-            "  \"recommendations\": [\"<specific actionable recommendation>\"],\n"
-            "  \"compliance_details\": {\n"
-            "    \"msha_compliant\": <true|false>,\n"
-            "    \"osha_compliant\": <true|false>,\n"
-            "    \"dgms_compliant\": <true|false>,\n"
-            "    \"missing_elements\": [\"<missing safety element>\"]\n"
+            '  "recommendations": ["<specific actionable recommendation>"],\n'
+            '  "compliance_details": {\n'
+            '    "msha_compliant": <true|false>,\n'
+            '    "osha_compliant": <true|false>,\n'
+            '    "dgms_compliant": <true|false>,\n'
+            '    "missing_elements": ["<missing safety element>"]\n'
             "  },\n"
-            "  \"reasoning\": {\n"
-            "    \"score_explanation\": \"<1-2 sentence explanation of why this specific score was assigned>\",\n"
-            "    \"positive_factors\": [\"<safety elements that contributed positively to the score>\"],\n"
-            "    \"negative_factors\": [\"<safety gaps or issues that reduced the score>\"],\n"
-            "    \"evidence\": [\n"
-            "      {\"text\": \"<exact quote or paraphrase from document>\", \"factor\": \"<positive|negative>\", \"impact\": \"<explanation>\"}\n"
+            '  "reasoning": {\n'
+            '    "score_explanation": "<1-2 sentence explanation of why this specific score was assigned>",\n'
+            '    "positive_factors": ["<safety elements that contributed positively to the score>"],\n'
+            '    "negative_factors": ["<safety gaps or issues that reduced the score>"],\n'
+            '    "evidence": [\n'
+            '      {"text": "<exact quote or paraphrase from document>", "factor": "<positive|negative>", "impact": "<explanation>"}\n'
             "    ]\n"
             "  },\n"
-            "  \"summary\": \"<brief safety assessment summary>\"\n"
+            '  "summary": "<brief safety assessment summary>"\n'
             "}\n\n"
             "Scoring guide:\n"
             "  80-100: Compliant, minimal concerns\n"
@@ -120,12 +127,14 @@ Be thorough but practical. Focus on actionable findings.
             "hazards": result.get("hazards", []),
             "recommendations": result.get("recommendations", []),
             "compliance_details": result.get("compliance_details", {}),
-            "reasoning": result.get("reasoning", {
-                "score_explanation": "",
-                "positive_factors": [],
-                "negative_factors": [],
-                "evidence": [],
-            }),
+            "reasoning": result.get(
+                "reasoning",
+                {
+                    "score_explanation": "",
+                    "positive_factors": [],
+                    "negative_factors": [],
+                    "evidence": [],
+                },
+            ),
             "summary": result.get("summary", ""),
         }
-
