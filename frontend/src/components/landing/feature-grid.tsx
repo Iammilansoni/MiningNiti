@@ -204,13 +204,13 @@ function KnowledgeGraphDiagram() {
             {n.glow && (
               <motion.circle
                 cx={n.x} cy={n.y}
-                r={n.r + 5}
+                r={n.r + 6}
                 fill="none"
                 stroke={n.color}
                 strokeWidth="0.8"
-                opacity={0.25}
-                animate={{ r: [n.r + 4, n.r + 9, n.r + 4], opacity: [0.25, 0.1, 0.25] }}
+                animate={{ opacity: [0.25, 0.08, 0.25], scale: [1, 1.3, 1] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                style={{ transformOrigin: `${n.x}px ${n.y}px` }}
               />
             )}
             {/* Node circle */}
