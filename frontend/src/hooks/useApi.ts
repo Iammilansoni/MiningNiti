@@ -33,6 +33,11 @@ import {
     // User
     getUserProfile,
     updateUserProfile,
+    // Compliance
+    getComplianceAudits,
+    createComplianceAudit,
+    getComplianceAuditDetail,
+    deleteComplianceAudit,
     // Types
     type DashboardStats,
     type Document,
@@ -46,6 +51,9 @@ import {
     type SafetyAnalytics,
     type DocumentAnalytics,
     type JobStatus,
+    type ComplianceAudit,
+    type ComplianceAuditDetail,
+    type ComplianceAuditListResponse,
 } from '@/lib/api';
 
 // ─────────────────────────────────────────────
@@ -65,6 +73,8 @@ export const queryKeys = {
     chatMessages: (sessionId: string) => ['chatMessages', sessionId] as const,
     prompts: ['prompts'] as const,
     userProfile: ['userProfile'] as const,
+    complianceAudits: (params?: object) => ['complianceAudits', params] as const,
+    complianceAuditDetail: (id: string) => ['complianceAuditDetail', id] as const,
 };
 
 // ─────────────────────────────────────────────
@@ -376,6 +386,58 @@ export function useUpdateUserProfile() {
         ) => updateUserProfile(data, getToken),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.userProfile });
+        },
+    });
+}
+
+// ─────────────────────────────────────────────
+// Compliance Audits
+// ─────────────────────────────────────────────
+
+export function useComplianceAudits(params?: { page?: number; page_size?: number }) {
+    const { getToken } = useAuth();
+    return useQuery<ComplianceAuditListResponse>({
+        queryKey: queryKeys.complianceAudits(params),
+        queryFn: () => getComplianceAudits(getToken, params),
+        staleTime: 15_000,
+    });
+}
+
+export function useComplianceAuditDetail(auditId: string | null) {
+    const { getToken } = useAuth();
+    return useQuery<ComplianceAuditDetail>({
+        queryKey: queryKeys.complianceAuditDetail(auditId!),
+        queryFn: () => getComplianceAuditDetail(auditId!, getToken),
+        enabled: !!auditId,
+        refetchInterval: (query) => {
+            const data = query.state.data as ComplianceAuditDetail | undefined;
+            if (!data) return false;
+            return data.status === 'pending' || data.status === 'running' ? 3000 : false;
+        },
+    });
+}
+
+export function useCreateComplianceAudit() {
+    const { getToken } = useAuth();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (data: { title: string; regulation_doc_id: string; operational_doc_ids: string[] }) =>
+            createComplianceAudit(data, getToken),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['complianceAudits'] });
+        },
+    });
+}
+
+export function useDeleteComplianceAudit() {
+    const { getToken } = useAuth();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (auditId: string) => deleteComplianceAudit(auditId, getToken),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['complianceAudits'] });
         },
     });
 }

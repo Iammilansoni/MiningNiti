@@ -5,7 +5,9 @@ export interface ChatSource {
   document_id: string;
   document_title: string;
   file_name: string;
+  file_url?: string;
   chunk_text: string;
+  exact_text_chunk?: string;
   relevance_score: number;
   page_numbers: number[];
   section_title?: string | null;

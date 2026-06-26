@@ -452,3 +452,85 @@ export const updateUserProfile = (
         method: 'PUT',
         body: JSON.stringify(data),
     });
+
+// ─────────────────────────────────────────────
+// Compliance Audits
+// ─────────────────────────────────────────────
+
+export type AuditStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export interface ComplianceMatrixRow {
+    id: string;
+    clause_index: number;
+    clause_text: string;
+    section_title?: string | null;
+    status: 'compliant' | 'gap' | 'missing';
+    assessment: string;
+    confidence: number;
+    evidence_chunks?: {
+        chunk_text: string;
+        document_title: string;
+        page_numbers: number[];
+        section_title?: string;
+        relevance_score: number;
+    }[] | null;
+    recommendations?: string[] | null;
+}
+
+export interface ComplianceAudit {
+    id: string;
+    title: string;
+    regulation_doc_id: string;
+    operational_doc_ids?: string[] | null;
+    status: AuditStatus;
+    total_clauses?: number | null;
+    processed_clauses: number;
+    compliant_count?: number | null;
+    gap_count?: number | null;
+    missing_count?: number | null;
+    overall_score?: number | null;
+    processing_error?: string | null;
+    completed_at?: string | null;
+    created_at?: string | null;
+}
+
+export interface ComplianceAuditDetail extends ComplianceAudit {
+    rows: ComplianceMatrixRow[];
+}
+
+export interface ComplianceAuditListResponse {
+    audits: ComplianceAudit[];
+    total: number;
+}
+
+export const getComplianceAudits = (
+    getToken: GetToken,
+    params?: { page?: number; page_size?: number }
+): Promise<ComplianceAuditListResponse> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.page_size) query.set('page_size', String(params.page_size));
+    const qs = query.toString();
+    return fetchWithAuth(`${API_V1}/compliance/audits${qs ? `?${qs}` : ''}`, getToken);
+};
+
+export const createComplianceAudit = (
+    data: { title: string; regulation_doc_id: string; operational_doc_ids: string[] },
+    getToken: GetToken
+): Promise<ComplianceAudit> =>
+    fetchWithAuth(`${API_V1}/compliance/audits`, getToken, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+
+export const getComplianceAuditDetail = (
+    auditId: string,
+    getToken: GetToken
+): Promise<ComplianceAuditDetail> =>
+    fetchWithAuth(`${API_V1}/compliance/audits/${auditId}`, getToken);
+
+export const deleteComplianceAudit = (
+    auditId: string,
+    getToken: GetToken
+): Promise<void> =>
+    fetchWithAuth(`${API_V1}/compliance/audits/${auditId}`, getToken, { method: 'DELETE' });
