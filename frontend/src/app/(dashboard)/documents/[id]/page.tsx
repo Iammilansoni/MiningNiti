@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDocument, getDocumentAnalysis, deleteDocument, reanalyzeDocument } from '@/lib/api';
@@ -111,8 +111,37 @@ function HazardRow({ hazard, index }: { hazard: { type: string; severity: string
 
 // ── Tab Components ────────────────────────────────────────────────────────────
 
-function SummaryTab({ analysis }: { analysis: any }) {
+function SummaryTab({ analysis, onReanalyze, isReanalyzing }: { analysis: any; onReanalyze?: () => void; isReanalyzing?: boolean }) {
   if (!analysis) return <EmptyAnalysis />;
+
+  const summaryIsEmpty = !analysis.summary || analysis.summary === 'Summary not available.';
+  const keyPointsEmpty = !analysis.key_points?.length;
+
+  if (summaryIsEmpty && keyPointsEmpty) {
+    return (
+      <div className="p-6 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col items-center text-center gap-4">
+        <AlertCircle className="w-10 h-10 text-amber-500 opacity-70" />
+        <div>
+          <p className="font-semibold text-foreground">AI analysis incomplete</p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+            This document was processed when the AI service was temporarily unavailable (quota limit).
+            Click <strong>Re-analyze</strong> to run the full analysis now.
+          </p>
+        </div>
+        {onReanalyze && (
+          <button
+            onClick={onReanalyze}
+            disabled={isReanalyzing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${isReanalyzing ? 'animate-spin' : ''}`} />
+            {isReanalyzing ? 'Re-analyzing...' : 'Re-analyze Document'}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary */}
@@ -120,7 +149,7 @@ function SummaryTab({ analysis }: { analysis: any }) {
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
           <BookOpen className="w-4 h-4" /> Executive Summary
         </h3>
-        <p className="text-foreground leading-relaxed text-[15px]">{analysis.summary || 'No summary available.'}</p>
+        <p className="text-foreground leading-relaxed text-[15px]">{analysis.summary}</p>
       </div>
 
       {/* Key Points */}
@@ -143,10 +172,36 @@ function SummaryTab({ analysis }: { analysis: any }) {
   );
 }
 
-function SafetyTab({ analysis }: { analysis: any }) {
+function SafetyTab({ analysis, onReanalyze, isReanalyzing }: { analysis: any; onReanalyze?: () => void; isReanalyzing?: boolean }) {
   if (!analysis) return <EmptyAnalysis />;
   const hazards = analysis.hazards_detected || [];
   const recommendations = analysis.safety_recommendations || [];
+
+  // Show quota-error banner when safety score is missing (agent returned empty/failed)
+  if (analysis.safety_score == null && hazards.length === 0 && recommendations.length === 0) {
+    return (
+      <div className="p-6 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col items-center text-center gap-4">
+        <Shield className="w-10 h-10 text-amber-500 opacity-70" />
+        <div>
+          <p className="font-semibold text-foreground">Safety analysis incomplete</p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+            This document was processed when the AI service was temporarily unavailable (quota limit).
+            Click <strong>Re-analyze</strong> to run the full safety scan now.
+          </p>
+        </div>
+        {onReanalyze && (
+          <button
+            onClick={onReanalyze}
+            disabled={isReanalyzing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${isReanalyzing ? 'animate-spin' : ''}`} />
+            {isReanalyzing ? 'Re-analyzing...' : 'Re-analyze Document'}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -205,7 +260,7 @@ function SafetyTab({ analysis }: { analysis: any }) {
   );
 }
 
-function EntitiesTab({ analysis }: { analysis: any }) {
+function EntitiesTab({ analysis, onReanalyze, isReanalyzing }: { analysis: any; onReanalyze?: () => void; isReanalyzing?: boolean }) {
   if (!analysis) return <EmptyAnalysis />;
   const entities = analysis.entities || {};
   const entityGroups = [
@@ -219,9 +274,24 @@ function EntitiesTab({ analysis }: { analysis: any }) {
 
   const hasAny = entityGroups.some(g => (entities[g.key] || []).length > 0);
   if (!hasAny) return (
-    <div className="text-center py-12 text-muted-foreground">
-      <Tag className="w-10 h-10 mx-auto mb-3 opacity-30" />
-      <p>No entities extracted yet.</p>
+    <div className="p-6 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col items-center text-center gap-4">
+      <Tag className="w-10 h-10 text-amber-500 opacity-70" />
+      <div>
+        <p className="font-semibold text-foreground">No entities extracted</p>
+        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+          Entity extraction requires a successful AI analysis pass. If analysis was incomplete due to a quota limit, re-analyze to extract equipment, locations, personnel, and more.
+        </p>
+      </div>
+      {onReanalyze && (
+        <button
+          onClick={onReanalyze}
+          disabled={isReanalyzing}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${isReanalyzing ? 'animate-spin' : ''}`} />
+          {isReanalyzing ? 'Re-analyzing...' : 'Re-analyze Document'}
+        </button>
+      )}
     </div>
   );
 
@@ -279,7 +349,14 @@ export default function DocumentDetailPage() {
     queryKey: ['document', documentId],
     queryFn: () => getDocument(documentId, getToken),
     enabled: !!documentId,
+    refetchInterval: (query) => {
+      const status = (query.state.data as any)?.status;
+      return status === 'pending' || status === 'processing' || status === 'analyzing' ? 3000 : false;
+    },
   });
+
+  // Track previous status to detect completion/failure transitions
+  const prevStatusRef = useRef<string | undefined>(undefined);
 
   const { data: analysisData } = useQuery({
     queryKey: ['documentAnalysis', documentId],
@@ -303,12 +380,29 @@ export default function DocumentDetailPage() {
   const reanalyzeMutation = useMutation({
     mutationFn: () => reanalyzeDocument(documentId, getToken),
     onSuccess: () => {
-      toast.success('Re-analysis started');
+      toast.success('Re-analysis started — processing will begin shortly');
       queryClient.invalidateQueries({ queryKey: ['document', documentId] });
       queryClient.invalidateQueries({ queryKey: ['documentAnalysis', documentId] });
     },
     onError: (err: any) => toast.error(err.message || 'Re-analysis failed'),
   });
+
+  // Fire a toast when analysis transitions to completed or failed
+  useEffect(() => {
+    const current = doc?.status;
+    const prev = prevStatusRef.current;
+    if (prev && prev !== current) {
+      if (current === 'completed') {
+        toast.success('✅ AI analysis complete! Results are now available.');
+        queryClient.invalidateQueries({ queryKey: ['documentAnalysis', documentId] });
+      } else if (current === 'failed') {
+        toast.error('❌ Analysis failed. Try re-analyzing the document.');
+      }
+    }
+    prevStatusRef.current = current;
+  }, [doc?.status]);
+
+  const isProcessing = doc?.status === 'pending' || doc?.status === 'processing' || doc?.status === 'analyzing';
 
   const analysis = analysisData?.analysis;
 
@@ -349,6 +443,74 @@ export default function DocumentDetailPage() {
         <ChevronRight className="w-4 h-4" />
         <span className="text-foreground font-medium truncate max-w-xs">{doc.title}</span>
       </div>
+
+      {/* ── Processing Progress Banner ── */}
+      {isProcessing && (
+        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="relative w-5 h-5 shrink-0">
+              <div className="absolute inset-0 rounded-full border-2 border-blue-500/30" />
+              <div className="absolute inset-0 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+            </div>
+            <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+              AI analysis in progress — this may take 30–60 seconds
+            </p>
+          </div>
+          <div className="flex items-center gap-2 ml-8 flex-wrap">
+            {([
+              { id: 'pending',    label: 'Queued' },
+              { id: 'processing', label: 'Extracting text' },
+              { id: 'analyzing',  label: 'Running AI agents' },
+              { id: 'completed',  label: 'Done' },
+            ] as const).map((step, i, arr) => {
+              const order = ['pending', 'processing', 'analyzing', 'completed'];
+              const currentIdx = order.indexOf(doc?.status ?? '');
+              const stepIdx = order.indexOf(step.id);
+              const isDone = stepIdx < currentIdx;
+              const isActive = stepIdx === currentIdx;
+              return (
+                <React.Fragment key={step.id}>
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${
+                      isDone ? 'bg-blue-500' : isActive ? 'bg-blue-400 animate-pulse' : 'bg-muted-foreground/30'
+                    }`} />
+                    <span className={`text-xs ${
+                      isDone ? 'text-blue-600 dark:text-blue-400 font-medium' :
+                      isActive ? 'text-blue-500 font-semibold' : 'text-muted-foreground'
+                    }`}>
+                      {step.label}
+                    </span>
+                  </div>
+                  {i < arr.length - 1 && (
+                    <div className={`h-px w-6 shrink-0 ${isDone ? 'bg-blue-400' : 'bg-muted-foreground/20'}`} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Failed Banner ── */}
+      {doc?.status === 'failed' && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 flex items-center gap-3">
+          <XCircle className="w-5 h-5 text-red-500 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-red-600 dark:text-red-400">Analysis failed</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {(doc as any)?.processing_error || 'An error occurred during AI processing.'}
+            </p>
+          </div>
+          <button
+            onClick={() => reanalyzeMutation.mutate()}
+            disabled={reanalyzeMutation.isPending}
+            className="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors font-medium whitespace-nowrap"
+          >
+            <RefreshCw className={`w-3 h-3 inline mr-1 ${reanalyzeMutation.isPending ? 'animate-spin' : ''}`} />
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -486,11 +648,11 @@ export default function DocumentDetailPage() {
 
           {/* Tab Content */}
           <div className="min-h-[400px]">
-            {activeTab === 'summary' && <SummaryTab analysis={analysis} />}
-            {activeTab === 'safety' && <SafetyTab analysis={analysis} />}
-            {activeTab === 'entities' && <EntitiesTab analysis={analysis} />}
+            {activeTab === 'summary' && <SummaryTab analysis={analysis} onReanalyze={() => reanalyzeMutation.mutate()} isReanalyzing={reanalyzeMutation.isPending} />}
+            {activeTab === 'safety' && <SafetyTab analysis={analysis} onReanalyze={() => reanalyzeMutation.mutate()} isReanalyzing={reanalyzeMutation.isPending} />}
+            {activeTab === 'entities' && <EntitiesTab analysis={analysis} onReanalyze={() => reanalyzeMutation.mutate()} isReanalyzing={reanalyzeMutation.isPending} />}
             {activeTab === 'ask' && (
-              <AskDocumentAI documentId={documentId} documentTitle={doc.title} />
+              <AskDocumentAI documentId={documentId} documentTitle={doc.title} fileUrl={doc.file_url} />
             )}
           </div>
         </div>
