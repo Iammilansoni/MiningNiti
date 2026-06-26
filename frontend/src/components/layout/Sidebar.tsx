@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Sparkles,
   Search,
+  ShieldCheck,
 } from 'lucide-react';
 
 const navItems = [
@@ -35,9 +36,9 @@ const navItems = [
     icon: FileText,
   },
   {
-    name: 'Semantic Search',
-    href: '/search',
-    icon: Search,
+    name: 'Compliance',
+    href: '/compliance',
+    icon: ShieldCheck,
   },
   {
     name: 'Prompts',

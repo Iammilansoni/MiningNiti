@@ -22,18 +22,18 @@ export function RecentDocumentsTable() {
   const recentDocs = data?.documents || [];
 
   return (
-    <SectionCard className="flex flex-col h-full bg-card shadow-sm border border-border">
+    <SectionCard className="flex flex-col h-full bg-white/[0.02] backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/[0.08] rounded-2xl">
       <div className="flex items-center justify-between border-b border-border p-4">
         <h2 className="text-sm font-semibold text-foreground">Recent Documents</h2>
         <Button variant="ghost" size="sm" asChild className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">
-          <Link href="/dashboard/documents">
+          <Link href="/documents">
             View All <ArrowRight className="ml-1 size-3" />
           </Link>
         </Button>
       </div>
       <div className="flex-1 overflow-auto">
         <table className="w-full text-sm">
-          <thead className="bg-muted/30 text-muted-foreground">
+          <thead className="bg-white/[0.02] text-foreground/50 border-b border-white/[0.05]">
             <tr>
               <th className="h-9 px-4 text-left font-medium">Document</th>
               <th className="h-9 px-4 text-left font-medium hidden sm:table-cell">Category</th>
@@ -57,18 +57,28 @@ export function RecentDocumentsTable() {
               </tr>
             ) : recentDocs.length === 0 ? (
               <tr>
-                <td colSpan={4} className="p-4 text-center text-muted-foreground">No recent documents found.</td>
+                <td colSpan={4} className="p-12">
+                  <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
+                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 text-foreground/40">
+                      <FileText className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-sm font-medium text-foreground tracking-tight">No documents yet</h3>
+                    <p className="text-[13px] text-foreground/50 mt-1 max-w-[250px]">
+                      Upload your first safety protocol or incident report to see it tracked here.
+                    </p>
+                  </div>
+                </td>
               </tr>
             ) : (
               recentDocs.map((doc) => (
-                <tr key={doc.id} className="border-b border-border hover:bg-muted/20 transition-colors last:border-0">
+                <tr key={doc.id} className="group border-b border-white/[0.05] hover:bg-white/[0.03] transition-all duration-300 last:border-0 hover:shadow-[inset_4px_0_0_#3B82F6]">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <FileText className="size-4 text-primary shrink-0" />
                       <span className="font-medium truncate text-foreground/90">{doc.title || doc.file_name}</span>
                     </div>
                   </td>
-                  <td className="p-4 hidden sm:table-cell text-muted-foreground">
+                  <td className="p-4 hidden sm:table-cell text-foreground/50">
                     {doc.category || 'Uncategorized'}
                   </td>
                   <td className="p-4">
@@ -78,7 +88,7 @@ export function RecentDocumentsTable() {
                     {doc.status === 'pending' && <StatusBadge label="Pending" tone="neutral" />}
                     {doc.status === 'analyzing' && <StatusBadge label="Analyzing" tone="warning" pulse />}
                   </td>
-                  <td className="p-4 hidden md:table-cell text-right text-muted-foreground whitespace-nowrap">
+                  <td className="p-4 hidden md:table-cell text-right text-foreground/50 whitespace-nowrap">
                     {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
                   </td>
                 </tr>
