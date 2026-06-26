@@ -13,12 +13,11 @@ Key improvements over v1:
 import asyncio
 import json
 import logging
-from typing import AsyncGenerator, Dict, Any, List, Optional, Tuple
-
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 import google.generativeai as genai
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.document import Document, DocumentEmbedding, DocumentStatus
@@ -82,13 +81,6 @@ class ChatService:
         document_ids: Optional[List[str]] = None,
         db: Session = None,
     ) -> Tuple[str, List[Dict[str, Any]]]:
-        """
-        Generate AI response using RAG.
-
-        Returns:
-            (response_text, sources_list)
-            Sources include document name, file name, page numbers, and section title.
-        """
         try:
             query_embedding = await self._get_embedding(query)
             relevant_chunks = await self._find_relevant_chunks(
@@ -102,15 +94,27 @@ class ChatService:
             context = self._format_context(relevant_chunks)
             prompt = self._build_prompt(query, context)
 
-            response = self.model.generate_content(prompt)
-            answer = response.text
-            
-            tokens_used = None
-            if hasattr(response, "usage_metadata") and response.usage_metadata:
-                tokens_used = {
-                    "input": getattr(response.usage_metadata, "prompt_token_count", 0),
-                    "output": getattr(response.usage_metadata, "candidates_token_count", 0)
+            from app.services.llm_provider import get_groq_client
+
+            client = get_groq_client()
+
+            # Removed debug print that causes charmap error on Windows
+            # print("DEBUG - FINAL PROMPT BEING SENT TO LLM:\n", prompt)
+
+            response = await client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+            )
+            answer = response.choices[0].message.content
+
+            tokens_used = (
+                {
+                    "input": response.usage.prompt_tokens,
+                    "output": response.usage.completion_tokens,
                 }
+                if hasattr(response, "usage")
+                else None
+            )
 
             sources = self._build_sources(relevant_chunks[:3])
             return answer, sources, tokens_used
@@ -130,19 +134,6 @@ class ChatService:
         document_ids: Optional[List[str]] = None,
         db: Session = None,
     ) -> AsyncGenerator[str, None]:
-        """
-        Stream AI response as Server-Sent Events.
-
-        Yields SSE-formatted strings:
-          event: sources
-          data: <json>
-
-          event: token
-          data: <json with text field>
-
-          event: done
-          data: <json with session metadata>
-        """
         try:
             query_embedding = await self._get_embedding(query)
             relevant_chunks = await self._find_relevant_chunks(
@@ -153,28 +144,32 @@ class ChatService:
                 top_k=5,
             )
 
-            # Emit sources first so the UI can render them while streaming
             sources = self._build_sources(relevant_chunks[:3])
             yield f"event: sources\ndata: {json.dumps(sources)}\n\n"
 
             context = self._format_context(relevant_chunks)
             prompt = self._build_prompt(query, context)
 
-            # Stream LLM tokens
-            response_stream = self.model.generate_content(prompt, stream=True)
-            for chunk in response_stream:
-                if chunk.text:
-                    yield f"event: token\ndata: {json.dumps({'text': chunk.text})}\n\n"
+            from app.services.llm_provider import get_groq_client
 
+            client = get_groq_client()
+
+            # Removed debug print that causes charmap error on Windows
+            # print("DEBUG - FINAL PROMPT BEING SENT TO LLM:\n", prompt)
+
+            response_stream = await client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+            )
+
+            async for chunk in response_stream:
+                if chunk.choices[0].delta.content:
+                    yield f"event: token\ndata: {json.dumps({'text': chunk.choices[0].delta.content})}\n\n"
+
+            # Groq async stream doesn't easily return usage per chunk without stream_options
             tokens_used = None
-            if hasattr(response_stream, "usage_metadata") and response_stream.usage_metadata:
-                tokens_used = {
-                    "input": getattr(response_stream.usage_metadata, "prompt_token_count", 0),
-                    "output": getattr(response_stream.usage_metadata, "candidates_token_count", 0)
-                }
-            
             yield f"event: done\ndata: {json.dumps({'sources_count': len(sources), 'tokens_used': tokens_used})}\n\n"
-
 
         except Exception as e:
             logger.error(f"Stream generation error: {e}", exc_info=True)
@@ -200,6 +195,7 @@ class ChatService:
                 model=self.embedding_model,
                 content=text,
                 task_type="retrieval_query",  # Use query task type (vs document)
+                output_dimensionality=768,
             )
             return result["embedding"]
         except Exception as e:
@@ -233,10 +229,11 @@ class ChatService:
         }
 
         if document_ids:
-            doc_filter = "AND d.id = ANY(:doc_ids)"
+            doc_filter = "AND d.id = ANY(CAST(:doc_ids AS uuid[]))"
             params["doc_ids"] = document_ids
 
-        sql = text(f"""
+        sql = text(
+            f"""
             SELECT
                 de.id,
                 de.chunk_text,
@@ -247,20 +244,23 @@ class ChatService:
                 d.id AS document_id,
                 d.title AS document_title,
                 d.file_name,
+                d.file_url,
                 1 - (de.embedding <=> CAST(:embedding AS vector)) AS similarity
             FROM document_embeddings de
             JOIN documents d ON d.id = de.document_id
             WHERE d.user_id = :user_id
-              AND d.status = 'completed'
+              AND d.status = 'COMPLETED'
               {doc_filter}
             ORDER BY de.embedding <=> CAST(:embedding AS vector)
             LIMIT :top_k
-        """)
+        """
+        )
 
         try:
             rows = db.execute(sql, params).fetchall()
         except Exception as e:
             logger.error(f"pgvector query failed: {e}", exc_info=True)
+            db.rollback()
             return []
 
         return [
@@ -268,11 +268,11 @@ class ChatService:
                 "document_id": str(row.document_id),
                 "document_title": row.document_title,
                 "file_name": row.file_name,
+                "file_url": row.file_url,
                 "text": row.chunk_text,
                 "score": float(row.similarity),
-                "page_numbers": row.page_numbers or (
-                    [row.start_page] if row.start_page else []
-                ),
+                "page_numbers": row.page_numbers
+                or ([row.start_page] if row.start_page else []),
                 "section_title": row.section_title,
                 "chunk_index": row.chunk_index,
             }
@@ -280,12 +280,6 @@ class ChatService:
         ]
 
     def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
-        """
-        Format retrieved chunks into rich context with full provenance.
-
-        Each source block includes file name, page numbers, and section title
-        so the LLM can construct accurate citations in its response.
-        """
         if not chunks:
             return "No relevant document context found."
 
@@ -293,21 +287,21 @@ class ChatService:
         for i, chunk in enumerate(chunks, 1):
             pages = chunk.get("page_numbers", [])
             page_str = (
-                f"Pages {pages[0]}–{pages[-1]}" if len(pages) > 1
-                else f"Page {pages[0]}" if pages
-                else "Page unknown"
+                f"{pages[0]}-{pages[-1]}"
+                if len(pages) > 1
+                else f"{pages[0]}" if pages else "unknown"
             )
-            section = chunk.get("section_title")
-            section_str = f"\n**Section**: {section}" if section else ""
+            file_name = chunk.get("file_name", "unknown.pdf")
+            text = chunk.get("text", "")
+            section = chunk.get("section_title", "")
 
+            # Format explicitly required for the chat agent to recognize citations:
+            section_prefix = f"[{section}] " if section else ""
             context_parts.append(
-                f"### Source {i}: {chunk['document_title']} ({chunk['file_name']})\n"
-                f"**{page_str}**{section_str}\n\n"
-                f"{chunk['text']}\n"
-                f"---"
+                f"Context chunk {i}: {section_prefix}{text} (Source: {file_name}, Page: {page_str})"
             )
 
-        return "\n\n".join(context_parts)
+        return "\n".join(context_parts)
 
     def _build_prompt(self, query: str, context: str) -> str:
         """Build the full RAG prompt."""
@@ -323,13 +317,18 @@ class ChatService:
         sources = []
         for chunk in chunks:
             pages = chunk.get("page_numbers", [])
-            sources.append({
-                "document_id": chunk["document_id"],
-                "document_title": chunk["document_title"],
-                "file_name": chunk["file_name"],
-                "chunk_text": chunk["text"][:300] + ("..." if len(chunk["text"]) > 300 else ""),
-                "relevance_score": round(chunk["score"], 4),
-                "page_numbers": pages,
-                "section_title": chunk.get("section_title"),
-            })
+            sources.append(
+                {
+                    "document_id": chunk["document_id"],
+                    "document_title": chunk["document_title"],
+                    "file_name": chunk["file_name"],
+                    "file_url": chunk.get("file_url"),
+                    "chunk_text": chunk["text"][:300]
+                    + ("..." if len(chunk["text"]) > 300 else ""),
+                    "exact_text_chunk": chunk["text"],
+                    "relevance_score": round(chunk["score"], 4),
+                    "page_numbers": pages,
+                    "section_title": chunk.get("section_title"),
+                }
+            )
         return sources
