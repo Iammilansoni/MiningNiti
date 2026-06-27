@@ -142,45 +142,43 @@ class TestBuildSources:
 
 
 class TestBuildPrompt:
-    """Tests for _build_prompt method."""
+    """Tests for _build_user_message and system prompt."""
 
     @pytest.mark.unit
     def test_prompt_includes_system_prompt(self):
-        """Generated prompt includes the system prompt with citation instructions."""
-        from app.services.chat_service import ChatService
+        """System prompt contains citation instructions."""
+        from app.services.chat_service import _SYSTEM_PROMPT
 
-        service = ChatService()
-        prompt = service._build_prompt("What is ventilation?", "Some context")
-        assert "Citation" in prompt or "cite" in prompt.lower()
+        assert "Citation" in _SYSTEM_PROMPT or "cite" in _SYSTEM_PROMPT.lower()
 
     @pytest.mark.unit
     def test_prompt_includes_query(self):
-        """Generated prompt includes the user's question."""
+        """User message includes the user's question."""
         from app.services.chat_service import ChatService
 
         service = ChatService()
         query = "What are the methane limits?"
-        prompt = service._build_prompt(query, "Context here")
-        assert query in prompt
+        msg = service._build_user_message(query, "Context here")
+        assert query in msg
 
     @pytest.mark.unit
     def test_prompt_includes_context(self):
-        """Generated prompt includes the document context."""
+        """User message includes the document context."""
         from app.services.chat_service import ChatService
 
         service = ChatService()
         context = "Source 1: Mining_site.pdf, Page 12"
-        prompt = service._build_prompt("question?", context)
-        assert context in prompt
+        msg = service._build_user_message("question?", context)
+        assert context in msg
 
     @pytest.mark.unit
     def test_prompt_includes_file_citation_format(self):
-        """System prompt instructs LLM to use [FileName, Page X] format."""
+        """User message references page citation format."""
         from app.services.chat_service import ChatService
 
         service = ChatService()
-        prompt = service._build_prompt("question?", "context")
-        assert "Page" in prompt or "page" in prompt
+        msg = service._build_user_message("question?", "context")
+        assert "Page" in msg or "page" in msg
 
 
 class TestGetMiningeSuggestions:
