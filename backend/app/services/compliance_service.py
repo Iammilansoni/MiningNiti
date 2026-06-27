@@ -31,8 +31,10 @@ logger = logging.getLogger(__name__)
 
 # Max concurrent LLM calls to avoid rate limits
 _MAX_CONCURRENT_ASSESSMENTS = 5
-# Top-K evidence chunks per clause
+# Top-K evidence chunks per clause (after reranking)
 _TOP_K = 5
+# Over-fetch count for reranking
+_OVER_FETCH = 15
 # Relevance threshold for evidence chunks
 _RELEVANCE_THRESHOLD = 0.30
 
@@ -203,12 +205,13 @@ class ComplianceService:
         async def assess_one(index: int, clause: DocumentEmbedding):
             async with self._semaphore:
                 try:
-                    # pgvector search for evidence
+                    # Hybrid search for evidence + rerank
                     evidence = await self._find_evidence(
                         db=db,
                         user_id=user_id,
                         query_embedding=clause.embedding,
                         operational_doc_ids=operational_doc_ids,
+                        clause_text=clause.chunk_text,
                     )
 
                     # Run agent assessment
@@ -282,57 +285,50 @@ class ComplianceService:
         user_id: str,
         query_embedding: list,
         operational_doc_ids: List[str],
+        clause_text: str = "",
     ) -> List[Dict]:
         """
-        pgvector cosine similarity search for evidence chunks
-        from operational documents.
+        Hybrid search for evidence chunks from operational documents.
+
+        Pipeline: pgvector cosine + pg_trgm BM25 → RRF → cross-encoder rerank
         """
         if not operational_doc_ids:
             return []
 
-        sql = text(
-            """
-            SELECT
-                de.chunk_text,
-                de.page_numbers,
-                de.section_title,
-                d.title AS document_title,
-                1 - (de.embedding <=> CAST(:embedding AS vector)) AS similarity
-            FROM document_embeddings de
-            JOIN documents d ON d.id = de.document_id
-            WHERE d.user_id = :user_id
-              AND d.status = 'completed'
-              AND d.id = ANY(:doc_ids::uuid[])
-              AND (1 - (de.embedding <=> CAST(:embedding AS vector))) >= :threshold
-            ORDER BY de.embedding <=> CAST(:embedding AS vector)
-            LIMIT :limit
-        """
+        # Step 1: Hybrid search (over-fetch for reranking)
+        from app.services.hybrid_search import hybrid_search
+
+        candidates = await hybrid_search(
+            query_text=clause_text,
+            query_embedding=query_embedding,
+            db=db,
+            user_id=user_id,
+            document_ids=operational_doc_ids,
+            top_k=_OVER_FETCH,
         )
 
-        try:
-            rows = db.execute(
-                sql,
-                {
-                    "user_id": user_id,
-                    "embedding": query_embedding,
-                    "doc_ids": operational_doc_ids,
-                    "threshold": _RELEVANCE_THRESHOLD,
-                    "limit": _TOP_K,
-                },
-            ).fetchall()
-        except Exception as e:
-            logger.error(f"Evidence search failed: {e}", exc_info=True)
-            return []
+        # Step 2: Rerank if we have more candidates than needed
+        if settings.ENABLE_RERANKING and len(candidates) > _TOP_K:
+            from app.services.reranker import rerank
+
+            candidates = rerank(
+                query=clause_text,
+                chunks=candidates,
+                top_k=_TOP_K,
+                text_key="text",
+            )
+        else:
+            candidates = candidates[:_TOP_K]
 
         return [
             {
-                "chunk_text": row.chunk_text,
-                "document_title": row.document_title,
-                "page_numbers": row.page_numbers or [],
-                "section_title": row.section_title,
-                "relevance_score": round(float(row.similarity), 4),
+                "chunk_text": c["text"],
+                "document_title": c["document_title"],
+                "page_numbers": c.get("page_numbers", []),
+                "section_title": c.get("section_title"),
+                "relevance_score": round(c.get("rerank_score", c.get("score", 0.0)), 4),
             }
-            for row in rows
+            for c in candidates
         ]
 
 

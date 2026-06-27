@@ -1,29 +1,26 @@
 """
 Semantic Search API Endpoint
-Natural language search across all user documents using pgvector.
+Natural language search across all user documents.
 
-Supports:
-  - Query: free-text natural language
-  - Filters: category, date range
-  - Relevance threshold: filters out low-quality matches
-  - Results grouped by document with page-level provenance
+Production retrieval pipeline:
+  1. Embed query via Gemini text-embedding-004
+  2. Hybrid search: pgvector cosine + pg_trgm BM25 via RRF
+  3. Cross-encoder reranking for precise relevance
+  4. Results grouped by document with page-level provenance
 """
 
 import asyncio
 import logging
-from datetime import datetime
 from typing import List, Optional
 
 import google.generativeai as genai
 from fastapi import APIRouter, Depends
 from fastapi import Query as FastAPIQuery
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_id
 from app.config import settings
 from app.db.session import get_db
-from app.models.document import DocumentCategory
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +28,6 @@ router = APIRouter()
 
 # Configure Gemini for embeddings
 genai.configure(api_key=settings.GEMINI_API_KEY)
-
-# Minimum similarity score to return a result (0-1, higher = more strict)
-RELEVANCE_THRESHOLD = 0.35
 
 
 async def _get_query_embedding(text_input: str) -> List[float]:
@@ -62,16 +56,17 @@ async def semantic_search(
     db: Session = Depends(get_db),
 ):
     """
-    Semantic search across all user documents using vector similarity.
+    Semantic search across all user documents.
 
-    Returns chunks ranked by relevance, grouped by document.
-    Uses pgvector HNSW index for sub-5ms nearest-neighbor search.
+    Production pipeline:
+      1. Hybrid search (pgvector + pg_trgm via RRF)
+      2. Cross-encoder reranking
+      3. Results with page-level provenance
 
     Example queries:
       - "ventilation rules for underground mines"
-      - "emergency evacuation procedures"
-      - "equipment maintenance schedule"
-      - "MSHA regulations compliance"
+      - "30 CFR 75.323 methane requirements"
+      - "equipment maintenance schedule for Caterpillar D11"
     """
     if not q.strip():
         return {"query": q, "results": [], "total": 0}
@@ -86,76 +81,50 @@ async def semantic_search(
             "error": "Could not generate embedding for query",
         }
 
-    # Build dynamic filters
-    category_filter = ""
-    params = {
-        "user_id": user_id,
-        "embedding": embedding,
-        "limit": limit,
-        "threshold": RELEVANCE_THRESHOLD,
-    }
+    # Step 1: Hybrid search (over-fetch for reranking)
+    from app.services.hybrid_search import hybrid_search
 
-    if category:
-        category_filter = "AND d.category = :category"
-        params["category"] = category
-
-    # pgvector cosine similarity search with relevance threshold
-    sql = text(
-        f"""
-        SELECT
-            de.id AS chunk_id,
-            de.chunk_text,
-            de.page_numbers,
-            de.section_title,
-            de.start_page,
-            de.chunk_index,
-            d.id AS document_id,
-            d.title AS document_title,
-            d.file_name,
-            d.category,
-            d.safety_score,
-            d.created_at,
-            1 - (de.embedding <=> CAST(:embedding AS vector)) AS similarity
-        FROM document_embeddings de
-        JOIN documents d ON d.id = de.document_id
-        WHERE d.user_id = :user_id
-          AND d.status = 'completed'
-          {category_filter}
-          AND (1 - (de.embedding <=> CAST(:embedding AS vector))) >= :threshold
-        ORDER BY de.embedding <=> CAST(:embedding AS vector)
-        LIMIT :limit
-    """
+    candidates = await hybrid_search(
+        query_text=q.strip(),
+        query_embedding=embedding,
+        db=db,
+        user_id=user_id,
+        top_k=settings.RERANK_OVER_FETCH,
     )
 
-    try:
-        rows = db.execute(sql, params).fetchall()
-    except Exception as e:
-        logger.error(f"Semantic search query failed: {e}", exc_info=True)
-        return {"query": q, "results": [], "total": 0, "error": "Search failed"}
+    # Step 2: Rerank
+    if settings.ENABLE_RERANKING and len(candidates) > limit:
+        from app.services.reranker import rerank
+
+        candidates = rerank(query=q.strip(), chunks=candidates, top_k=limit)
+    else:
+        candidates = candidates[:limit]
 
     # Format results
     results = []
-    for row in rows:
-        pages = row.page_numbers or ([row.start_page] if row.start_page else [])
+    for row in candidates:
+        pages = row.get("page_numbers", [])
         page_str = (
-            f"Pages {pages[0]}–{pages[-1]}"
+            f"Pages {pages[0]}\u2013{pages[-1]}"
             if len(pages) > 1
             else f"Page {pages[0]}" if pages else "Unknown page"
         )
         results.append(
             {
-                "chunk_id": str(row.chunk_id),
-                "document_id": str(row.document_id),
-                "document_title": row.document_title,
-                "file_name": row.file_name,
-                "category": row.category,
-                "safety_score": row.safety_score,
-                "chunk_text": row.chunk_text,
-                "section_title": row.section_title,
+                "chunk_id": row["id"],
+                "document_id": row["document_id"],
+                "document_title": row["document_title"],
+                "file_name": row["file_name"],
+                "chunk_text": row["text"],
+                "section_title": row.get("section_title"),
                 "page_numbers": pages,
                 "page_label": page_str,
-                "relevance_score": round(float(row.similarity), 4),
-                "relevance_percent": round(float(row.similarity) * 100, 1),
+                "relevance_score": round(
+                    row.get("rerank_score", row.get("score", 0.0)), 4
+                ),
+                "relevance_percent": round(
+                    row.get("rerank_score", row.get("score", 0.0)) * 100, 1
+                ),
             }
         )
 

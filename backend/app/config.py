@@ -74,6 +74,36 @@ class Settings(BaseSettings):
     SAFETY_SCORE_THRESHOLD: float = Field(default=70.0)
     MAX_EMBEDDINGS_PER_QUERY: int = Field(default=5)
 
+    # RAG Pipeline — Production Retrieval
+    RERANK_MODEL: str = Field(
+        default="cross-encoder/ms-marco-MiniLM-L-6-v2",
+        description="Cross-encoder model for reranking retrieved chunks",
+    )
+    RERANK_OVER_FETCH: int = Field(
+        default=20,
+        description="How many chunks to fetch from vector+BM25 before reranking",
+    )
+    RERANK_TOP_K: int = Field(
+        default=5,
+        description="Final number of chunks after reranking",
+    )
+    SIMILARITY_THRESHOLD: float = Field(
+        default=0.25,
+        description="Minimum cosine similarity to include a chunk (0-1)",
+    )
+    ENABLE_HYBRID_SEARCH: bool = Field(
+        default=True,
+        description="Combine vector search with pg_trgm BM25 via RRF",
+    )
+    ENABLE_RERANKING: bool = Field(
+        default=True,
+        description="Apply cross-encoder reranking after retrieval",
+    )
+    RRF_K: int = Field(
+        default=60,
+        description="Reciprocal Rank Fusion constant (higher = less rank influence)",
+    )
+
     # SSL
     SSL_CERT_PATH: Optional[str] = Field(default=None)
 

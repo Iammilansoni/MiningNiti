@@ -111,7 +111,16 @@ Classifier Safety  Entity    Summarizer  Compliance
 
 ### RAG-Powered Conversational Search
 
-- Semantic vector search via pgvector cosine similarity (sub-5ms retrieval)
+Production-grade retrieval pipeline:
+
+```
+Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rerank → Top-5 → LLM
+```
+
+- **Hybrid Search**: pgvector cosine similarity + pg_trgm BM25 keyword matching combined via Reciprocal Rank Fusion
+- **Cross-Encoder Reranking**: `ms-marco-MiniLM-L-6-v2` reranks top-20 candidates for precise relevance
+- **Similarity Threshold**: Filters irrelevant chunks before context formatting
+- **System Role Prompt**: Proper LLM message structure for better instruction following
 - Streaming responses token-by-token via Server-Sent Events (SSE)
 - Every answer cites `[Document, Page X]` — no hallucination without source
 - Multi-turn session management with full conversation history
@@ -164,6 +173,20 @@ Classifier Safety  Entity    Summarizer  Compliance
        └─────────────────┼──────────────────┘
                          ▼
 ┌─────────────────────────────────────────────────────────────────────┐
+│                     RAG RETRIEVAL PIPELINE                           │
+│                                                                     │
+│   Query → Embed (Gemini) → Hybrid Search → RRF → Rerank → Top-5   │
+│                                                                     │
+│   ┌─────────────┐  ┌─────────────┐  ┌────────────────────────┐     │
+│   │  pgvector   │  │ pg_trgm BM25│  │  Cross-Encoder Rerank  │     │
+│   │  (semantic) │  │ (keyword)   │  │  (ms-marco-MiniLM)     │     │
+│   └──────┬──────┘  └──────┬──────┘  └───────────┬────────────┘     │
+│          └────────┬───────┘                      │                  │
+│           Reciprocal Rank Fusion                 ▼                  │
+│                                    Precise Top-5 Chunks             │
+└──────────────────────────┬──────────────────────────────────────────┘
+                           ▼
+┌─────────────────────────────────────────────────────────────────────┐
 │                       AI AGENT LAYER                                 │
 │                                                                     │
 │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐           │
@@ -215,10 +238,11 @@ Classifier Safety  Entity    Summarizer  Compliance
 | Framework | FastAPI + Uvicorn | 0.128 |
 | Language | Python | 3.11+ |
 | ORM | SQLAlchemy (async-capable) | 2.0 |
-| Database | PostgreSQL + pgvector | 16+ |
+| Database | PostgreSQL + pgvector + pg_trgm | 16+ |
 | Validation | Pydantic | v2.9 |
 | Auth | Clerk JWT (JWKS) | - |
 | Rate Limiting | slowapi | 0.1.9 |
+| Reranking | sentence-transformers (CrossEncoder) | 3.x |
 | Background Tasks | FastAPI BackgroundTasks / Celery | - |
 | HTTP Client | httpx | 0.28 |
 | Process Server | Gunicorn | 23.x |
@@ -234,6 +258,7 @@ Classifier Safety  Entity    Summarizer  Compliance
 | Entity Extractor | Cerebras | `llama-4-scout` | 1M tokens/day |
 | Safety Analyzer | Mistral | `magistral-small-latest` | Free tier |
 | Compliance Auditor | Google Gemini | `gemini-2.5-flash` | 1,500 req/day |
+| Reranker | Local (CPU) | `ms-marco-MiniLM-L-6-v2` | Free (runs locally) |
 | Fallback | OpenRouter | `deepseek/deepseek-r1:free` | Free tier |
 
 > All agents run on free tiers — zero cost for development and moderate production usage.
@@ -397,7 +422,9 @@ MiningNiti/
 │   │   │   └── user.py                # User model
 │   │   ├── schemas/                   # Pydantic request/response schemas
 │   │   ├── services/
-│   │   │   ├── chat_service.py        # RAG pipeline (embed → search → generate)
+│   │   │   ├── chat_service.py        # RAG pipeline (hybrid → rerank → generate)
+│   │   │   ├── hybrid_search.py       # Vector + BM25 + Reciprocal Rank Fusion
+│   │   │   ├── reranker.py            # Cross-encoder reranking (ms-marco-MiniLM)
 │   │   │   ├── document_service.py    # Upload, extract, chunk, embed
 │   │   │   ├── compliance_service.py  # Compliance audit logic
 │   │   │   ├── chunking.py            # Text chunking with overlap
@@ -554,8 +581,10 @@ docker-compose -f docker-compose.prod.yml up -d
 
 | Optimization | Detail |
 |---|---|
-| **Parallel agents** | 6 AI agents run concurrently via `asyncio.gather()` |
+| **Hybrid search** | Vector (pgvector) + keyword (pg_trgm) combined via Reciprocal Rank Fusion |
+| **Cross-encoder reranking** | `ms-marco-MiniLM-L-6-v2` reranks top-20 candidates for precise relevance |
 | **pgvector HNSW** | Sub-5ms nearest-neighbor search over document embeddings |
+| **Parallel agents** | 6 AI agents run concurrently via `asyncio.gather()` |
 | **SSE streaming** | Token-by-token response delivery (no wait for full answer) |
 | **Background tasks** | Document processing runs asynchronously via FastAPI BackgroundTasks |
 | **Crash recovery** | Stuck documents auto-reset to PENDING on server restart |
