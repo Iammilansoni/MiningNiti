@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useUploadThing } from '@/lib/uploadthing';
 import { DragDropUpload } from '@/components/ui/drag-drop-upload';
-import { createDocument } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -15,6 +13,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
 interface UploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -23,45 +23,41 @@ interface UploadModalProps {
 export function UploadModal({ open, onOpenChange }: UploadModalProps) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const { startUpload } = useUploadThing('miningDocsUploader');
 
   const handleUpload = async (files: File[]) => {
-    try {
-      // 1. Upload files to UploadThing
-      const uploadedFiles = await startUpload(files);
-      
-      if (!uploadedFiles || uploadedFiles.length === 0) {
-        throw new Error('No files were returned from UploadThing');
+    for (const file of files) {
+      try {
+        const token = await getToken();
+        if (!token) {
+          toast.error('Authentication required');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.detail || err.error || `Upload failed (${response.status})`);
+        }
+
+        toast.success(`${file.name} uploaded successfully!`);
+      } catch (error: any) {
+        console.error('Upload failed:', error);
+        toast.error(error.message || 'Upload failed. Please try again.');
       }
-
-      // 2. For each uploaded file, create a document in the backend database
-      for (const file of uploadedFiles) {
-        const originalFile = files.find(f => f.name === file.name);
-        if (!originalFile) continue;
-
-        await createDocument({
-          file_url: file.url,
-          file_name: file.name,
-          file_size: file.size,
-          file_type: originalFile.type || 'application/octet-stream',
-          title: file.name.split('.').slice(0, -1).join('.') || file.name,
-          tags: ['Upload'],
-        }, getToken);
-      }
-
-      toast.success(`${files.length} document(s) uploaded successfully!`);
-      
-      // 3. Invalidate React Query to refresh lists
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      queryClient.invalidateQueries({ queryKey: ['recent-documents'] });
-      queryClient.invalidateQueries({ queryKey: ['document-analytics'] });
-      
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error('Upload failed. Please try again.');
-      throw error; // Re-throw so DragDropUpload knows it failed
     }
+
+    queryClient.invalidateQueries({ queryKey: ['documents'] });
+    queryClient.invalidateQueries({ queryKey: ['recent-documents'] });
+    queryClient.invalidateQueries({ queryKey: ['document-analytics'] });
+    onOpenChange(false);
   };
 
   return (
