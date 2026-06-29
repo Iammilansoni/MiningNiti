@@ -15,9 +15,8 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.128+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16+-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+pgvector-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![PostgreSQL](https://img.shields.io/badge/Supabase-pgvector-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
-[![Live Demo](https://img.shields.io/badge/Live_Demo-miningniti.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://miningniti.vercel.app)
 
 [Architecture](#architecture) · [Quick Start](#quick-start) · [API Reference](#api-endpoints) · [Deploy](#deployment) · [Contributing](#contributing)
 
@@ -36,7 +35,7 @@
 
 ---
 
-MiningNiti is a full-stack AI platform that transforms how coal mining organizations manage safety documentation, regulatory compliance, and institutional knowledge. It combines a **multi-agent AI pipeline** (6 specialized agents across 4 AI providers) with **RAG-powered conversational search** and **real-time compliance auditing** — turning thousands of fragmented PDFs into an instantly queryable, citation-backed source of truth.
+MiningNiti is a full-stack AI platform that transforms how coal mining organizations manage safety documentation, regulatory compliance, and institutional knowledge. It combines a **multi-agent AI pipeline** (6 specialized agents across 4 AI providers) with **production-grade RAG** (hybrid search + cross-encoder reranking) and **real-time compliance auditing** — turning thousands of fragmented PDFs into an instantly queryable, citation-backed source of truth.
 
 ---
 
@@ -50,8 +49,8 @@ MiningNiti is a full-stack AI platform that transforms how coal mining organizat
 - [Quick Start](#quick-start)
 - [API Endpoints](#api-endpoints)
 - [Project Structure](#project-structure)
-- [Testing](#testing)
 - [Deployment](#deployment)
+- [Testing](#testing)
 - [Security](#security)
 - [Performance](#performance)
 - [Contributing](#contributing)
@@ -76,10 +75,10 @@ MiningNiti deploys **specialized AI agents** that understand mining domain conte
 |---|---|
 | **Auto-classify** documents into safety, equipment, regulatory, and geological categories | Classifier Agent (Groq / Llama 3.3) |
 | **Detect hazards** and flag compliance violations against MSHA/OSHA standards | Safety Analyzer (Mistral / Magistral) |
-| **Extract entities** — equipment names, chemicals, regulations, personnel, locations | Entity Extractor (Cerebras / Llama 4 Scout) |
-| **Summarize** long documents with actionable key points | Summarizer Agent (Gemini 2.5 Flash) |
+| **Extract entities** — equipment names, chemicals, regulations, personnel, locations | Entity Extractor (Cerebras / GPT-OSS-120B) |
+| **Summarize** long documents with actionable key points | Summarizer Agent (Cerebras / GPT-OSS-120B) |
 | **Audit compliance** by cross-referencing operational docs against regulations | Compliance Auditor Agent (Gemini) |
-| **Answer questions** with page-level citations from your document corpus | RAG Chat with pgvector search |
+| **Answer questions** with page-level citations from your document corpus | RAG Chat with hybrid search + reranking |
 
 ---
 
@@ -101,7 +100,7 @@ Document Upload
    ▼     ▼     ▼          ▼          ▼            ▼
 Classifier Safety  Entity    Summarizer  Compliance
   Agent   Analyzer Extractor   Agent      Auditor
-(Groq)  (Mistral) (Cerebras) (Gemini)   (Gemini)
+(Groq)  (Mistral) (Cerebras) (Cerebras) (Gemini)
    │     │     │          │          │            │
    └─────┴─────┴──────────┴──────────┴────────────┘
          │
@@ -109,18 +108,21 @@ Classifier Safety  Entity    Summarizer  Compliance
   Chunks + Embeddings → pgvector (HNSW index)
 ```
 
-### RAG-Powered Conversational Search
+### Production RAG Pipeline
 
-Production-grade retrieval pipeline:
+The retrieval system goes beyond basic vector search with a multi-stage pipeline:
 
 ```
 Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rerank → Top-5 → LLM
 ```
 
-- **Hybrid Search**: pgvector cosine similarity + pg_trgm BM25 keyword matching combined via Reciprocal Rank Fusion
-- **Cross-Encoder Reranking**: `ms-marco-MiniLM-L-6-v2` reranks top-20 candidates for precise relevance
-- **Similarity Threshold**: Filters irrelevant chunks before context formatting
-- **System Role Prompt**: Proper LLM message structure for better instruction following
+| Stage | What it does |
+|---|---|
+| **Hybrid Search** | pgvector cosine similarity + pg_trgm BM25 keyword matching combined via Reciprocal Rank Fusion |
+| **Cross-Encoder Reranking** | `ms-marco-MiniLM-L-6-v2` reranks top-20 candidates for precise relevance scoring |
+| **Similarity Threshold** | Filters irrelevant chunks before context formatting |
+| **System Role Prompt** | Proper LLM message structure for better instruction following |
+
 - Streaming responses token-by-token via Server-Sent Events (SSE)
 - Every answer cites `[Document, Page X]` — no hallucination without source
 - Multi-turn session management with full conversation history
@@ -142,7 +144,7 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
 ### Document Management
 
 - Drag-and-drop upload with PDF, DOCX, TXT support
-- UploadThing integration for reliable file storage
+- Direct file upload to backend (no third-party CDN dependency)
 - In-document AI chat — ask questions about a specific document
 - PDF viewer modal for inline document review
 
@@ -153,21 +155,22 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          CLIENT LAYER                                │
-│            Next.js 16 · React 19 · Tailwind v4 · shadcn/ui         │
-│    Clerk Auth · Framer Motion · Recharts · React-PDF               │
+│     Next.js 16 · React 19 · Tailwind v4 · shadcn/ui · Vercel      │
+│        Clerk Auth · Framer Motion · Recharts · React-PDF            │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │ HTTPS
 ┌──────────────────────────▼──────────────────────────────────────────┐
 │                        API GATEWAY                                   │
-│          FastAPI 0.128 · Clerk JWT Auth · slowapi Rate Limiter      │
-│          Pydantic v2 Validation · CORS · Audit Logging              │
+│    FastAPI 0.128 · Clerk JWT Auth · slowapi Rate Limiter            │
+│    Pydantic v2 Validation · CORS · Audit Logging                    │
+│    Deployed on: HuggingFace Spaces (Docker)                         │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │
          ┌─────────────────┼──────────────────┐
          ▼                 ▼                  ▼
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │  Documents   │  │  Chat (SSE)  │  │  Compliance  │
-│  CRUD + AI   │  │  RAG Pipeline│  │  Audit APIs  │
+│  Upload + AI │  │  RAG Pipeline│  │  Audit APIs  │
 └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
        │                 │                  │
        └─────────────────┼──────────────────┘
@@ -191,7 +194,7 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
 │                                                                     │
 │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐           │
 │  │Classifier │ │  Safety   │ │  Entity   │ │Summarizer │           │
-│  │  (Groq)   │ │ (Mistral) │ │(Cerebras) │ │ (Gemini)  │           │
+│  │  (Groq)   │ │ (Mistral) │ │(Cerebras) │ │(Cerebras) │           │
 │  └───────────┘ └───────────┘ └───────────┘ └───────────┘           │
 │                  ┌───────────┐ ┌───────────┐                        │
 │                  │Compliance │ │ Orchestrator│                       │
@@ -202,19 +205,19 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
          ┌─────────────────┼──────────────────┐
          ▼                 ▼                  ▼
 ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
-│  PostgreSQL   │  │    Redis      │  │  AI Providers │
-│  + pgvector   │  │  (Cache/Queue)│  │               │
-│  (HNSW index) │  │               │  │ Gemini · Groq │
-└───────────────┘  └───────────────┘  │ Mistral       │
-                                      │ Cerebras      │
-                                      └───────────────┘
+│  Supabase     │  │  Upstash      │  │  AI Providers │
+│  PostgreSQL   │  │  Redis        │  │               │
+│  + pgvector   │  │  (Cache/Queue)│  │ Gemini · Groq │
+│  (HNSW index) │  │               │  │ Mistral       │
+│  (Free tier)  │  │  (Free tier)  │  │ Cerebras      │
+└───────────────┘  └───────────────┘  └───────────────┘
 ```
 
 ---
 
 ## Tech Stack
 
-### Frontend
+### Frontend (Deployed on Vercel)
 
 | Category | Technology | Version |
 |---|---|---|
@@ -228,40 +231,49 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
 | Animation | Framer Motion + Lenis | 12.x |
 | Charts | Recharts | 2.15 |
 | PDF | react-pdf | 10.x |
-| Uploads | UploadThing | 7.x |
 | Forms | React Hook Form + Zod | 7.x / 3.x |
 
-### Backend
+### Backend (Deployed on HuggingFace Spaces)
 
 | Category | Technology | Version |
 |---|---|---|
 | Framework | FastAPI + Uvicorn | 0.128 |
 | Language | Python | 3.11+ |
 | ORM | SQLAlchemy (async-capable) | 2.0 |
-| Database | PostgreSQL + pgvector + pg_trgm | 16+ |
+| Database | Supabase PostgreSQL + pgvector + pg_trgm | 16+ |
 | Validation | Pydantic | v2.9 |
 | Auth | Clerk JWT (JWKS) | - |
 | Rate Limiting | slowapi | 0.1.9 |
 | Reranking | sentence-transformers (CrossEncoder) | 3.x |
-| Background Tasks | FastAPI BackgroundTasks / Celery | - |
-| HTTP Client | httpx | 0.28 |
-| Process Server | Gunicorn | 23.x |
+| Background Tasks | FastAPI BackgroundTasks | - |
+| HTTP Client | httpx | 0.27.2 |
+| Process Server | Uvicorn (HF Spaces) | - |
 
-### AI Providers
+### AI Providers (All Free Tiers)
 
 | Agent / Service | Provider | Model | Free Tier |
 |---|---|---|---|
 | Embeddings | Google Gemini | `text-embedding-004` | 1,500 req/day |
-| RAG Chat | Google Gemini | `gemini-2.5-flash` | 1,500 req/day |
-| Summarizer | Google Gemini | `gemini-2.5-flash-lite` | 1,500 req/day |
+| RAG Chat | Groq (primary) / Cerebras (fallback) | `llama-3.3-70b-versatile` / `gpt-oss-120b` | 14,400 req/day |
 | Classifier | Groq | `llama-3.3-70b-versatile` | 14,400 req/day |
-| Entity Extractor | Cerebras | `llama-4-scout` | 1M tokens/day |
+| Entity Extractor | Cerebras | `gpt-oss-120b` | 1M tokens/day |
+| Summarizer | Cerebras | `gpt-oss-120b` | 1M tokens/day |
 | Safety Analyzer | Mistral | `magistral-small-latest` | Free tier |
 | Compliance Auditor | Google Gemini | `gemini-2.5-flash` | 1,500 req/day |
 | Reranker | Local (CPU) | `ms-marco-MiniLM-L-6-v2` | Free (runs locally) |
-| Fallback | OpenRouter | `deepseek/deepseek-r1:free` | Free tier |
 
-> All agents run on free tiers — zero cost for development and moderate production usage.
+### Infrastructure (All Free Tiers)
+
+| Service | Provider | Free Tier |
+|---|---|---|
+| Frontend Hosting | **Vercel** | Unlimited deploys, custom domain |
+| Backend Hosting | **HuggingFace Spaces** | 16GB RAM, 2 vCPU, Docker support |
+| Database | **Supabase** | 500MB PostgreSQL + pgvector, unlimited API calls |
+| Cache / Queue | **Upstash** | 10,000 Redis commands/day |
+| Authentication | **Clerk** | 10,000 monthly active users |
+| File Upload | **Direct to Backend** | No third-party dependency |
+
+> **Total infrastructure cost: $0/month** — all services run on free tiers.
 
 ---
 
@@ -270,9 +282,8 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
 ### Prerequisites
 
 - **Python 3.11+** and **Node.js 18+**
-- **Docker & Docker Compose** (recommended)
-- **API Keys**: Gemini, Groq, Mistral, Cerebras (all have free tiers)
-- **Clerk Account** for authentication
+- **Docker & Docker Compose** (recommended for local development)
+- **Free accounts**: Supabase, Upstash, Clerk, Google AI Studio, Groq, Cerebras, Mistral
 
 ### 1. Clone & Configure
 
@@ -281,7 +292,7 @@ git clone https://github.com/Iammilansoni/MiningNiti.git
 cd MiningNiti
 
 cp backend/.env.example backend/.env
-# Edit backend/.env with your API keys
+# Edit backend/.env with your API keys (see Environment Variables below)
 ```
 
 ### 2. Docker (Recommended)
@@ -314,15 +325,17 @@ npm run dev                     # http://localhost:3000
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `GEMINI_API_KEY` | Yes | Google Gemini API key |
-| `GROQ_API_KEY` | Yes | Groq API key |
-| `MISTRAL_API_KEY` | Yes | Mistral API key |
-| `CEREBRAS_API_KEY` | No | Cerebras API key (enables faster entity extraction) |
+| `DATABASE_URL` | Yes | Supabase PostgreSQL connection string (use Transaction pooler, port 6543) |
+| `GEMINI_API_KEY` | Yes | Google Gemini API key from [aistudio.google.com](https://aistudio.google.com/apikey) |
+| `GROQ_API_KEY` | Yes | Groq API key from [console.groq.com](https://console.groq.com) |
+| `MISTRAL_API_KEY` | Yes | Mistral API key from [console.mistral.ai](https://console.mistral.ai) |
+| `CEREBRAS_API_KEY` | Yes | Cerebras API key from [cloud.cerebras.ai](https://cloud.cerebras.ai) |
 | `CLERK_JWKS_URL` | Yes | Clerk JWKS endpoint for JWT verification |
-| `REDIS_URL` | No | Redis connection (defaults to localhost) |
-| `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend (defaults to localhost:8000) |
+| `REDIS_URL` | Yes | Upstash Redis URL (with `?tls=true`) |
+| `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend (e.g. `https://your-space.hf.space`) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key for frontend auth |
+| `CLERK_SECRET_KEY` | Yes | Clerk secret key for backend auth |
+| `UPLOADTHING_TOKEN` | No | UploadThing token (optional, direct upload used by default) |
 
 ---
 
@@ -342,7 +355,8 @@ All endpoints are prefixed with `/api/v1`.
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/v1/documents` | List documents (paginated) |
-| POST | `/api/v1/documents` | Upload & process document |
+| POST | `/api/v1/documents` | Create document from URL |
+| POST | `/api/v1/upload` | Upload file directly (multipart) |
 | GET | `/api/v1/documents/{id}` | Get document detail |
 | DELETE | `/api/v1/documents/{id}` | Delete document |
 | GET | `/api/v1/documents/{id}/analysis` | Get AI analysis results |
@@ -396,6 +410,7 @@ MiningNiti/
 │   │   │   └── v1/
 │   │   │       ├── router.py          # Unified API router
 │   │   │       ├── documents.py       # Document CRUD + processing
+│   │   │       ├── upload.py          # Direct file upload endpoint
 │   │   │       ├── chat.py            # RAG chat (sync)
 │   │   │       ├── chat_stream.py     # RAG chat (SSE streaming)
 │   │   │       ├── compliance.py      # Compliance audit endpoints
@@ -406,11 +421,11 @@ MiningNiti/
 │   │   │       ├── user.py            # User profile
 │   │   │       └── health.py          # Health check
 │   │   ├── agents/
-│   │   │   ├── base.py                # Base agent interface
+│   │   │   ├── base.py                # Base agent interface with retry logic
 │   │   │   ├── classifier.py          # Document classification (Groq)
 │   │   │   ├── safety_analyzer.py     # Hazard detection (Mistral)
 │   │   │   ├── entity_extractor.py    # Mining NER (Cerebras)
-│   │   │   ├── summarizer.py          # Executive summaries (Gemini)
+│   │   │   ├── summarizer.py          # Executive summaries (Cerebras)
 │   │   │   ├── compliance_auditor.py  # Compliance cross-reference (Gemini)
 │   │   │   └── orchestrator.py        # Parallel agent coordination
 │   │   ├── models/
@@ -443,7 +458,8 @@ MiningNiti/
 │   │   └── integration/               # Integration tests (PostgreSQL + Redis)
 │   ├── requirements.txt
 │   ├── pyproject.toml                 # black + isort config
-│   └── Dockerfile
+│   ├── Dockerfile                     # Docker build for HuggingFace Spaces
+│   └── alembic/                       # Database migrations
 ├── frontend/
 │   ├── src/
 │   │   ├── app/
@@ -458,7 +474,6 @@ MiningNiti/
 │   │   │   │   └── settings/          # Profile, notifications, security
 │   │   │   ├── about/                 # About page
 │   │   │   ├── announcement/          # Announcement page
-│   │   │   ├── api-reference/         # API documentation
 │   │   │   ├── blog/                  # Blog
 │   │   │   ├── careers/               # Careers
 │   │   │   ├── case-studies/          # Case studies
@@ -490,12 +505,117 @@ MiningNiti/
 
 ---
 
+## Deployment
+
+### Overview
+
+The entire application runs on **free-tier services** with zero infrastructure cost:
+
+```
+┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
+│   Frontend   │────▶│     Backend      │────▶│   Database   │
+│   Vercel     │     │ HuggingFace      │     │  Supabase    │
+│              │     │ Spaces (Docker)  │     │  PostgreSQL  │
+└──────────────┘     └──────────────────┘     │  + pgvector  │
+                             │                 └──────────────┘
+                             ▼
+                      ┌──────────────┐
+                      │    Redis     │
+                      │   Upstash    │
+                      └──────────────┘
+```
+
+### Step 1: Setup Database (Supabase)
+
+1. Create a free account at [supabase.com](https://supabase.com)
+2. Create a new project (choose closest region)
+3. Go to **Connect** → **Connection string** → **Transaction pooler** → Copy the URI
+4. In **SQL Editor**, run:
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+```
+5. Use the connection string as `DATABASE_URL` (port 6543, with `?sslmode=require`)
+
+### Step 2: Setup Redis (Upstash)
+
+1. Create a free account at [upstash.com](https://upstash.com)
+2. Create a Redis database (choose closest region)
+3. Copy the Redis URL
+4. Use as `REDIS_URL` (append `?tls=true`)
+
+### Step 3: Setup Authentication (Clerk)
+
+1. Create a free account at [clerk.com](https://clerk.com)
+2. Create a new application
+3. Copy the **Publishable Key** and **Secret Key**
+4. Copy the **JWKS URL** from your Clerk dashboard
+
+### Step 4: Get AI Provider Keys (All Free)
+
+| Provider | Sign up at | What you get |
+|---|---|---|
+| Google Gemini | [aistudio.google.com](https://aistudio.google.com/apikey) | Embeddings + Chat |
+| Groq | [console.groq.com](https://console.groq.com) | Ultra-fast LLM inference |
+| Cerebras | [cloud.cerebras.ai](https://cloud.cerebras.ai) | 1M tokens/day free |
+| Mistral | [console.mistral.ai](https://console.mistral.ai) | Safety analysis |
+
+### Step 5: Deploy Backend (HuggingFace Spaces)
+
+1. Create a free account at [huggingface.co](https://huggingface.co)
+2. Create a new Space with **Docker** SDK
+3. Clone the Space:
+```bash
+git clone https://huggingface.co/spaces/YOUR-USERNAME/miningniti-api
+```
+4. Copy backend files into the Space folder
+5. Create `Dockerfile` and `README.md` (see `backend/Dockerfile.hf`)
+6. Push to HuggingFace:
+```bash
+cd miningniti-api
+git add .
+git commit -m "Deploy MiningNiti API"
+git push
+```
+7. In Space **Settings** → **Variables and Secrets**, add all environment variables
+8. Wait for the build to complete (~5-10 minutes)
+
+### Step 6: Deploy Frontend (Vercel)
+
+1. Push frontend code to GitHub
+2. Go to [vercel.com](https://vercel.com) → Import repository
+3. Add environment variables:
+   - `NEXT_PUBLIC_API_BASE_URL` → `https://YOUR-USERNAME-miningniti-api.hf.space`
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` → your Clerk publishable key
+   - `CLERK_SECRET_KEY` → your Clerk secret key
+4. Click **Deploy**
+
+### Step 7: Run Database Migration
+
+After backend is deployed, run the migration in Supabase SQL Editor:
+```sql
+-- From alembic/versions/001_enable_pgvector.py
+-- (tables are auto-created on startup, but run manually if needed)
+```
+
+### Live URLs
+
+| Service | URL |
+|---|---|
+| Frontend | `https://YOUR-USERNAME-miningniti-frontend.vercel.app` |
+| Backend API | `https://YOUR-USERNAME-miningniti-api.hf.space` |
+| API Docs | `https://YOUR-USERNAME-miningniti-api.hf.space/docs` |
+| Database | `https://supabase.com/dashboard/project/YOUR-PROJECT` |
+| Redis | `https://upstash.com/dashboard/YOUR-DATABASE` |
+
+---
+
 ## Testing
 
 ```bash
 cd backend
 
-# Unit tests (fast, SQLite in-memory, no external services)
+# Unit tests (fast, SQLite in-memory, no external services needed)
 pytest tests/unit/ -v -m unit
 
 # Integration tests (requires running PostgreSQL + Redis)
@@ -508,6 +628,7 @@ pytest tests/unit/ --cov=app --cov-report=html
 **47 unit tests** covering:
 - All 5 AI agents (mocked LLM responses)
 - RAG chat service (context formatting, prompt building, source citations)
+- Hybrid search + reranking pipeline
 - Text chunking (sequential indices, page tracking, overlap, edge cases)
 - Document extractors (plain text processing)
 
@@ -528,40 +649,6 @@ npm run build         # Production build
 
 ---
 
-## Deployment
-
-### Frontend → Vercel
-
-1. Connect GitHub repo to [Vercel](https://vercel.com)
-2. Set environment variables:
-   - `NEXT_PUBLIC_API_BASE_URL` → your backend URL
-   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-3. Deploy (auto-builds on push to `main`)
-
-### Backend → AWS ECS (Production)
-
-The project uses GitHub Actions CI/CD:
-
-```
-Push to main → Build Docker image → Push to AWS ECR → Deploy to ECS
-```
-
-**Required secrets in GitHub:**
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-- `ECR_REPOSITORY`, `ECS_CLUSTER`, `ECS_SERVICE`
-
-### Self-Hosted (Docker)
-
-```bash
-# Development
-docker-compose up -d
-
-# Production
-docker-compose -f docker-compose.prod.yml up -d
-```
-
----
-
 ## Security
 
 | Layer | Implementation |
@@ -573,7 +660,7 @@ docker-compose -f docker-compose.prod.yml up -d
 | **SQL Injection** | SQLAlchemy ORM with parameterized queries |
 | **Audit Logging** | All mutations logged with action, user, and timestamp |
 | **CORS** | Configurable origins; auth errors propagate CORS headers |
-| **Secrets** | Never committed; `.env` gitignored; Docker secrets for production |
+| **Secrets** | Stored as HuggingFace/Vercel environment secrets, never committed |
 
 ---
 
@@ -588,8 +675,8 @@ docker-compose -f docker-compose.prod.yml up -d
 | **SSE streaming** | Token-by-token response delivery (no wait for full answer) |
 | **Background tasks** | Document processing runs asynchronously via FastAPI BackgroundTasks |
 | **Crash recovery** | Stuck documents auto-reset to PENDING on server restart |
-| **Connection pooling** | SQLAlchemy pool with configurable size/overflow |
-| **Turbopack** | Frontend dev builds and production bundling via Next.js 16 Turbopack |
+| **LLM fallback** | Groq → Cerebras automatic fallback with retry logic |
+| **Model pre-download** | Cross-encoder reranker baked into Docker image (no cold start) |
 
 ---
 
@@ -615,7 +702,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Built for the Mining Industry** · **Powered by 4 AI Providers** · **Enterprise Ready**
+**Built for the Mining Industry** · **Powered by 4 AI Providers** · **$0/month Infrastructure**
 
 <br/>
 
