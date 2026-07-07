@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Navbar } from './Navbar';
-import { AnnouncementBanner } from './AnnouncementBanner';
 import { IntelligenceGraph } from './IntelligenceGraph';
 import { ArrowRight } from 'lucide-react';
 import ColorBends from '@/components/ui/ColorBends';
@@ -148,9 +147,6 @@ export function HeroSection() {
 
       {/* ── Bottom gradient fade into next section ── */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-linear-to-t from-[#05030A] to-transparent pointer-events-none z-20" />
-
-      {/* ── Announcement Banner ── */}
-      <AnnouncementBanner />
     </section>
   );
 }
