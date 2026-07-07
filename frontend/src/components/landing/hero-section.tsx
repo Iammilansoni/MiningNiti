@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Navbar } from './Navbar';
-import { IntelligenceGraph } from './IntelligenceGraph';
 import { ArrowRight } from 'lucide-react';
 import ColorBends from '@/components/ui/ColorBends';
 
@@ -17,7 +16,6 @@ import ColorBends from '@/components/ui/ColorBends';
     Navbar → Eyebrow → Headline → Subheadline → CTAs → Visual → Trust bar
   
   One accent color (#947AFC). Typography does 80% of the work.
-  The IntelligenceGraph SVG is the single visual centerpiece.
 */
 
 const fadeUp = (delay = 0) => ({
@@ -137,11 +135,6 @@ export function HeroSection() {
             <ArrowRight className="size-4 text-white/30 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all duration-300" />
           </Link>
         </motion.div>
-
-        {/* ── Intelligence Graph — The Visual Centerpiece ── */}
-        <div className="w-full mb-12 sm:mb-16 -mt-4">
-          <IntelligenceGraph />
-        </div>
 
       </div>
 

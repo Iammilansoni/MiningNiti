@@ -46,9 +46,8 @@ python-docx==1.1.2
 python-magic==0.4.27
 
 # -----------------------------------------------------------------------------
-# Background Jobs (Optional: used for production scaling, BackgroundTasks used in dev)
+# Background Jobs
 # -----------------------------------------------------------------------------
-# celery==5.6.2  # Uncomment for production Celery workers
 redis==7.1.0
 
 # -----------------------------------------------------------------------------

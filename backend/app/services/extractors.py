@@ -197,30 +197,39 @@ async def download_and_extract(file_url: str, file_type: str) -> ExtractedDocume
     Download a file from URL and extract its text content with page tracking.
 
     Args:
-        file_url: Remote URL of the document file
+        file_url: Remote URL or local file:// path
         file_type: MIME type string
 
     Returns:
         ExtractedDocument with full text and per-page content
-
-    Raises:
-        ValueError: If file type is not supported or extraction fails
     """
     suffix = EXTENSION_MAP.get(file_type, ".tmp")
 
-    # Validate URL scheme before downloading (SSRF prevention)
     from urllib.parse import urlparse
 
     parsed = urlparse(file_url)
-    if parsed.scheme not in ("https", "http"):
-        raise ValueError(f"Unsupported URL scheme: {parsed.scheme}")
 
-    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-        response = await client.get(file_url)
+    # Handle local file:// URLs
+    if parsed.scheme == "file":
+        import os
+
+        local_path = parsed.path
+        if os.name == "nt" and local_path.startswith("/"):
+            local_path = local_path[1:]
+
+        with open(local_path, "rb") as f:
+            file_bytes = f.read()
+    else:
+        if parsed.scheme not in ("https", "http"):
+            raise ValueError(f"Unsupported URL scheme: {parsed.scheme}")
+
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            response = await client.get(file_url)
         response.raise_for_status()
+        file_bytes = response.content
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(response.content)
+        tmp.write(file_bytes)
         tmp_path = tmp.name
 
     try:
