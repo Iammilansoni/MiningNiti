@@ -60,25 +60,20 @@ MiningNiti is a full-stack AI platform that transforms how coal mining organizat
 
 ## The Problem
 
-Coal mining operations generate **thousands of critical documents** — MSHA regulations, equipment manuals, safety protocols, environmental impact assessments, and incident investigations. The core challenges:
-
-- **Fragmentation**: Information is scattered across PDFs, scanned forms, and siloed databases
-- **Compliance risk**: Missing a regulation update can mean violations, fines, or worse — lives
-- **Slow retrieval**: Finding a specific clause across 500 pages of safety protocols takes hours
-- **Knowledge drain**: Expertise leaves when experienced personnel retire
+Coal mining operations generate **thousands of critical documents** — MSHA regulations, equipment manuals, safety protocols, environmental impact assessments, and incident investigations. Information is scattered across PDFs, scanned forms, and siloed databases. Finding a specific clause across 500 pages of safety protocols takes hours, and missing a regulation update can mean violations, fines, or lives.
 
 ## The Solution
 
-MiningNiti deploys **specialized AI agents** that understand mining domain context:
+MiningNiti deploys **6 specialized AI agents** across 4 providers that understand mining domain context:
 
-| Capability | How |
+| Capability | Agent |
 |---|---|
-| **Auto-classify** documents into safety, equipment, regulatory, and geological categories | Classifier Agent (Groq / Llama 3.3) |
+| **Auto-classify** documents into safety, equipment, regulatory, and geological categories | Classifier (Groq / Llama 3.3) |
 | **Detect hazards** and flag compliance violations against MSHA/OSHA standards | Safety Analyzer (Mistral / Magistral) |
 | **Extract entities** — equipment names, chemicals, regulations, personnel, locations | Entity Extractor (Cerebras / GPT-OSS-120B) |
-| **Summarize** long documents with actionable key points | Summarizer Agent (Cerebras / GPT-OSS-120B) |
-| **Audit compliance** by cross-referencing operational docs against regulations | Compliance Auditor Agent (Gemini) |
-| **Answer questions** with page-level citations from your document corpus | RAG Chat with hybrid search + reranking |
+| **Summarize** long documents with actionable key points | Summarizer (Cerebras / GPT-OSS-120B) |
+| **Audit compliance** by cross-referencing operational docs against regulations | Compliance Auditor (Gemini) |
+| **Answer questions** with page-level citations from your document corpus | RAG Chat (hybrid search + reranking) |
 
 ---
 
@@ -217,63 +212,15 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
 
 ## Tech Stack
 
-### Frontend (Deployed on Vercel)
-
-| Category | Technology | Version |
+| Layer | Technology | Version |
 |---|---|---|
-| Framework | Next.js (App Router, Turbopack) | 16.x |
-| UI Library | React | 19.x |
-| Language | TypeScript | 5.x |
-| Styling | Tailwind CSS + tw-animate-css | v4 |
-| Components | shadcn/ui (Radix primitives) | Latest |
-| Auth | Clerk | 6.x |
-| State | Zustand + TanStack React Query | 5.x |
-| Animation | Framer Motion + Lenis | 12.x |
-| Charts | Recharts | 2.15 |
-| PDF | react-pdf | 10.x |
-| Forms | React Hook Form + Zod | 7.x / 3.x |
+| **Frontend** | Next.js (App Router, Turbopack) · React · TypeScript · Tailwind CSS v4 · shadcn/ui · Clerk Auth · Zustand · TanStack React Query · Recharts | 16.x / 19.x / 5.x |
+| **Backend** | FastAPI · Python · SQLAlchemy (async) · Pydantic v2 · slowapi Rate Limiting · sentence-transformers CrossEncoder | 0.128 / 3.11+ / 2.0 |
+| **Database** | Supabase PostgreSQL + pgvector + pg_trgm (HNSW index) | 16+ |
+| **AI Agents** | Groq (Llama 3.3) · Mistral (Magistral) · Cerebras (GPT-OSS-120B) · Gemini (2.5 Flash) | All free tiers |
+| **Infrastructure** | Vercel (frontend) · HuggingFace Spaces (backend, Docker) · Supabase (DB) · Upstash (Redis) · Clerk (Auth) | All free tiers |
 
-### Backend (Deployed on HuggingFace Spaces)
-
-| Category | Technology | Version |
-|---|---|---|
-| Framework | FastAPI + Uvicorn | 0.128 |
-| Language | Python | 3.11+ |
-| ORM | SQLAlchemy (async-capable) | 2.0 |
-| Database | Supabase PostgreSQL + pgvector + pg_trgm | 16+ |
-| Validation | Pydantic | v2.9 |
-| Auth | Clerk JWT (JWKS) | - |
-| Rate Limiting | slowapi | 0.1.9 |
-| Reranking | sentence-transformers (CrossEncoder) | 3.x |
-| Background Tasks | FastAPI BackgroundTasks | - |
-| HTTP Client | httpx | 0.27.2 |
-| Process Server | Uvicorn (HF Spaces) | - |
-
-### AI Providers (All Free Tiers)
-
-| Agent / Service | Provider | Model | Free Tier |
-|---|---|---|---|
-| Embeddings | Google Gemini | `text-embedding-004` | 1,500 req/day |
-| RAG Chat | Groq (primary) / Cerebras (fallback) | `llama-3.3-70b-versatile` / `gpt-oss-120b` | 14,400 req/day |
-| Classifier | Groq | `llama-3.3-70b-versatile` | 14,400 req/day |
-| Entity Extractor | Cerebras | `gpt-oss-120b` | 1M tokens/day |
-| Summarizer | Cerebras | `gpt-oss-120b` | 1M tokens/day |
-| Safety Analyzer | Mistral | `magistral-small-latest` | Free tier |
-| Compliance Auditor | Google Gemini | `gemini-2.5-flash` | 1,500 req/day |
-| Reranker | Local (CPU) | `ms-marco-MiniLM-L-6-v2` | Free (runs locally) |
-
-### Infrastructure (All Free Tiers)
-
-| Service | Provider | Free Tier |
-|---|---|---|
-| Frontend Hosting | **Vercel** | Unlimited deploys, custom domain |
-| Backend Hosting | **HuggingFace Spaces** | 16GB RAM, 2 vCPU, Docker support |
-| Database | **Supabase** | 500MB PostgreSQL + pgvector, unlimited API calls |
-| Cache / Queue | **Upstash** | 10,000 Redis commands/day |
-| Authentication | **Clerk** | 10,000 monthly active users |
-| File Upload | **Direct to Backend** | No third-party dependency |
-
-> **Total infrastructure cost: $0/month** — all services run on free tiers.
+> **Total infrastructure cost: $0/month**
 
 ---
 
@@ -405,208 +352,71 @@ All endpoints are prefixed with `/api/v1`.
 MiningNiti/
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   │   ├── deps.py                # Dependency injection (auth, DB)
-│   │   │   └── v1/
-│   │   │       ├── router.py          # Unified API router
-│   │   │       ├── documents.py       # Document CRUD + processing
-│   │   │       ├── upload.py          # Direct file upload endpoint
-│   │   │       ├── chat.py            # RAG chat (sync)
-│   │   │       ├── chat_stream.py     # RAG chat (SSE streaming)
-│   │   │       ├── compliance.py      # Compliance audit endpoints
-│   │   │       ├── analytics.py       # Dashboard analytics
-│   │   │       ├── search.py          # Semantic vector search
-│   │   │       ├── prompts.py         # Prompt template management
-│   │   │       ├── jobs.py            # Background job tracking
-│   │   │       ├── user.py            # User profile
-│   │   │       └── health.py          # Health check
-│   │   ├── agents/
-│   │   │   ├── base.py                # Base agent interface with retry logic
-│   │   │   ├── classifier.py          # Document classification (Groq)
-│   │   │   ├── safety_analyzer.py     # Hazard detection (Mistral)
-│   │   │   ├── entity_extractor.py    # Mining NER (Cerebras)
-│   │   │   ├── summarizer.py          # Executive summaries (Cerebras)
-│   │   │   ├── compliance_auditor.py  # Compliance cross-reference (Gemini)
-│   │   │   └── orchestrator.py        # Parallel agent coordination
-│   │   ├── models/
-│   │   │   ├── document.py            # Document + DocumentEmbedding (pgvector)
-│   │   │   ├── chat.py                # ChatSession + ChatMessage
-│   │   │   ├── compliance.py          # ComplianceAudit + ComplianceMatrixRow
-│   │   │   ├── audit.py               # Audit logging
-│   │   │   ├── prompt.py              # Prompt templates
-│   │   │   └── user.py                # User model
-│   │   ├── schemas/                   # Pydantic request/response schemas
-│   │   ├── services/
-│   │   │   ├── chat_service.py        # RAG pipeline (hybrid → rerank → generate)
-│   │   │   ├── hybrid_search.py       # Vector + BM25 + Reciprocal Rank Fusion
-│   │   │   ├── reranker.py            # Cross-encoder reranking (ms-marco-MiniLM)
-│   │   │   ├── document_service.py    # Upload, extract, chunk, embed
-│   │   │   ├── compliance_service.py  # Compliance audit logic
-│   │   │   ├── chunking.py            # Text chunking with overlap
-│   │   │   ├── extractors.py          # PDF/DOCX/TXT text extraction
-│   │   │   ├── llm_provider.py        # Multi-provider AI client setup
-│   │   │   └── queue.py               # Task queue management
-│   │   ├── core/
-│   │   │   ├── security.py            # JWT verification, CORS
-│   │   │   └── exceptions.py          # Custom error handlers
-│   │   ├── db/
-│   │   │   ├── session.py             # SQLAlchemy engine + pgvector init
-│   │   │   └── __init__.py
-│   │   └── main.py                    # FastAPI app factory
-│   ├── tests/
-│   │   ├── unit/                      # 47 unit tests (SQLite in-memory)
-│   │   └── integration/               # Integration tests (PostgreSQL + Redis)
-│   ├── requirements.txt
-│   ├── pyproject.toml                 # black + isort config
-│   ├── Dockerfile                     # Docker build for HuggingFace Spaces
-│   └── alembic/                       # Database migrations
+│   │   ├── api/v1/          # API endpoints (documents, chat, compliance, analytics, search)
+│   │   ├── agents/          # 6 AI agents (classifier, safety, entity, summarizer, compliance, orchestrator)
+│   │   ├── models/          # SQLAlchemy models (documents, chat, compliance, audit)
+│   │   ├── schemas/         # Pydantic request/response schemas
+│   │   ├── services/        # Business logic (RAG, hybrid search, reranker, compliance)
+│   │   ├── core/            # Security, exceptions, config
+│   │   └── db/              # SQLAlchemy engine + pgvector init
+│   ├── tests/unit/          # 47 unit tests (SQLite in-memory)
+│   ├── tests/integration/   # Integration tests (PostgreSQL + Redis)
+│   └── Dockerfile           # Docker build for HuggingFace Spaces
 ├── frontend/
 │   ├── src/
-│   │   ├── app/
-│   │   │   ├── (auth)/                # Sign-in / Sign-up (Clerk)
-│   │   │   ├── (dashboard)/           # Protected routes
-│   │   │   │   ├── dashboard/         # Main dashboard
-│   │   │   │   ├── chat/              # RAG chat interface
-│   │   │   │   ├── documents/         # Document management + [id] detail
-│   │   │   │   ├── compliance/        # Compliance audits + [id] detail
-│   │   │   │   ├── analytics/         # Analytics dashboard
-│   │   │   │   ├── prompts/           # Prompt template manager
-│   │   │   │   └── settings/          # Profile, notifications, security
-│   │   │   ├── about/                 # About page
-│   │   │   ├── announcement/          # Announcement page
-│   │   │   ├── blog/                  # Blog
-│   │   │   ├── careers/               # Careers
-│   │   │   ├── case-studies/          # Case studies
-│   │   │   ├── contact/               # Contact
-│   │   │   └── privacy/               # Privacy policy
-│   │   ├── components/
-│   │   │   ├── landing/               # 22 landing page components
-│   │   │   ├── chat/                  # ChatMessage, PDFViewerModal
-│   │   │   ├── documents/             # UploadModal, AskDocumentAI
-│   │   │   ├── dashboard/             # KPI grid, StatCard, QuickActions
-│   │   │   ├── analytics/             # Charts and visualizations
-│   │   │   ├── settings/              # ProfileSettings, NotificationSettings
-│   │   │   ├── layout/                # Header, Sidebar
-│   │   │   ├── ui/                    # shadcn/ui + custom animated components
-│   │   │   └── prompts/               # Prompt management UI
-│   │   ├── hooks/
-│   │   │   ├── use-chat-stream.ts     # SSE streaming hook
-│   │   │   └── useApi.ts              # Typed API client hook
-│   │   └── lib/
-│   │       └── api.ts                 # API client with auth headers
-│   ├── package.json
-│   └── next.config.ts
+│   │   ├── app/             # Next.js App Router (auth, dashboard, chat, documents, compliance, analytics)
+│   │   ├── components/      # Landing (22 components), chat, documents, dashboard, analytics, settings, ui
+│   │   ├── hooks/           # SSE streaming, typed API client
+│   │   └── lib/             # API client with auth headers
+│   └── package.json
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
-├── ARCHITECTURE.md
-├── AGENTS.md
-└── LICENSE
+└── ARCHITECTURE.md
 ```
 
 ---
 
 ## Deployment
 
-### Overview
-
-The entire application runs on **free-tier services** with zero infrastructure cost:
+The entire application runs on **free-tier services** with zero infrastructure cost.
 
 ```
 ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
 │   Frontend   │────▶│     Backend      │────▶│   Database   │
 │   Vercel     │     │ HuggingFace      │     │  Supabase    │
-│              │     │ Spaces (Docker)  │     │  PostgreSQL  │
-└──────────────┘     └──────────────────┘     │  + pgvector  │
-                             │                 └──────────────┘
-                             ▼
-                      ┌──────────────┐
-                      │    Redis     │
-                      │   Upstash    │
-                      └──────────────┘
+│              │     │ Spaces (Docker)  │     │  + pgvector  │
+└──────────────┘     └──────────────────┘     └──────────────┘
+                              │
+                              ▼
+                       ┌──────────────┐
+                       │    Redis     │
+                       │   Upstash    │
+                       └──────────────┘
 ```
 
-### Step 1: Setup Database (Supabase)
+### Setup Steps
 
-1. Create a free account at [supabase.com](https://supabase.com)
-2. Create a new project (choose closest region)
-3. Go to **Connect** → **Connection string** → **Transaction pooler** → Copy the URI
-4. In **SQL Editor**, run:
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-```
-5. Use the connection string as `DATABASE_URL` (port 6543, with `?sslmode=require`)
+1. **Database** (Supabase): Create project, copy Transaction pooler connection string (port 6543), run `CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pg_trgm;`
+2. **Redis** (Upstash): Create Redis database, copy URL with `?tls=true`
+3. **Auth** (Clerk): Create app, copy Publishable Key, Secret Key, and JWKS URL
+4. **AI Keys** (all free): [Gemini](https://aistudio.google.com/apikey), [Groq](https://console.groq.com), [Cerebras](https://cloud.cerebras.ai), [Mistral](https://console.mistral.ai)
+5. **Backend** (HuggingFace Spaces): Create Docker space, clone, copy `backend/` files, push, add env vars in Settings
+6. **Frontend** (Vercel): Import repo, add `NEXT_PUBLIC_API_BASE_URL` (HF space URL) + Clerk keys, deploy
 
-### Step 2: Setup Redis (Upstash)
+### Environment Variables
 
-1. Create a free account at [upstash.com](https://upstash.com)
-2. Create a Redis database (choose closest region)
-3. Copy the Redis URL
-4. Use as `REDIS_URL` (append `?tls=true`)
-
-### Step 3: Setup Authentication (Clerk)
-
-1. Create a free account at [clerk.com](https://clerk.com)
-2. Create a new application
-3. Copy the **Publishable Key** and **Secret Key**
-4. Copy the **JWKS URL** from your Clerk dashboard
-
-### Step 4: Get AI Provider Keys (All Free)
-
-| Provider | Sign up at | What you get |
+| Variable | Required | Description |
 |---|---|---|
-| Google Gemini | [aistudio.google.com](https://aistudio.google.com/apikey) | Embeddings + Chat |
-| Groq | [console.groq.com](https://console.groq.com) | Ultra-fast LLM inference |
-| Cerebras | [cloud.cerebras.ai](https://cloud.cerebras.ai) | 1M tokens/day free |
-| Mistral | [console.mistral.ai](https://console.mistral.ai) | Safety analysis |
-
-### Step 5: Deploy Backend (HuggingFace Spaces)
-
-1. Create a free account at [huggingface.co](https://huggingface.co)
-2. Create a new Space with **Docker** SDK
-3. Clone the Space:
-```bash
-git clone https://huggingface.co/spaces/YOUR-USERNAME/miningniti-api
-```
-4. Copy backend files into the Space folder
-5. Create `Dockerfile` and `README.md` (see `backend/Dockerfile.hf`)
-6. Push to HuggingFace:
-```bash
-cd miningniti-api
-git add .
-git commit -m "Deploy MiningNiti API"
-git push
-```
-7. In Space **Settings** → **Variables and Secrets**, add all environment variables
-8. Wait for the build to complete (~5-10 minutes)
-
-### Step 6: Deploy Frontend (Vercel)
-
-1. Push frontend code to GitHub
-2. Go to [vercel.com](https://vercel.com) → Import repository
-3. Add environment variables:
-   - `NEXT_PUBLIC_API_BASE_URL` → `https://YOUR-USERNAME-miningniti-api.hf.space`
-   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` → your Clerk publishable key
-   - `CLERK_SECRET_KEY` → your Clerk secret key
-4. Click **Deploy**
-
-### Step 7: Run Database Migration
-
-After backend is deployed, run the migration in Supabase SQL Editor:
-```sql
--- From alembic/versions/001_enable_pgvector.py
--- (tables are auto-created on startup, but run manually if needed)
-```
-
-### Live URLs
-
-| Service | URL |
-|---|---|
-| Frontend | `https://YOUR-USERNAME-miningniti-frontend.vercel.app` |
-| Backend API | `https://YOUR-USERNAME-miningniti-api.hf.space` |
-| API Docs | `https://YOUR-USERNAME-miningniti-api.hf.space/docs` |
-| Database | `https://supabase.com/dashboard/project/YOUR-PROJECT` |
-| Redis | `https://upstash.com/dashboard/YOUR-DATABASE` |
+| `DATABASE_URL` | Yes | Supabase PostgreSQL (Transaction pooler, port 6543) |
+| `GEMINI_API_KEY` | Yes | Google Gemini API key |
+| `GROQ_API_KEY` | Yes | Groq API key |
+| `MISTRAL_API_KEY` | Yes | Mistral API key |
+| `CEREBRAS_API_KEY` | Yes | Cerebras API key |
+| `CLERK_JWKS_URL` | Yes | Clerk JWKS endpoint |
+| `REDIS_URL` | Yes | Upstash Redis URL (with `?tls=true`) |
+| `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Yes | Clerk secret key |
 
 ---
 
@@ -614,50 +424,16 @@ After backend is deployed, run the migration in Supabase SQL Editor:
 
 ```bash
 cd backend
-
-# Unit tests (fast, SQLite in-memory, no external services needed)
-pytest tests/unit/ -v -m unit
-
-# Integration tests (requires running PostgreSQL + Redis)
-pytest tests/integration/ -v -m integration
-
-# RAG evaluation — synthetic (no DB, instant)
-pytest tests/eval/test_rag_eval.py -v -m synthetic
-
-# RAG evaluation — live pipeline (needs DB + API keys)
-pytest tests/eval/test_rag_eval.py -v -m live
-
-# With coverage
-pytest tests/unit/ --cov=app --cov-report=html
+pytest tests/unit/ -v -m unit                           # 47 unit tests (SQLite in-memory)
+pytest tests/integration/ -v -m integration              # Needs PostgreSQL + Redis
+pytest tests/eval/test_rag_eval.py -v -m synthetic       # RAG eval (no DB, instant)
+pytest tests/eval/test_rag_eval.py -v -m live            # RAG eval (full pipeline)
+pytest tests/unit/ --cov=app --cov-report=html           # With coverage
 ```
 
-**47 unit tests** covering:
-- All 5 AI agents (mocked LLM responses)
-- RAG chat service (context formatting, prompt building, source citations)
-- Hybrid search + reranking pipeline
-- Text chunking (sequential indices, page tracking, overlap, edge cases)
-- Document extractors (plain text processing)
+**Unit tests** cover all 5 AI agents (mocked), RAG chat service, hybrid search + reranking, text chunking, and document extractors.
 
-**RAG evaluation tests** (Gemini-powered, no external eval services):
-- Faithfulness scoring — verifies LLM answers are grounded in retrieved context
-- Answer relevancy scoring — verifies LLM answers actually address the query
-- Synthetic tests run instantly without a database
-- Live tests run the full hybrid_search + LLM pipeline against real data
-
-**Linting:**
-```bash
-cd backend
-python -m isort app/ tests/     # Sort imports
-python -m black app/ tests/     # Format code
-python -m black --check app/ tests/   # Verify formatting
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm run lint          # ESLint
-npm run build         # Production build
-```
+**Linting:** `isort` + `black` (backend), `npm run lint` (frontend).
 
 ---
 
@@ -665,84 +441,37 @@ npm run build         # Production build
 
 ### Guardrails
 
-Input validation layer that protects the RAG pipeline from prompt injection and abuse:
-
-| Check | Action |
-|---|---|
-| Query exceeds 1500 characters | Reject (422) |
-| Prompt injection patterns detected | Block (403) |
-| Empty or whitespace-only query | Reject (422) |
-
-20+ regex patterns cover instruction override, system prompt extraction, jailbreak, and role-play attacks.
+Input validation protecting the RAG pipeline from prompt injection and abuse. 20+ regex patterns cover instruction override, system prompt extraction, jailbreak, and role-play attacks. Queries exceeding 1500 characters or containing injection patterns are rejected (422/403).
 
 ### Observability
 
-LangSmith tracing integration for end-to-end visibility into the AI pipeline:
-
-```bash
-# Enable in .env
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=lsv2_pt_...
-LANGCHAIN_PROJECT=miningniti
-```
-
-Traced functions:
-- `AgentOrchestrator.analyze_document()` — full multi-agent pipeline
-- `hybrid_search()` — vector + BM25 retrieval
-- `ChatService.generate_response()` — sync RAG path
-- `ChatService.generate_response_stream()` — SSE streaming path
-
-Falls back to no-op when langsmith is not installed.
+LangSmith tracing for end-to-end AI pipeline visibility — traces `AgentOrchestrator.analyze_document()`, `hybrid_search()`, and `ChatService.generate_response()` (sync + streaming). Falls back to no-op when langsmith is not installed.
 
 ### RAG Evaluation
 
-Gemini-powered evaluation that measures answer quality without external services:
-
-```bash
-# Quick check (no DB needed)
-pytest tests/eval/test_rag_eval.py -v -m synthetic
-
-# Full pipeline test
-pytest tests/eval/test_rag_eval.py -v -m live
-```
+Gemini-powered evaluation measuring answer quality:
 
 | Metric | What it measures | Threshold |
 |---|---|---|
 | Faithfulness | Are all claims grounded in retrieved context? | 0.70 |
 | Relevancy | Does the answer actually address the question? | 0.70 |
 
+```bash
+pytest tests/eval/test_rag_eval.py -v -m synthetic   # Quick check (no DB needed)
+pytest tests/eval/test_rag_eval.py -v -m live         # Full pipeline test
+```
+
 ---
 
 ## Security
 
-| Layer | Implementation |
-|---|---|
-| **Authentication** | Clerk JWT verified via JWKS endpoint; user ID from `sub` claim |
-| **Authorization** | User-scoped resource access — no cross-user data leakage |
-| **Rate Limiting** | 120 requests/minute per IP (slowapi) |
-| **Input Validation** | Pydantic v2 models on all request/response schemas |
-| **Input Guardrails** | Prompt injection detection + query length enforcement |
-| **SQL Injection** | SQLAlchemy ORM with parameterized queries |
-| **Audit Logging** | All mutations logged with action, user, and timestamp |
-| **CORS** | Configurable origins; auth errors propagate CORS headers |
-| **Secrets** | Stored as HuggingFace/Vercel environment secrets, never committed |
-| **Observability** | LangSmith tracing for LLM call monitoring |
+Clerk JWT auth (JWKS) with user-scoped resource access. Rate limiting (120 req/min per IP), Pydantic v2 validation on all inputs, prompt injection guardrails, SQLAlchemy parameterized queries, audit logging on all mutations, configurable CORS, and secrets stored as environment variables (never committed).
 
 ---
 
 ## Performance
 
-| Optimization | Detail |
-|---|---|
-| **Hybrid search** | Vector (pgvector) + keyword (pg_trgm) combined via Reciprocal Rank Fusion |
-| **Cross-encoder reranking** | `ms-marco-MiniLM-L-6-v2` reranks top-20 candidates for precise relevance |
-| **pgvector HNSW** | Sub-5ms nearest-neighbor search over document embeddings |
-| **Parallel agents** | 6 AI agents run concurrently via `asyncio.gather()` |
-| **SSE streaming** | Token-by-token response delivery (no wait for full answer) |
-| **Background tasks** | Document processing runs asynchronously via FastAPI BackgroundTasks |
-| **Crash recovery** | Stuck documents auto-reset to PENDING on server restart |
-| **LLM fallback** | Groq → Cerebras automatic fallback with retry logic |
-| **Model pre-download** | Cross-encoder reranker baked into Docker image (no cold start) |
+Hybrid search (pgvector + pg_trgm) with Reciprocal Rank Fusion, cross-encoder reranking (`ms-marco-MiniLM-L-6-v2`), sub-5ms HNSW nearest-neighbor search, 6 AI agents running concurrently via `asyncio.gather()`, SSE streaming for token-by-token delivery, async document processing via FastAPI BackgroundTasks, Groq→Cerebras automatic fallback, crash recovery (stuck docs auto-reset), and cross-encoder pre-baked in Docker image.
 
 ---
 
@@ -750,13 +479,10 @@ pytest tests/eval/test_rag_eval.py -v -m live
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feat/amazing-feature`
-3. Make your changes following the code style:
-   - **Backend**: Run `isort` then `black` before committing
-   - **Frontend**: Run `npm run lint` to check
-4. Add tests for new functionality
-5. Ensure all unit tests pass: `pytest tests/unit/ -v -m unit`
-6. Commit with a descriptive message: `feat(backend): add amazing feature`
-7. Push and open a Pull Request
+3. Make changes following code style: `isort` + `black` (backend), `npm run lint` (frontend)
+4. Add tests, ensure unit tests pass: `pytest tests/unit/ -v -m unit`
+5. Commit: `feat(backend): add amazing feature`
+6. Push and open a Pull Request
 
 ---
 
