@@ -55,6 +55,10 @@ async def stream_chat(
         source.addEventListener('done', () => source.close())
     """
     from app.services.chat_service import ChatService
+    from app.services.guardrails import MiningGuardrails
+
+    # ── Input Guardrails ────────────────────────────────────────────────────
+    validated_query = MiningGuardrails.validate_input(request.content)
 
     # Get or create session
     if request.session_id:
@@ -93,7 +97,7 @@ async def stream_chat(
 
         try:
             async for event in chat_service.generate_response_stream(
-                query=request.content,
+                query=validated_query,
                 user_id=user_id,
                 document_ids=request.document_ids,
                 db=db,
