@@ -6,56 +6,51 @@ export default function PrivacyPage() {
     <div className="flex flex-col min-h-screen bg-[#0A0A0B]">
       <Navbar />
       <main className="flex-1 pt-32 pb-24">
-        
         <div className="max-w-[800px] mx-auto px-6">
-          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4">Legal & Compliance</p>
+          <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4">Legal</p>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Privacy Policy</h1>
-          <p className="text-white/50 mb-12">Last updated: May 29, 2026</p>
+          <p className="text-white/50 mb-12">Last updated: July 2026</p>
 
-          <div className="prose prose-invert prose-p:text-white/60 prose-p:leading-relaxed prose-headings:text-white prose-headings:font-bold prose-a:text-purple-400 max-w-none">
-            
-            <div className="p-6 rounded-2xl bg-white/2 border border-white/8 mb-10 shadow-lg">
-              <h3 className="text-lg font-bold text-white mt-0 mb-2">Our Zero-Training Guarantee</h3>
-              <p className="text-sm text-white/60 m-0">
-                MiningNiti is an enterprise AI infrastructure company. <strong>We do not use your operational data, documents, or queries to train our foundational models.</strong> Your data remains strictly within your isolated tenant or on-premise deployment.
-              </p>
-            </div>
+          <div className="prose prose-invert prose-p:text-white/60 prose-p:leading-relaxed prose-headings:text-white prose-headings:font-bold max-w-none">
 
-            <h2>1. Information We Collect</h2>
+            <h2>Overview</h2>
             <p>
-              When you deploy MiningNiti, the system processes operational documents, including safety logs, geological reports, employee shift records, and regulatory filings. Depending on your deployment model (SaaS vs. On-Premise), the nature of our access to this data varies fundamentally:
+              MiningNiti is an open-source AI-powered document intelligence platform built for the coal mining industry. It was developed as a Smart India Hackathon 2023 project and recognized by Coal India Limited &amp; CMPDI.
+            </p>
+
+            <h2>Data Processing</h2>
+            <p>
+              Documents uploaded to MiningNiti are processed to extract text, generate embeddings, and produce AI-generated summaries and analyses. All processing occurs on the deployed infrastructure (backend server and database).
+            </p>
+
+            <h2>Data Storage</h2>
+            <p>
+              Uploaded documents and their processed data are stored in the PostgreSQL database. Embeddings are stored using pgvector for semantic search functionality. Data is retained as long as the user maintains their account.
             </p>
             <ul>
-              <li><strong>On-Premise / VPC Deployments:</strong> We collect zero operational data. All processing, including OCR and LLM inference, occurs within your firewalled environment. We only collect anonymized telemetry (CPU/GPU utilization, error crash logs) if explicitly enabled by your administrators.</li>
-              <li><strong>Managed SaaS:</strong> We temporarily process your documents to extract text and build vector embeddings. These embeddings are stored in single-tenant isolated databases encrypted at rest (AES-256) and in transit (TLS 1.3).</li>
+              <li>Documents and extracted text are stored in the database</li>
+              <li>Vector embeddings are generated and stored for search functionality</li>
+              <li>Chat history and AI responses are stored per session</li>
             </ul>
 
-            <h2>2. How We Use Information</h2>
+            <h2>Third-Party Services</h2>
             <p>
-              We use the telemetry and account information collected to:
+              MiningNiti uses the following third-party services for authentication and AI processing:
             </p>
             <ul>
-              <li>Provide, maintain, and improve the MiningNiti platform infrastructure.</li>
-              <li>Process transactions and send related information, including invoices and confirmations.</li>
-              <li>Send technical notices, security alerts, and administrative messages.</li>
-              <li>Respond to your comments, questions, and customer service requests.</li>
+              <li><strong>Clerk</strong> — for user authentication and session management</li>
+              <li><strong>Google Gemini / Groq / Mistral / Cerebras</strong> — for AI document analysis and chat responses</li>
             </ul>
 
-            <h2>3. Security & Certifications</h2>
+            <h2>Data Deletion</h2>
             <p>
-              MiningNiti maintains SOC 2 Type II compliance and adheres to ISO 27001 standards for information security management. Access to production environments is strictly gated via hardware security keys, zero-trust network architecture, and mandatory multi-party approval for infrastructure changes.
+              Users can delete their documents and chat sessions at any time through the application interface. Deleted data is permanently removed from the database.
             </p>
 
-            <h2>4. Data Retention and Deletion</h2>
+            <h2>Open Source</h2>
             <p>
-              For SaaS customers, if you terminate your contract, all vector embeddings, extracted text, and uploaded documents are permanently wiped from our systems within 14 days, accompanied by a cryptographic certificate of destruction.
+              MiningNiti is open-source under the MIT License. The source code is publicly available on GitHub. Self-hosted deployments are fully under the operator&apos;s control.
             </p>
-
-            <h2>5. Contact Us</h2>
-            <p>
-              If you have questions about this Privacy Policy or our data handling practices, please contact our security team directly at <a href="mailto:security@miningniti.com">security@miningniti.com</a>.
-            </p>
-
           </div>
         </div>
       </main>
