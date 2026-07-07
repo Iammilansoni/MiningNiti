@@ -2,9 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { KeyRound, Smartphone } from 'lucide-react';
+import { KeyRound, Mail, Link2 } from 'lucide-react';
 
 export function SecuritySettings() {
   return (
@@ -18,46 +16,48 @@ export function SecuritySettings() {
       <div>
         <h2 className="text-xl font-semibold tracking-tight text-foreground">Security</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage your password and secure your account.
+          Manage your password and authentication through Clerk.
         </p>
       </div>
-      
+
       <div className="border border-border/50 rounded-xl bg-card shadow-sm overflow-hidden divide-y divide-border/50">
-        
-        {/* Password Section */}
-        <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-primary/10 text-primary rounded-lg shrink-0">
-              <KeyRound className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-medium text-foreground">Password</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Ensure your account is using a long, random password to stay secure.
-              </p>
-            </div>
+
+        {/* Password */}
+        <div className="p-6 flex items-start gap-4">
+          <div className="p-2 bg-primary/10 text-primary rounded-lg shrink-0">
+            <KeyRound className="w-5 h-5" />
           </div>
-          <Button variant="outline" className="shrink-0 bg-background">
-            Update Password
-          </Button>
+          <div className="flex-1">
+            <h3 className="font-medium text-foreground">Password</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Change your password from the sign-in page. Use &quot;Forgot password&quot; to reset.
+            </p>
+          </div>
         </div>
 
-        {/* 2FA Section */}
-        <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-lg shrink-0">
-              <Smartphone className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-medium text-foreground">Two-factor Authentication</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Add an extra layer of security to your account.
-              </p>
-            </div>
+        {/* Email */}
+        <div className="p-6 flex items-start gap-4">
+          <div className="p-2 bg-blue-500/10 text-blue-600 rounded-lg shrink-0">
+            <Mail className="w-5 h-5" />
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="text-sm text-muted-foreground font-medium">Off</span>
-            <Switch />
+          <div className="flex-1">
+            <h3 className="font-medium text-foreground">Email Address</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Your email is managed by Clerk authentication. Update it from your account settings.
+            </p>
+          </div>
+        </div>
+
+        {/* Connected Accounts */}
+        <div className="p-6 flex items-start gap-4">
+          <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-lg shrink-0">
+            <Link2 className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-medium text-foreground">Connected Accounts</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Link social accounts for easier sign-in. Manage from Clerk&apos;s authentication portal.
+            </p>
           </div>
         </div>
 

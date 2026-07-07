@@ -7,6 +7,7 @@ import { useAuth } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { User } from 'lucide-react';
 
 export function ProfileSettings({ profile, isLoading }: { profile: any; isLoading: boolean }) {
   const { getToken } = useAuth();
@@ -36,7 +37,7 @@ export function ProfileSettings({ profile, isLoading }: { profile: any; isLoadin
     }
   }, [profile]);
 
-  const hasUnsavedChanges = 
+  const hasUnsavedChanges =
     formData.fullName !== initialData.fullName ||
     formData.companyName !== initialData.companyName ||
     formData.companyRole !== initialData.companyRole;
@@ -48,7 +49,7 @@ export function ProfileSettings({ profile, isLoading }: { profile: any; isLoadin
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       setInitialData(formData);
-      toast.success('Profile updated successfully');
+      toast.success('Profile updated');
     },
     onError: () => {
       toast.error('Failed to update profile');
@@ -63,7 +64,7 @@ export function ProfileSettings({ profile, isLoading }: { profile: any; isLoadin
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasUnsavedChanges) return;
-    
+
     updateMutation.mutate({
       full_name: formData.fullName,
       company_name: formData.companyName,
@@ -74,9 +75,9 @@ export function ProfileSettings({ profile, isLoading }: { profile: any; isLoadin
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-4 bg-muted w-1/3 rounded"></div>
-        <div className="h-10 bg-muted rounded-lg w-full"></div>
-        <div className="h-10 bg-muted rounded-lg w-full"></div>
+        <div className="h-4 bg-muted w-1/3 rounded" />
+        <div className="h-10 bg-muted rounded-lg w-full" />
+        <div className="h-10 bg-muted rounded-lg w-full" />
       </div>
     );
   }
@@ -92,63 +93,78 @@ export function ProfileSettings({ profile, isLoading }: { profile: any; isLoadin
       <div>
         <h2 className="text-xl font-semibold tracking-tight text-foreground">Profile</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage your personal information and how it is displayed.
+          Your personal information and display preferences.
         </p>
       </div>
-      
+
       <div className="border border-border/50 rounded-xl bg-card shadow-sm overflow-hidden">
-        <form onSubmit={handleSubmit} className="divide-y divide-border/50">
-          
-          <div className="p-6 space-y-4">
-            <div className="grid gap-2">
-              <label htmlFor="fullName" className="text-sm font-medium text-foreground/80">Full Name</label>
-              <input 
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder="John Doe"
-                className="max-w-md flex h-9 w-full rounded-md border border-input bg-background/50 px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              />
-              <p className="text-[13px] text-muted-foreground">
-                This is the name that will be displayed on reports and audit logs.
-              </p>
+        <form onSubmit={handleSubmit}>
+          <div className="p-6 space-y-5">
+            {/* Avatar placeholder */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {formData.fullName || 'Your Name'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formData.companyRole || 'Set your role below'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 max-w-md">
+              <div className="grid gap-2">
+                <label htmlFor="fullName" className="text-sm font-medium text-foreground/80">
+                  Full Name
+                </label>
+                <input
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <label htmlFor="companyName" className="text-sm font-medium text-foreground/80">
+                  Company
+                </label>
+                <input
+                  id="companyName"
+                  name="companyName"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  placeholder="Organization name (optional)"
+                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <label htmlFor="companyRole" className="text-sm font-medium text-foreground/80">
+                  Role
+                </label>
+                <input
+                  id="companyRole"
+                  name="companyRole"
+                  value={formData.companyRole}
+                  onChange={handleChange}
+                  placeholder="e.g. Safety Inspector, Engineer"
+                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="p-6 space-y-4">
-            <div className="grid gap-2">
-              <label htmlFor="companyName" className="text-sm font-medium text-foreground/80">Company</label>
-              <input 
-                id="companyName"
-                name="companyName"
-                value={formData.companyName}
-                onChange={handleChange}
-                placeholder="Mining Corp Inc."
-                className="max-w-md flex h-9 w-full rounded-md border border-input bg-background/50 px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div className="grid gap-2 pt-2">
-              <label htmlFor="companyRole" className="text-sm font-medium text-foreground/80">Role</label>
-              <input 
-                id="companyRole"
-                name="companyRole"
-                value={formData.companyRole}
-                onChange={handleChange}
-                placeholder="Safety Inspector"
-                className="max-w-md flex h-9 w-full rounded-md border border-input bg-background/50 px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-          </div>
-
-          <div className="px-6 py-4 bg-muted/20 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Please use 32 characters at maximum.
-            </p>
-            <Button 
-              type="submit" 
+          <div className="px-6 py-4 bg-muted/30 flex items-center justify-end border-t border-border/50">
+            <Button
+              type="submit"
               disabled={!hasUnsavedChanges || updateMutation.isPending}
-              className="relative overflow-hidden transition-all duration-200"
+              className="relative transition-all duration-200"
             >
               <span className={updateMutation.isPending ? 'opacity-0' : 'opacity-100'}>
                 Save Changes
