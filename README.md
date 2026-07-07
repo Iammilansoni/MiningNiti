@@ -621,6 +621,12 @@ pytest tests/unit/ -v -m unit
 # Integration tests (requires running PostgreSQL + Redis)
 pytest tests/integration/ -v -m integration
 
+# RAG evaluation — synthetic (no DB, instant)
+pytest tests/eval/test_rag_eval.py -v -m synthetic
+
+# RAG evaluation — live pipeline (needs DB + API keys)
+pytest tests/eval/test_rag_eval.py -v -m live
+
 # With coverage
 pytest tests/unit/ --cov=app --cov-report=html
 ```
@@ -631,6 +637,12 @@ pytest tests/unit/ --cov=app --cov-report=html
 - Hybrid search + reranking pipeline
 - Text chunking (sequential indices, page tracking, overlap, edge cases)
 - Document extractors (plain text processing)
+
+**RAG evaluation tests** (Gemini-powered, no external eval services):
+- Faithfulness scoring — verifies LLM answers are grounded in retrieved context
+- Answer relevancy scoring — verifies LLM answers actually address the query
+- Synthetic tests run instantly without a database
+- Live tests run the full hybrid_search + LLM pipeline against real data
 
 **Linting:**
 ```bash
@@ -649,6 +661,58 @@ npm run build         # Production build
 
 ---
 
+## MLOps
+
+### Guardrails
+
+Input validation layer that protects the RAG pipeline from prompt injection and abuse:
+
+| Check | Action |
+|---|---|
+| Query exceeds 1500 characters | Reject (422) |
+| Prompt injection patterns detected | Block (403) |
+| Empty or whitespace-only query | Reject (422) |
+
+20+ regex patterns cover instruction override, system prompt extraction, jailbreak, and role-play attacks.
+
+### Observability
+
+LangSmith tracing integration for end-to-end visibility into the AI pipeline:
+
+```bash
+# Enable in .env
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_...
+LANGCHAIN_PROJECT=miningniti
+```
+
+Traced functions:
+- `AgentOrchestrator.analyze_document()` — full multi-agent pipeline
+- `hybrid_search()` — vector + BM25 retrieval
+- `ChatService.generate_response()` — sync RAG path
+- `ChatService.generate_response_stream()` — SSE streaming path
+
+Falls back to no-op when langsmith is not installed.
+
+### RAG Evaluation
+
+Gemini-powered evaluation that measures answer quality without external services:
+
+```bash
+# Quick check (no DB needed)
+pytest tests/eval/test_rag_eval.py -v -m synthetic
+
+# Full pipeline test
+pytest tests/eval/test_rag_eval.py -v -m live
+```
+
+| Metric | What it measures | Threshold |
+|---|---|---|
+| Faithfulness | Are all claims grounded in retrieved context? | 0.70 |
+| Relevancy | Does the answer actually address the question? | 0.70 |
+
+---
+
 ## Security
 
 | Layer | Implementation |
@@ -657,10 +721,12 @@ npm run build         # Production build
 | **Authorization** | User-scoped resource access — no cross-user data leakage |
 | **Rate Limiting** | 120 requests/minute per IP (slowapi) |
 | **Input Validation** | Pydantic v2 models on all request/response schemas |
+| **Input Guardrails** | Prompt injection detection + query length enforcement |
 | **SQL Injection** | SQLAlchemy ORM with parameterized queries |
 | **Audit Logging** | All mutations logged with action, user, and timestamp |
 | **CORS** | Configurable origins; auth errors propagate CORS headers |
 | **Secrets** | Stored as HuggingFace/Vercel environment secrets, never committed |
+| **Observability** | LangSmith tracing for LLM call monitoring |
 
 ---
 
