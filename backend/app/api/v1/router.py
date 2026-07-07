@@ -15,6 +15,7 @@ from app.api.v1 import (
     jobs,
     prompts,
     search,
+    upload,
     user,
 )
 
@@ -40,3 +41,5 @@ api_router.include_router(user.router, prefix="/user", tags=["User"])
 api_router.include_router(search.router, prefix="/search", tags=["Search"])
 
 api_router.include_router(compliance.router, prefix="/compliance", tags=["Compliance"])
+
+api_router.include_router(upload.router, prefix="/upload", tags=["Upload"])
