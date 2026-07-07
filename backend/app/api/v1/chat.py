@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_id
 from app.core.exceptions import NotFoundError
+from app.services.guardrails import MiningGuardrails
 from app.db.session import get_db
 from app.models.audit import AuditAction, create_audit_log
 from app.models.chat import ChatMessage, ChatSession
@@ -232,6 +233,9 @@ async def send_message(
     """
     start_time = datetime.utcnow()
 
+    # ── Input Guardrails ────────────────────────────────────────────────────
+    validated_query = MiningGuardrails.validate_input(request.content)
+
     # Get or create session
     if request.session_id:
         session = (
@@ -263,7 +267,7 @@ async def send_message(
 
     try:
         ai_response, sources, tokens_used = await chat_service.generate_response(
-            query=request.content,
+            query=validated_query,
             user_id=user_id,
             document_ids=request.document_ids,
             db=db,
