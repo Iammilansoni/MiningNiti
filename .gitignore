@@ -112,7 +112,13 @@ celerybeat.pid
 
 # ── Uploads (keep structure, not contents) ──────────────────────────────────
 backend/uploads/*
-!backend/uploads/.gitkeep
+!backend/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# ── Local tooling (never commit) ────────────────────────────────────────────
+.mimocode/
+miningniti-api/
 
 # ── Ad-hoc test scripts (keep them out of repo) ────────────────────────────
 backend/test_*.py
