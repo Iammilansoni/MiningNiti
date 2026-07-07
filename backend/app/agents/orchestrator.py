@@ -15,6 +15,19 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+try:
+    from langsmith import traceable
+
+    _HAS_LANGSMITH = True
+except ImportError:
+    _HAS_LANGSMITH = False
+
+    def traceable(func=None, **kwargs):  # type: ignore[misc]
+        """No-op fallback when langsmith is not installed."""
+        if func is not None:
+            return func
+        return lambda f: f
+
 from app.agents.base import QuotaExceededError
 from app.agents.classifier import ClassifierAgent
 from app.agents.entity_extractor import EntityExtractorAgent
@@ -93,6 +106,7 @@ class AgentOrchestrator:
         self.entity_extractor = EntityExtractorAgent()
         self.summarizer = SummarizerAgent()
 
+    @traceable(name="miningniti.agent_orchestrator.analyze_document")
     async def analyze_document(
         self,
         text: str,

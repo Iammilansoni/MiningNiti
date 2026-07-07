@@ -18,6 +18,19 @@ import json
 import logging
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
+try:
+    from langsmith import traceable
+
+    _HAS_LANGSMITH = True
+except ImportError:
+    _HAS_LANGSMITH = False
+
+    def traceable(func=None, **kwargs):  # type: ignore[misc]
+        """No-op fallback when langsmith is not installed."""
+        if func is not None:
+            return func
+        return lambda f: f
+
 import google.generativeai as genai
 from sqlalchemy.orm import Session
 
@@ -77,6 +90,7 @@ class ChatService:
 
     # ── Public API ─────────────────────────────────────────────────────────────
 
+    @traceable(name="miningniti.chat.generate_response")
     async def generate_response(
         self,
         query: str,
@@ -132,6 +146,7 @@ class ChatService:
                 None,
             )
 
+    @traceable(name="miningniti.chat.generate_response_stream")
     async def generate_response_stream(
         self,
         query: str,

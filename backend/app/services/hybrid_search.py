@@ -16,6 +16,19 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
+try:
+    from langsmith import traceable
+
+    _HAS_LANGSMITH = True
+except ImportError:
+    _HAS_LANGSMITH = False
+
+    def traceable(func=None, **kwargs):  # type: ignore[misc]
+        """No-op fallback when langsmith is not installed."""
+        if func is not None:
+            return func
+        return lambda f: f
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -209,6 +222,7 @@ def reciprocal_rank_fusion(
     return [all_items[item_id] for item_id, _ in ranked]
 
 
+@traceable(name="miningniti.retrieval.hybrid_search")
 async def hybrid_search(
     query_text: str,
     query_embedding: List[float],
