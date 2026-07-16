@@ -9,11 +9,10 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_user_id
 from app.core.exceptions import NotFoundError
-from app.services.guardrails import MiningGuardrails
 from app.db.session import get_db
 from app.models.audit import AuditAction, create_audit_log
 from app.models.chat import ChatMessage, ChatSession
@@ -26,6 +25,7 @@ from app.schemas.chat import (
     ChatSessionResponse,
     ChatSessionUpdateRequest,
 )
+from app.services.guardrails import MiningGuardrails
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,7 @@ async def list_chat_sessions(
         .filter(ChatSession.user_id == user_id)
         .order_by(ChatSession.updated_at.desc())
         .limit(limit)
+        .options(selectinload(ChatSession.messages))
         .all()
     )
 
@@ -120,6 +121,7 @@ async def get_chat_session(
     session = (
         db.query(ChatSession)
         .filter(ChatSession.id == session_id, ChatSession.user_id == user_id)
+        .options(selectinload(ChatSession.messages))
         .first()
     )
 
@@ -163,6 +165,7 @@ async def update_chat_session(
     session = (
         db.query(ChatSession)
         .filter(ChatSession.id == session_id, ChatSession.user_id == user_id)
+        .options(selectinload(ChatSession.messages))
         .first()
     )
 
