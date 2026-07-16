@@ -33,6 +33,7 @@ def _gemini_judge(query: str, answer: str, context_chunks: list[str]) -> dict:
         {"faithfulness": float, "relevancy": float, "reason": str}
     """
     import google.generativeai as genai
+
     from app.config import settings
 
     genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -71,7 +72,11 @@ Return JSON only, no other text:
     if json_match:
         return json.loads(json_match.group())
 
-    return {"faithfulness": 0.0, "relevancy": 0.0, "reason": f"Failed to parse judge output: {raw[:200]}"}
+    return {
+        "faithfulness": 0.0,
+        "relevancy": 0.0,
+        "reason": f"Failed to parse judge output: {raw[:200]}",
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -88,12 +93,10 @@ _RETRIEVED_CONTEXT = [
     "affording safe passage. Illumination levels on haulage roads must meet "
     "the minimum standards prescribed in the Coal Mines Regulations 2017, "
     "Schedule IV.",
-
     "Regulation 115 of CMR 2017 specifies that every underground road used "
     "for haulage shall be provided with adequate lighting at all junctions, "
     "loading points, and switches. Minimum illumination of 10 lux is "
     "required at the floor level of main haulage roads.",
-
     "Mine operators must conduct regular inspections of all electrical "
     "lighting systems on haulage roads. Defective lighting must be "
     "repaired within 24 hours of reporting.",
@@ -147,6 +150,7 @@ _LIVE_QUERIES = [
 
 def _get_embedding_sync(text: str) -> list[float]:
     import google.generativeai as genai
+
     from app.config import settings
 
     genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -160,8 +164,8 @@ def _get_embedding_sync(text: str) -> list[float]:
 
 
 def _get_llm_answer_sync(query: str, context_chunks: list[dict]) -> str:
-    from app.services.llm_provider import get_groq_client
     from app.services.chat_service import _SYSTEM_PROMPT
+    from app.services.llm_provider import get_groq_client
 
     context_parts = []
     for i, chunk in enumerate(context_chunks, 1):
@@ -198,6 +202,7 @@ class TestLiveRAGPipeline:
     def test_pipeline_faithfulness(self, query: str):
         from sqlalchemy import create_engine
         from sqlalchemy.orm import Session
+
         from app.config import settings
 
         query_embedding = _get_embedding_sync(query)
@@ -205,6 +210,7 @@ class TestLiveRAGPipeline:
         engine = create_engine(settings.DATABASE_URL)
         with Session(engine) as db:
             from app.services.hybrid_search import hybrid_search
+
             chunks = asyncio.get_event_loop().run_until_complete(
                 hybrid_search(
                     query_text=query,
@@ -232,6 +238,7 @@ class TestLiveRAGPipeline:
     def test_pipeline_relevancy(self, query: str):
         from sqlalchemy import create_engine
         from sqlalchemy.orm import Session
+
         from app.config import settings
 
         query_embedding = _get_embedding_sync(query)
@@ -239,6 +246,7 @@ class TestLiveRAGPipeline:
         engine = create_engine(settings.DATABASE_URL)
         with Session(engine) as db:
             from app.services.hybrid_search import hybrid_search
+
             chunks = asyncio.get_event_loop().run_until_complete(
                 hybrid_search(
                     query_text=query,
