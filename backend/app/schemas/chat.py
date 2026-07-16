@@ -47,8 +47,7 @@ class ChatMessageResponse(BaseModel):
     model_used: Optional[str] = None
     response_time_ms: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True, "protected_namespaces": ()}
 
 
 class ChatResponse(BaseModel):
@@ -83,8 +82,7 @@ class ChatSessionResponse(BaseModel):
     last_message: Optional[str] = None
     last_message_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ChatSessionDetailResponse(BaseModel):
