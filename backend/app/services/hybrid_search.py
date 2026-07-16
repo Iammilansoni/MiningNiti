@@ -29,6 +29,7 @@ except ImportError:
             return func
         return lambda f: f
 
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 

@@ -31,6 +31,7 @@ except ImportError:
             return func
         return lambda f: f
 
+
 import google.generativeai as genai
 from sqlalchemy.orm import Session
 

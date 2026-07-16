@@ -28,6 +28,7 @@ except ImportError:
             return func
         return lambda f: f
 
+
 from app.agents.base import QuotaExceededError
 from app.agents.classifier import ClassifierAgent
 from app.agents.entity_extractor import EntityExtractorAgent
