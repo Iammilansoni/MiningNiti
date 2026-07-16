@@ -172,7 +172,7 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: https://api.miningniti.com
+          NEXT_PUBLIC_API_BASE_URL: https://api.miningniti.com
 
       - name: Security audit
         working-directory: frontend
