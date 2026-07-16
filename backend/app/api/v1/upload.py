@@ -58,7 +58,9 @@ async def upload_document(
 
     document = Document(
         user_id=user_id,
-        title=file.filename.rsplit(".", 1)[0] if "." in file.filename else file.filename,
+        title=(
+            file.filename.rsplit(".", 1)[0] if "." in file.filename else file.filename
+        ),
         file_name=file.filename,
         file_size=len(content),
         file_type=file.content_type or "application/octet-stream",
