@@ -164,11 +164,13 @@ async def get_dashboard_stats(
         total_chat_sessions=total_sessions,
         total_messages=total_messages,
         average_safety_score=(
-            round(safety_stats.avg_score, 1) if safety_stats.avg_score else None
+            round(safety_stats.avg_score, 1)
+            if safety_stats and safety_stats.avg_score
+            else None
         ),
-        documents_with_hazards=safety_stats.with_hazards or 0,
-        compliance_violations=safety_stats.violations or 0,
-        compliance_warnings=safety_stats.warnings or 0,
+        documents_with_hazards=safety_stats.with_hazards if safety_stats else 0,
+        compliance_violations=safety_stats.violations if safety_stats else 0,
+        compliance_warnings=safety_stats.warnings if safety_stats else 0,
         documents_processed_today=docs_today,
         documents_processed_this_week=docs_week,
         documents_by_category=categories,
