@@ -1,15 +1,22 @@
 """
 Hybrid Search Service
 
-Combines pgvector cosine similarity (semantic) with pg_trgm
-trigram similarity (keyword/BM25) using Reciprocal Rank Fusion.
+Combines pgvector cosine similarity (semantic) with PostgreSQL full-text
+search (lexical) using Reciprocal Rank Fusion.
 
 This catches both:
   - Semantic matches: "how to prevent methane explosions"
-  - Keyword matches: "30 CFR 75.323", "Caterpillar D11"
+  - Lexical matches:  "30 CFR 75.323", "Caterpillar D11"
 
 Both search paths use the same PostgreSQL database — no external
 services needed.
+
+History worth knowing: the lexical arm previously used pg_trgm's `%` operator,
+comparing whole-string trigram similarity between a ~1000 character chunk and
+a short question. That scores ~0.13 against pg_trgm's 0.30 default threshold,
+so it returned zero rows for every query and RRF spent the entire life of the
+feature fusing one list with nothing. It is now a real inverted index — see
+migration 003 and tests/eval/test_retrieval_eval.py.
 """
 
 import logging
@@ -34,6 +41,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.models.document import DocumentStatus, db_status
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +63,7 @@ async def vector_search(
         "embedding": query_embedding,
         "top_k": top_k,
         "threshold": settings.SIMILARITY_THRESHOLD,
+        "doc_status": db_status(DocumentStatus.COMPLETED),
     }
 
     if document_ids:
@@ -78,7 +87,7 @@ async def vector_search(
         FROM document_embeddings de
         JOIN documents d ON d.id = de.document_id
         WHERE d.user_id = :user_id
-          AND d.status = 'COMPLETED'
+          AND d.status = :doc_status
           {doc_filter}
           AND (1 - (de.embedding <=> CAST(:embedding AS vector))) >= :threshold
         ORDER BY de.embedding <=> CAST(:embedding AS vector)
@@ -111,7 +120,30 @@ async def vector_search(
     ]
 
 
-def bm25_search(
+# Turns free text into an OR-ed tsquery over its own lexemes.
+#
+# The obvious constructions do not work for question-shaped input:
+# plainto_tsquery and websearch_to_tsquery both AND every term, so
+# "What are the methane limits under 30 CFR 75.323?" requires the chunk to
+# contain "limit" as well as "methane" — and the regulation text says
+# "less than 1.0 percent" instead. Measured against a real corpus, the AND
+# form returned zero rows for exactly the query it should have nailed.
+#
+# ORing the lexemes lets ts_rank_cd do the discriminating instead of the
+# matcher: the correct chunk scored 0.60 against 0.10 for a near miss.
+#
+# quote_literal() on each lexeme is what makes this injection-safe against
+# tsquery's own operator syntax — '&', '|', '!', '<->' and ':*A' in user input
+# are reduced to ordinary quoted lexemes rather than parsed as operators.
+# A query of only stopwords yields NULL, and `chunk_tsv @@ NULL` is NULL, so
+# the search correctly returns nothing instead of raising.
+_OR_TSQUERY = """
+    (SELECT to_tsquery('english', string_agg(quote_literal(lex), ' | '))
+     FROM unnest(tsvector_to_array(to_tsvector('english', :query_text))) AS lex)
+"""
+
+
+def fulltext_search(
     query_text: str,
     db: Session,
     user_id: str,
@@ -119,14 +151,22 @@ def bm25_search(
     top_k: int = 20,
 ) -> List[Dict[str, Any]]:
     """
-    PostgreSQL pg_trgm similarity search (keyword/BM25 equivalent).
-    Catches exact and partial string matches that vector search misses.
+    PostgreSQL full-text lexical search over the chunk_tsv inverted index.
+
+    Complements dense retrieval by catching the things embeddings are worst
+    at: exact identifiers and rare tokens such as "30 CFR 75.323",
+    "Caterpillar D11", or a specific chemical name.
+
+    Ranked with ts_rank_cd (cover density), which favours chunks where the
+    query terms occur close together. This is not BM25 — true BM25 needs an
+    extension like pg_search; the name is accurate on purpose.
     """
     doc_filter = ""
     params: Dict[str, Any] = {
         "user_id": user_id,
         "query_text": query_text,
         "top_k": top_k,
+        "doc_status": db_status(DocumentStatus.COMPLETED),
     }
 
     if document_ids:
@@ -135,6 +175,7 @@ def bm25_search(
 
     sql = text(
         f"""
+        WITH q AS (SELECT {_OR_TSQUERY} AS tsq)
         SELECT
             de.id,
             de.chunk_text,
@@ -146,14 +187,15 @@ def bm25_search(
             d.title AS document_title,
             d.file_name,
             d.file_url,
-            similarity(de.chunk_text, :query_text) AS bm25_score
+            ts_rank_cd(de.chunk_tsv, q.tsq) AS lexical_score
         FROM document_embeddings de
         JOIN documents d ON d.id = de.document_id
+        CROSS JOIN q
         WHERE d.user_id = :user_id
-          AND d.status = 'COMPLETED'
+          AND d.status = :doc_status
           {doc_filter}
-          AND de.chunk_text % :query_text
-        ORDER BY bm25_score DESC
+          AND de.chunk_tsv @@ q.tsq
+        ORDER BY lexical_score DESC
         LIMIT :top_k
     """
     )
@@ -161,8 +203,9 @@ def bm25_search(
     try:
         rows = db.execute(sql, params).fetchall()
     except Exception as e:
-        # pg_trgm extension might not be available — fall back gracefully
-        logger.warning(f"BM25 search failed (pg_trgm may be unavailable): {e}")
+        # Most likely the chunk_tsv column is missing because migration 003
+        # has not been applied. Degrade to vector-only rather than 500.
+        logger.warning(f"Full-text search failed (is migration 003 applied?): {e}")
         db.rollback()
         return []
 
@@ -178,10 +221,15 @@ def bm25_search(
             "document_title": row.document_title,
             "file_name": row.file_name,
             "file_url": row.file_url,
-            "score": float(row.bm25_score),
+            "score": float(row.lexical_score),
         }
         for row in rows
     ]
+
+
+# Backwards-compatible alias: the old name described an implementation that
+# was never BM25 and never returned rows.
+bm25_search = fulltext_search
 
 
 def reciprocal_rank_fusion(
@@ -233,15 +281,17 @@ async def hybrid_search(
     top_k: int = None,
 ) -> List[Dict[str, Any]]:
     """
-    Hybrid search combining vector similarity + pg_trgm BM25 via RRF.
+    Hybrid search combining dense vector similarity with lexical full-text
+    search via Reciprocal Rank Fusion.
 
     Flow:
-    1. Run vector search (pgvector cosine) → list A
-    2. Run BM25 search (pg_trgm) → list B
+    1. Vector search (pgvector cosine)      → list A — semantic similarity
+    2. Full-text search (ts_rank_cd + GIN)  → list B — exact terms, identifiers
     3. Combine via Reciprocal Rank Fusion
     4. Return top_k fused results
 
-    If hybrid search is disabled or BM25 fails, falls back to vector-only.
+    Falls back to vector-only if hybrid is disabled or the lexical side is
+    unavailable (e.g. migration 003 not yet applied).
     """
     if top_k is None:
         top_k = settings.RERANK_OVER_FETCH
@@ -258,8 +308,7 @@ async def hybrid_search(
     if not settings.ENABLE_HYBRID_SEARCH:
         return vector_results
 
-    # Run BM25 search (may fail if pg_trgm unavailable)
-    bm25_results = bm25_search(
+    lexical_results = fulltext_search(
         query_text=query_text,
         db=db,
         user_id=user_id,
@@ -267,16 +316,16 @@ async def hybrid_search(
         top_k=top_k,
     )
 
-    if not bm25_results:
-        # BM25 returned nothing — fall back to vector-only
+    if not lexical_results:
+        # Nothing matched lexically (or the index is missing) — vector-only.
         return vector_results
 
     # Fuse results
-    fused = reciprocal_rank_fusion(vector_results, bm25_results)
+    fused = reciprocal_rank_fusion(vector_results, lexical_results)
 
     logger.debug(
         f"Hybrid search: {len(vector_results)} vector + "
-        f"{len(bm25_results)} BM25 → {len(fused)} fused"
+        f"{len(lexical_results)} lexical → {len(fused)} fused"
     )
 
     return fused[:top_k]
