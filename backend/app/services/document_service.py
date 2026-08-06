@@ -11,9 +11,10 @@ Pipeline:
   6. Persist results and mark document COMPLETED
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 
 import google.generativeai as genai
 
@@ -38,6 +39,9 @@ genai.configure(api_key=settings.GEMINI_API_KEY)
 
 _chunker = ChunkingService()
 _orchestrator = AgentOrchestrator()
+
+# Gemini accepts up to 100 inputs per embed_content call.
+EMBED_BATCH_SIZE = 100
 
 
 class DocumentService:
@@ -99,15 +103,18 @@ class DocumentService:
                 logger.info(f"Created {len(chunks)} chunks")
 
                 # ── Step 4: Generate embeddings and persist ─────────────────
-                logger.info("Generating embeddings...")
-                for chunk in chunks:
-                    embedding_values = await self._embed(chunk.text)
+                logger.info(f"Generating embeddings for {len(chunks)} chunks...")
+                vectors = await self._embed_batch([c.text for c in chunks])
+
+                embedded = 0
+                for chunk, embedding_values in zip(chunks, vectors):
                     if embedding_values is None:
                         logger.warning(
                             f"Skipping chunk {chunk.chunk_index} — embedding failed"
                         )
                         continue
 
+                    embedded += 1
                     doc_embedding = DocumentEmbedding(
                         document_id=document.id,
                         chunk_index=chunk.chunk_index,
@@ -124,6 +131,16 @@ class DocumentService:
                     db.add(doc_embedding)
 
                 db.commit()
+                logger.info(f"Persisted {embedded}/{len(chunks)} chunk embeddings")
+
+                # Without embeddings the document is invisible to retrieval.
+                # Marking it COMPLETED would hide a total failure behind a
+                # green status in the UI.
+                if chunks and embedded == 0:
+                    raise ValueError(
+                        "All chunk embeddings failed — document would not be "
+                        "searchable"
+                    )
 
                 # ── Step 5: Run multi-agent analysis via orchestrator ────────
                 document.status = DocumentStatus.ANALYZING
@@ -218,9 +235,17 @@ class DocumentService:
                 return False
 
     async def _embed(self, text: str) -> list | None:
-        """Generate a single embedding vector via Gemini embedding API."""
+        """
+        Generate a single embedding vector via the Gemini embedding API.
+
+        genai.embed_content is a *blocking* HTTP call. Running it directly in a
+        coroutine stalls the entire event loop — every other request served by
+        this process waits. asyncio.to_thread hands it to the default executor
+        so the loop stays responsive.
+        """
         try:
-            result = genai.embed_content(
+            result = await asyncio.to_thread(
+                genai.embed_content,
                 model=self.embedding_model,
                 content=text,
                 task_type="retrieval_document",
@@ -230,6 +255,55 @@ class DocumentService:
         except Exception as e:
             logger.warning(f"Embedding generation failed: {e}")
             return None
+
+    async def _embed_batch(self, texts: List[str]) -> List[Optional[list]]:
+        """
+        Embed many chunks per API call instead of one call per chunk.
+
+        A 200-page PDF produces several hundred chunks; at one request each
+        that is several hundred round trips. Gemini accepts up to
+        EMBED_BATCH_SIZE inputs per call, cutting this by two orders of
+        magnitude.
+
+        Returns a list positionally aligned with `texts`; entries are None
+        where embedding failed, so the caller can skip just those chunks.
+        """
+        results: List[Optional[list]] = []
+
+        for start in range(0, len(texts), EMBED_BATCH_SIZE):
+            batch = texts[start : start + EMBED_BATCH_SIZE]
+            results.extend(await self._embed_one_batch(batch))
+
+        return results
+
+    async def _embed_one_batch(self, batch: List[str]) -> List[Optional[list]]:
+        """Embed one batch, degrading to per-chunk calls if the batch fails."""
+        try:
+            result = await asyncio.to_thread(
+                genai.embed_content,
+                model=self.embedding_model,
+                content=batch,
+                task_type="retrieval_document",
+                output_dimensionality=768,
+            )
+            vectors = result["embedding"]
+
+            # Guard against a shape change in the SDK: a batch request must
+            # return one vector per input, not a single flat vector.
+            if isinstance(vectors, list) and len(vectors) == len(batch):
+                return vectors
+
+            logger.warning(
+                f"Batch embedding returned {len(vectors)} vectors for "
+                f"{len(batch)} inputs — falling back to per-chunk embedding"
+            )
+        except Exception as e:
+            logger.warning(
+                f"Batch embedding failed ({e}) — falling back to per-chunk "
+                f"embedding so one bad chunk cannot lose the whole document"
+            )
+
+        return [await self._embed(t) for t in batch]
 
 
 # ── Background task wrapper ────────────────────────────────────────────────────
