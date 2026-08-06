@@ -22,11 +22,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Runtime stage — minimal image
 FROM python:3.11-slim AS runtime
 
-# Install only runtime system libraries
-RUN apt-get update && apt-get install -y \
+# Install only runtime system libraries.
+#   tesseract-ocr    — OCR engine for scanned documents (pytesseract wraps it)
+#   poppler-utils    — pdftoppm, used by pdf2image to rasterise pages for OCR
+# Without these, ingestion still works; scanned pages just yield no text.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libmagic1 \
     curl \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -53,6 +59,10 @@ RUN mkdir -p /app/.cache/huggingface /app/.cache/sentence-transformers \
 # Copy application code
 COPY --chown=appuser:appgroup . .
 
+# The entrypoint must be executable regardless of the checkout's file mode,
+# which is not preserved on Windows clones.
+RUN chmod +x /app/entrypoint.sh
+
 # Switch to non-root user
 USER appuser
 
@@ -63,13 +73,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Production: gunicorn with uvicorn workers
-# Workers = (2 * CPU_COUNT) + 1 — override via GUNICORN_WORKERS env var
-CMD ["sh", "-c", "gunicorn app.main:app \
-    --worker-class uvicorn.workers.UvicornWorker \
-    --workers ${GUNICORN_WORKERS:-2} \
-    --bind 0.0.0.0:8000 \
-    --timeout 120 \
-    --keep-alive 5 \
-    --access-logfile - \
-    --error-logfile -"]
+# Migrations run first, then the server — see entrypoint.sh.
+# Worker count is overridable via GUNICORN_WORKERS; each worker loads its own
+# copy of the cross-encoder, so raising it costs roughly 400MB apiece.
+CMD ["./entrypoint.sh"]

@@ -90,20 +90,112 @@ def get_db_context() -> Generator[Session, None, None]:
         db.close()
 
 
+# Indexes that Base.metadata.create_all() cannot express: pgvector's HNSW index
+# and the pg_trgm GIN indexes. They live in Alembic migrations 001/002, but the
+# migration chain has no baseline revision (001 ALTERs tables it assumes already
+# exist), so `alembic upgrade head` cannot bootstrap a fresh database and in
+# practice the migrations never run.
+#
+# Until a proper baseline migration exists, these are applied here so a fresh
+# deployment is not left doing sequential scans over every embedding — which is
+# what "sub-5ms ANN search" silently degrades to without idx_embeddings_hnsw.
+#
+# All statements are IF NOT EXISTS, so this is safe to run on every startup and
+# against a database that already has them.
+_REQUIRED_INDEXES = (
+    (
+        "idx_embeddings_hnsw",
+        """
+        CREATE INDEX IF NOT EXISTS idx_embeddings_hnsw
+        ON document_embeddings
+        USING hnsw (embedding vector_cosine_ops)
+        WITH (m = 16, ef_construction = 200)
+        """,
+    ),
+    (
+        "idx_embeddings_doc_chunk",
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_embeddings_doc_chunk
+        ON document_embeddings (document_id, chunk_index)
+        """,
+    ),
+    # Lexical retrieval. Deliberately NOT a trigram index on chunk_text: that
+    # is what migration 003 removed, because whole-string trigram similarity
+    # between a long chunk and a short question never clears pg_trgm's
+    # threshold. See alembic/versions/003_fulltext_search.py.
+    (
+        "chunk_tsv column",
+        """
+        ALTER TABLE document_embeddings
+        ADD COLUMN IF NOT EXISTS chunk_tsv tsvector
+        GENERATED ALWAYS AS (to_tsvector('english', chunk_text)) STORED
+        """,
+    ),
+    (
+        "idx_embeddings_chunk_tsv",
+        """
+        CREATE INDEX IF NOT EXISTS idx_embeddings_chunk_tsv
+        ON document_embeddings USING gin (chunk_tsv)
+        """,
+    ),
+    (
+        "idx_documents_title_trgm",
+        """
+        CREATE INDEX IF NOT EXISTS idx_documents_title_trgm
+        ON documents USING gin (title gin_trgm_ops)
+        """,
+    ),
+    (
+        "idx_documents_filename_trgm",
+        """
+        CREATE INDEX IF NOT EXISTS idx_documents_filename_trgm
+        ON documents USING gin (file_name gin_trgm_ops)
+        """,
+    ),
+)
+
+
 def init_db():
     """Initialize database tables using the canonical Base from models.base"""
     # Import all models so they register their tables with Base.metadata
     from app.models import audit, chat, document, prompt, user  # noqa: F401
     from app.models.base import Base as ModelBase
 
-    # Ensure pgvector extension exists before creating tables that use VECTOR columns
-    with engine.connect() as conn:
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        conn.commit()
-    logger.info("pgvector extension ensured")
+    is_postgres = engine.dialect.name == "postgresql"
+
+    if is_postgres:
+        # Extensions must exist before tables with VECTOR columns are created.
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+            conn.commit()
+        logger.info("pgvector and pg_trgm extensions ensured")
 
     ModelBase.metadata.create_all(bind=engine)
     logger.info("Database tables created successfully")
+
+    if is_postgres:
+        ensure_indexes()
+
+
+def ensure_indexes():
+    """
+    Create the vector and trigram indexes if they are missing.
+
+    Building the HNSW index on an already-large table takes time and holds a
+    lock on document_embeddings. On a fresh or small database this is
+    negligible; if you are adding it to a table with millions of rows, create
+    it out of band with CREATE INDEX CONCURRENTLY instead of relying on this.
+    """
+    for name, ddl in _REQUIRED_INDEXES:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(ddl))
+                conn.commit()
+            logger.debug(f"Index ensured: {name}")
+        except Exception as e:
+            # A missing index degrades performance; it must not stop the app.
+            logger.warning(f"Could not create index {name}: {e}")
 
 
 def check_db_connection() -> bool:
