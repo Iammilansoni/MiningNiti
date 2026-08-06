@@ -120,8 +120,10 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run Alembic migrations
-        run: python -m alembic upgrade head
-        continue-on-error: true  # May fail if pgvector not in test DB
+        # No longer continue-on-error: the chain now bootstraps a fresh
+        # database (revision 001 is a real baseline), so a failure here is a
+        # genuine break, not the expected state it used to be.
+        run: python -m scripts.migrate
 
       - name: Run unit tests
         run: |
@@ -136,6 +138,22 @@ jobs:
           pytest tests/integration/ -v --tb=short \
             -m "integration"
         continue-on-error: true  # Integration tests need real services
+
+      # ── Retrieval quality gate ────────────────────────────────────────────
+      # Blocking. Embeddings come from a local sentence-transformers model, so
+      # this needs no API keys and is deterministic. It exists because the
+      # lexical half of hybrid search was returning zero rows for the entire
+      # life of the feature and no test noticed.
+      - name: Cache eval embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ runner.os }}-minilm-marco-v1
+
+      - name: Retrieval quality eval
+        run: |
+          pytest tests/eval/test_retrieval_metrics.py -v --tb=short -m unit
+          pytest tests/eval/test_retrieval_eval.py -v -s --tb=short -m retrieval
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
