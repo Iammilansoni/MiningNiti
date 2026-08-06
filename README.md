@@ -35,7 +35,7 @@
 
 ---
 
-MiningNiti is a full-stack AI platform that transforms how coal mining organizations manage safety documentation, regulatory compliance, and institutional knowledge. It combines a **multi-agent AI pipeline** (6 specialized agents across 4 AI providers) with **production-grade RAG** (hybrid search + cross-encoder reranking) and **real-time compliance auditing** — turning thousands of fragmented PDFs into an instantly queryable, citation-backed source of truth.
+MiningNiti is a full-stack AI platform that transforms how coal mining organizations manage safety documentation, regulatory compliance, and institutional knowledge. It combines a **multi-agent AI pipeline** (5 specialized agents across 4 AI providers) with **production-grade RAG** (hybrid search + cross-encoder reranking) and **real-time compliance auditing** — turning thousands of fragmented PDFs into an instantly queryable, citation-backed source of truth.
 
 ---
 
@@ -64,7 +64,7 @@ Coal mining operations generate **thousands of critical documents** — MSHA reg
 
 ## The Solution
 
-MiningNiti deploys **6 specialized AI agents** across 4 providers that understand mining domain context:
+MiningNiti deploys **5 specialized AI agents** across 4 providers that understand mining domain context:
 
 | Capability | Agent |
 |---|---|
@@ -81,14 +81,14 @@ MiningNiti deploys **6 specialized AI agents** across 4 providers that understan
 
 ### Multi-Agent AI Pipeline
 
-Six specialized agents orchestrated in parallel for maximum throughput:
+Five specialized agents orchestrated in parallel for maximum throughput:
 
 ```
 Document Upload
        │
        ▼
   ┌─────────────┐
-  │ Orchestrator │──── Runs 6 agents concurrently via asyncio
+  │ Orchestrator │──── Runs 5 agents concurrently via asyncio
   └──────┬──────┘
          │
    ┌─────┼─────┬──────────┬──────────┬────────────┐
@@ -108,12 +108,12 @@ Classifier Safety  Entity    Summarizer  Compliance
 The retrieval system goes beyond basic vector search with a multi-stage pipeline:
 
 ```
-Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rerank → Top-5 → LLM
+Query → Embed → Hybrid Search (Vector + Full-Text) → RRF → Cross-Encoder Rerank → Top-5 → LLM
 ```
 
 | Stage | What it does |
 |---|---|
-| **Hybrid Search** | pgvector cosine similarity + pg_trgm BM25 keyword matching combined via Reciprocal Rank Fusion |
+| **Hybrid Search** | pgvector cosine similarity + PostgreSQL full-text search (`ts_rank_cd` over a GIN-indexed `tsvector`) combined via Reciprocal Rank Fusion. Not BM25 — true BM25 needs an extension such as `pg_search`. |
 | **Cross-Encoder Reranking** | `ms-marco-MiniLM-L-6-v2` reranks top-20 candidates for precise relevance scoring |
 | **Similarity Threshold** | Filters irrelevant chunks before context formatting |
 | **System Role Prompt** | Proper LLM message structure for better instruction following |
@@ -176,7 +176,7 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
 │   Query → Embed (Gemini) → Hybrid Search → RRF → Rerank → Top-5   │
 │                                                                     │
 │   ┌─────────────┐  ┌─────────────┐  ┌────────────────────────┐     │
-│   │  pgvector   │  │ pg_trgm BM25│  │  Cross-Encoder Rerank  │     │
+│   │  pgvector   │  │  full-text  │  │  Cross-Encoder Rerank  │     │
 │   │  (semantic) │  │ (keyword)   │  │  (ms-marco-MiniLM)     │     │
 │   └──────┬──────┘  └──────┬──────┘  └───────────┬────────────┘     │
 │          └────────┬───────┘                      │                  │
@@ -202,7 +202,7 @@ Query → Embed → Hybrid Search (Vector + BM25) → RRF → Cross-Encoder Rera
 ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
 │  Supabase     │  │  Upstash      │  │  AI Providers │
 │  PostgreSQL   │  │  Redis        │  │               │
-│  + pgvector   │  │  (Cache/Queue)│  │ Gemini · Groq │
+│  + pgvector   │  │   (Cache)     │  │ Gemini · Groq │
 │  (HNSW index) │  │               │  │ Mistral       │
 │  (Free tier)  │  │  (Free tier)  │  │ Cerebras      │
 └───────────────┘  └───────────────┘  └───────────────┘
@@ -282,7 +282,6 @@ npm run dev                     # http://localhost:3000
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend (e.g. `https://your-space.hf.space`) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key for frontend auth |
 | `CLERK_SECRET_KEY` | Yes | Clerk secret key for backend auth |
-| `UPLOADTHING_TOKEN` | No | UploadThing token (optional, direct upload used by default) |
 
 ---
 
@@ -353,7 +352,7 @@ MiningNiti/
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/          # API endpoints (documents, chat, compliance, analytics, search)
-│   │   ├── agents/          # 6 AI agents (classifier, safety, entity, summarizer, compliance, orchestrator)
+│   │   ├── agents/          # 5 AI agents + orchestrator (classifier, safety, entity, summarizer, compliance)
 │   │   ├── models/          # SQLAlchemy models (documents, chat, compliance, audit)
 │   │   ├── schemas/         # Pydantic request/response schemas
 │   │   ├── services/        # Business logic (RAG, hybrid search, reranker, compliance)
@@ -449,7 +448,23 @@ LangSmith tracing for end-to-end AI pipeline visibility — traces `AgentOrchest
 
 ### RAG Evaluation
 
-Gemini-powered evaluation measuring answer quality:
+RAG fails in two distinct ways and they are measured separately, because a
+blended score hides which one happened:
+
+**Retrieval quality** — was the right chunk ever in the context?
+Scored against a labelled golden set of 12 queries over a 130-chunk mining
+corpus. Runs in CI as a **blocking gate**, using a local sentence-transformers
+model so it needs no API keys and is deterministic.
+
+| Metric | What it measures | Floor | Current |
+|---|---|---|---|
+| Hit Rate@5 | Any relevant chunk in the top 5 | 0.90 | 1.000 |
+| MRR | How high the first relevant chunk lands | 0.75 | 1.000 |
+| Recall@5 | Share of relevant chunks retrieved | 0.85 | 0.958 |
+| nDCG@5 | Rewards clustering relevant chunks high | 0.75 | 0.968 |
+
+**Generation quality** — given good context, was the answer faithful?
+Gemini-judged, run on demand rather than in CI (needs an API key).
 
 | Metric | What it measures | Threshold |
 |---|---|---|
@@ -457,9 +472,18 @@ Gemini-powered evaluation measuring answer quality:
 | Relevancy | Does the answer actually address the question? | 0.70 |
 
 ```bash
-pytest tests/eval/test_rag_eval.py -v -m synthetic   # Quick check (no DB needed)
-pytest tests/eval/test_rag_eval.py -v -m live         # Full pipeline test
+pytest tests/eval/test_retrieval_eval.py -v -m retrieval   # Retrieval gate (needs Postgres)
+pytest tests/eval/test_rag_eval.py -v -m synthetic         # Generation, no DB
+pytest tests/eval/test_rag_eval.py -v -m live              # Generation, full pipeline
 ```
+
+> **A finding worth stating.** Stubbing the lexical arm to return nothing leaves
+> every aggregate metric unchanged — the cross-encoder reranker fully
+> compensates on a corpus this size. Aggregate scores therefore cannot prove an
+> arm is alive, which is why the suite also carries direct guards asserting the
+> lexical index returns rows and can distinguish near-identical citations
+> (`30 CFR 75.323` vs `75.400`). Those are the tests that actually fail when it
+> breaks.
 
 ---
 
@@ -471,7 +495,9 @@ Clerk JWT auth (JWKS) with user-scoped resource access. Rate limiting (120 req/m
 
 ## Performance
 
-Hybrid search (pgvector + pg_trgm) with Reciprocal Rank Fusion, cross-encoder reranking (`ms-marco-MiniLM-L-6-v2`), sub-5ms HNSW nearest-neighbor search, 6 AI agents running concurrently via `asyncio.gather()`, SSE streaming for token-by-token delivery, async document processing via FastAPI BackgroundTasks, Groq→Cerebras automatic fallback, crash recovery (stuck docs auto-reset), and cross-encoder pre-baked in Docker image.
+Hybrid search (pgvector + PostgreSQL full-text) with Reciprocal Rank Fusion, cross-encoder reranking (`ms-marco-MiniLM-L-6-v2`), HNSW approximate nearest-neighbour search, 5 AI agents running concurrently via `asyncio.gather()`, batched embedding (100 chunks per API call), SSE streaming, and crash recovery that resets *and requeues* interrupted documents.
+
+**Known limits, stated honestly:** database access is synchronous SQLAlchemy inside async endpoints, so throughput per worker is bounded; the background queue is an in-process `asyncio.Queue`, so queued work does not survive a restart or scale across replicas. Both are tracked as the next work.
 
 ---
 
