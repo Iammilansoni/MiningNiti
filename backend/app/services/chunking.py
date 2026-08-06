@@ -50,6 +50,106 @@ _HEADING_PATTERNS = [
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+(?=[A-Z\"])")
 
 
+# ── Markdown table handling ────────────────────────────────────────────────────
+#
+# Tables arrive from pdf_layout.py as Markdown, optionally preceded by a
+# "[Table 1 on page 7]" label. They need separate treatment from prose for one
+# concrete reason: a Markdown table contains no sentence-ending punctuation, so
+# the sentence splitter treats an entire table as a single sentence and
+# _group_into_chunks emits it whole no matter how large it is.
+#
+# Measured before this fix: a 400-row table became one 14,703-character chunk.
+# That is roughly twice gemini-embedding-001's ~2048 token input limit, so most
+# of the table was silently truncated and never indexed at all. What did get
+# embedded was a single vector averaging 400 unrelated rows, which matches
+# nothing specifically.
+#
+# The fix splits long tables by rows and repeats the header on every part, so
+# each part stands alone: "| 6 to 8 ft | 60 in |" is only meaningful next to
+# "| Mining Height | Bolt Length |".
+
+_TABLE_LABEL = re.compile(r"^\[Table [^\]]*\]$")
+
+# Prose shorter than this immediately before a table is treated as its caption
+# and kept with the table rather than emitted as a standalone fragment.
+_LEAD_IN_MAX_CHARS = 400
+
+_TABLE_BLOCK = re.compile(
+    r"(?:^\[Table [^\]]*\][ \t]*\n)?"  # optional "[Table 1 on page 7]" label
+    r"^\|.*\|[ \t]*\n"  # header row
+    r"^\|[\s\-:|]+\|[ \t]*\n"  # ---|--- separator row
+    r"(?:^\|.*\|[ \t]*(?:\n|$))*",  # data rows
+    re.MULTILINE,
+)
+
+
+def split_markdown_table(block: str, max_chars: int) -> List[str]:
+    """
+    Split one Markdown table into parts that each fit within max_chars.
+
+    Every part repeats the label, header row and separator, so a part retrieved
+    on its own is still readable — a bare row of numbers is not an answer.
+    Parts are labelled "(part i of n)" so the model can tell a split table from
+    a complete one and does not report a partial list as exhaustive.
+
+    A table already within the limit is returned unchanged, so small tables
+    keep their existing single-chunk behaviour.
+    """
+    lines = [ln for ln in block.strip().splitlines() if ln.strip()]
+    if not lines:
+        return []
+
+    label = None
+    if _TABLE_LABEL.match(lines[0].strip()):
+        label = lines[0].strip()
+        lines = lines[1:]
+
+    # Need at least a header, a separator and one data row to be worth splitting.
+    if len(lines) < 3:
+        return [block.strip()]
+
+    header, separator, rows = lines[0], lines[1], lines[2:]
+
+    if len(block) <= max_chars:
+        return [block.strip()]
+
+    def preamble(part_no: int, total: int) -> List[str]:
+        head = []
+        if label:
+            # "[Table 1 on page 7]" -> "[Table 1 on page 7, part 2 of 3]"
+            head.append(
+                f"{label[:-1]}, part {part_no} of {total}]" if total > 1 else label
+            )
+        head.extend([header, separator])
+        return head
+
+    # Two passes: the first packs rows to learn the part count, the second
+    # rebuilds with accurate "part i of n" labels. Without this the label would
+    # have to be written before the total is known.
+    def pack(total_hint: int) -> List[List[str]]:
+        groups: List[List[str]] = []
+        current: List[str] = []
+        budget = max_chars - len("\n".join(preamble(total_hint, total_hint))) - 1
+
+        for row in rows:
+            row_len = len(row) + 1
+            if current and sum(len(r) + 1 for r in current) + row_len > budget:
+                groups.append(current)
+                current = []
+            current.append(row)
+        if current:
+            groups.append(current)
+        return groups
+
+    groups = pack(1)
+    groups = pack(max(len(groups), 1))  # re-pack with the real label width
+    total = len(groups)
+
+    return [
+        "\n".join(preamble(i, total) + group) for i, group in enumerate(groups, start=1)
+    ]
+
+
 class ChunkingService:
     """
     Sentence-aware document chunker with page number tracking.
@@ -107,10 +207,17 @@ class ChunkingService:
         # Group sentences into word-count-bounded chunks with overlap
         raw_chunks = self._group_into_chunks(sentences, full_text)
 
+        # Enforce the hard character ceiling that CHUNK_SIZE cannot: tables are
+        # a single "sentence" and would otherwise be emitted at any size.
+        raw_chunks = self._enforce_size_ceiling(raw_chunks)
+
         # Annotate each chunk with page numbers and section title
         chunks: List[DocumentChunk] = []
         for idx, (chunk_text, char_start, char_end) in enumerate(raw_chunks):
-            if len(chunk_text.split()) < self.min_chunk_words:
+            # Table parts are exempt from the minimum-words filter: a short
+            # lookup table is meaningful even at a handful of words, and
+            # dropping it would lose the data entirely.
+            if len(chunk_text.split()) < self.min_chunk_words and "|" not in chunk_text:
                 continue  # Skip tiny fragments
 
             page_nums = self._get_page_numbers(char_start, char_end, page_map)
@@ -134,6 +241,99 @@ class ChunkingService:
         return chunks
 
     # ── Internal helpers ───────────────────────────────────────────────────────
+
+    def _enforce_size_ceiling(self, raw_chunks: List[tuple]) -> List[tuple]:
+        """
+        Break any chunk that exceeds MAX_CHUNK_CHARS.
+
+        Runs as a post-pass rather than being folded into sentence grouping so
+        that prose chunking behaviour is completely unchanged — only oversized
+        chunks are touched, and in practice those are the table ones.
+
+        A chunk may hold prose *and* a table, because the sentence splitter
+        does not break on ".\\n\\n[Table 1 on page 7]" (the following character
+        is '[', not a capital letter). Prose and table parts are therefore
+        separated here and emitted in document order.
+
+        All parts inherit the source chunk's char offsets. Page attribution
+        stays correct — every part came from that same span — at the cost of
+        page ranges being no narrower than the original chunk's.
+        """
+        max_chars = settings.MAX_CHUNK_CHARS
+        result: List[tuple] = []
+
+        for chunk_text, char_start, char_end in raw_chunks:
+            if len(chunk_text) <= max_chars:
+                result.append((chunk_text, char_start, char_end))
+                continue
+
+            for part in self._split_oversized(chunk_text, max_chars):
+                result.append((part, char_start, char_end))
+
+        return result
+
+    def _split_oversized(self, text: str, max_chars: int) -> List[str]:
+        """Split one oversized chunk into table parts and prose parts."""
+        parts: List[str] = []
+        cursor = 0
+
+        for match in _TABLE_BLOCK.finditer(text):
+            prose = text[cursor : match.start()].strip()
+            lead_in = ""
+
+            if prose:
+                if len(prose) <= _LEAD_IN_MAX_CHARS:
+                    # A short line before a table is almost always its
+                    # caption ("Roof bolt patterns shall conform to the
+                    # schedule below."). On its own it is under the
+                    # minimum-words filter and would be discarded, so it rides
+                    # with the first part of the table it introduces.
+                    lead_in = prose
+                else:
+                    parts.extend(self._split_plain_text(prose, max_chars))
+
+            table_budget = max_chars - (len(lead_in) + 2 if lead_in else 0)
+            table_parts = split_markdown_table(match.group(0), table_budget)
+
+            if lead_in and table_parts:
+                table_parts[0] = f"{lead_in}\n\n{table_parts[0]}"
+
+            parts.extend(table_parts)
+            cursor = match.end()
+
+        trailing = text[cursor:].strip()
+        if trailing:
+            parts.extend(self._split_plain_text(trailing, max_chars))
+
+        # No table found — the chunk is just a very long run of prose.
+        return parts or self._split_plain_text(text, max_chars)
+
+    def _split_plain_text(self, text: str, max_chars: int) -> List[str]:
+        """
+        Hard-split prose that has no usable sentence boundaries.
+
+        Breaks on whitespace so words stay intact. Only reached for text the
+        sentence splitter already failed to divide, so there is no better
+        boundary available.
+        """
+        text = text.strip()
+        if len(text) <= max_chars:
+            return [text] if text else []
+
+        parts: List[str] = []
+        current: List[str] = []
+        length = 0
+
+        for word in text.split():
+            if current and length + len(word) + 1 > max_chars:
+                parts.append(" ".join(current))
+                current, length = [], 0
+            current.append(word)
+            length += len(word) + 1
+
+        if current:
+            parts.append(" ".join(current))
+        return parts
 
     def _split_sentences(self, text: str) -> List[str]:
         """Split text into sentences using regex boundary detection."""
@@ -162,63 +362,78 @@ class ChunkingService:
         Returns list of (chunk_text, char_start, char_end) tuples.
         """
         chunks = []
-        current_sentences: List[str] = []
+        # Indices into `sentences`, not the strings themselves. Looking the
+        # strings back up with sentences.index() was O(n) per flush and
+        # returned the *first* match, so a document containing the same
+        # sentence twice attributed the chunk to the wrong character offset —
+        # and therefore the wrong page.
+        current: List[int] = []
         current_word_count = 0
 
         # Precompute sentence char offsets in full_text
         sentence_offsets = self._compute_sentence_offsets(sentences, full_text)
 
+        def flush(indices: List[int]) -> None:
+            if not indices:
+                return
+            char_start = sentence_offsets[indices[0]][0]
+            char_end = sentence_offsets[indices[-1]][1]
+            chunks.append(
+                (" ".join(sentences[j] for j in indices), char_start, char_end)
+            )
+
         i = 0
         while i < len(sentences):
-            sentence = sentences[i]
-            word_count = len(sentence.split())
+            word_count = len(sentences[i].split())
+
+            # A single sentence larger than chunk_size can never be packed.
+            # It must be emitted on its own AND i must advance, or the loop
+            # below spins forever: the else-branch flushes, restores a
+            # non-empty overlap, and re-tests the same oversized sentence
+            # against the same budget. That hung ingestion permanently on any
+            # document with prose followed by a large table, because a
+            # Markdown table has no sentence boundaries and merges into the
+            # preceding sentence.
+            if word_count > self.chunk_size:
+                flush(current)
+                # Deliberately no overlap here — carrying sentences forward
+                # would recreate the non-empty state that caused the spin.
+                current, current_word_count = [], 0
+                flush([i])
+                i += 1
+                continue
 
             if current_word_count + word_count <= self.chunk_size:
-                current_sentences.append(sentence)
+                current.append(i)
                 current_word_count += word_count
                 i += 1
-            else:
-                if current_sentences:
-                    # Save current chunk
-                    start_idx = sentences.index(current_sentences[0])
-                    end_idx = sentences.index(current_sentences[-1])
-                    char_start = sentence_offsets[start_idx][0]
-                    char_end = sentence_offsets[end_idx][1]
-                    chunks.append((" ".join(current_sentences), char_start, char_end))
+                continue
 
-                    # Build overlap: keep last N words worth of sentences
-                    overlap_sentences = self._get_overlap_sentences(
-                        current_sentences, self.chunk_overlap
-                    )
-                    current_sentences = overlap_sentences
-                    current_word_count = sum(len(s.split()) for s in current_sentences)
-                else:
-                    # Single sentence is longer than chunk_size — add it anyway
-                    char_start, char_end = sentence_offsets[i]
-                    chunks.append((sentence, char_start, char_end))
-                    i += 1
+            # Chunk is full: emit it and carry an overlap into the next one.
+            flush(current)
+            current = self._get_overlap_indices(current, sentences, self.chunk_overlap)
+            current_word_count = sum(len(sentences[j].split()) for j in current)
 
-        # Don't forget the last chunk
-        if current_sentences:
-            start_idx = sentences.index(current_sentences[0])
-            end_idx = sentences.index(current_sentences[-1])
-            char_start = sentence_offsets[start_idx][0]
-            char_end = sentence_offsets[end_idx][1]
-            chunks.append((" ".join(current_sentences), char_start, char_end))
+            # Guard against a pathological overlap that leaves no room for the
+            # next sentence, which would stall progress again.
+            if current_word_count + word_count > self.chunk_size:
+                flush(current)
+                current, current_word_count = [], 0
 
+        flush(current)
         return chunks
 
-    def _get_overlap_sentences(
-        self, sentences: List[str], target_words: int
-    ) -> List[str]:
-        """Return the tail sentences that total approximately target_words words."""
-        result = []
+    def _get_overlap_indices(
+        self, indices: List[int], sentences: List[str], target_words: int
+    ) -> List[int]:
+        """Return the tail sentence indices totalling approximately target_words."""
+        result: List[int] = []
         word_count = 0
-        for sentence in reversed(sentences):
-            wc = len(sentence.split())
+        for idx in reversed(indices):
+            wc = len(sentences[idx].split())
             if word_count + wc > target_words:
                 break
-            result.insert(0, sentence)
+            result.insert(0, idx)
             word_count += wc
         return result
 
