@@ -45,6 +45,18 @@ pypdf==4.2.0
 python-docx==1.1.2
 python-magic==0.4.27
 
+# Layout-aware extraction. pdfplumber recovers tables, which pypdf's flat text
+# stream destroys — and mining regulations/manuals are mostly tables.
+# NOTE: PyMuPDF (fitz) is deliberately NOT used here. It is more capable but
+# AGPL-3.0, which is incompatible with this project's MIT licence.
+pdfplumber==0.11.10
+
+# OCR for scanned documents. Requires the tesseract-ocr and poppler-utils
+# system packages (installed in the Dockerfile); the code degrades to a warning
+# when they are absent so local dev without them still works.
+pytesseract==0.3.13
+pdf2image==1.17.0
+
 # -----------------------------------------------------------------------------
 # Background Jobs
 # -----------------------------------------------------------------------------
@@ -61,9 +73,11 @@ requests==2.32.3
 # Security, Auth & Rate Limiting
 # -----------------------------------------------------------------------------
 slowapi==0.1.9
-python-jose[cryptography]==3.3.0
+# python-jose removed: 3.3.0 is affected by CVE-2024-33663 (algorithm
+# confusion) and CVE-2024-33664 (JWE decompression DoS). JWT verification now
+# uses PyJWT — see app/core/security.py.
 cryptography==46.0.3
-PyJWT==2.9.0
+PyJWT[crypto]==2.9.0
 
 # -----------------------------------------------------------------------------
 # Utilities

@@ -6,8 +6,9 @@ AI-Powered Document Intelligence for the Coal Mining Industry
 """
 
 import logging
+import re
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -21,6 +22,7 @@ from slowapi.util import get_remote_address
 from app.api.v1 import api_router
 from app.config import settings
 from app.core.exceptions import MiningNitiException
+from app.core.url_guard import UnsafeURLError
 from app.db.session import check_db_connection, init_db
 
 # Configure logging
@@ -38,6 +40,106 @@ logging.getLogger("sqlalchemy.dialects").setLevel(logging.WARNING)
 # Also suppress httpcore connection-level debug spam
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.INFO)
+
+
+# Arbitrary but fixed key so every replica contends for the same lock.
+_RECOVERY_LOCK_KEY = 8712_2024
+
+
+async def _recover_interrupted_work() -> None:
+    """
+    Requeue work that was in flight when the process last died.
+
+    Two things were previously wrong here:
+
+    1. Rows were reset to PENDING but never re-enqueued. Nothing scans for
+       PENDING documents — enqueue_document_task() is only called from the
+       upload/create/reanalyze endpoints — so "recovered" documents sat at
+       pending forever and needed a manual re-analyze.
+
+    2. With more than one worker process, every replica ran recovery
+       concurrently and would requeue the same rows N times. A Postgres
+       advisory lock now elects a single recoverer; the others skip.
+    """
+    from sqlalchemy import text
+
+    from app.db.session import get_db_context
+    from app.models.compliance import AuditStatus, ComplianceAudit
+    from app.models.document import Document, DocumentStatus
+    from app.services.queue import enqueue_compliance_task, enqueue_document_task
+
+    # Advisory locks are a PostgreSQL feature. On SQLite (unit tests) there is
+    # only ever one process, so the election is unnecessary.
+    try:
+        with get_db_context() as db:
+            # Ask the session we actually got, not the module-level engine —
+            # they can differ (tests inject a SQLite session while DATABASE_URL
+            # points at PostgreSQL), and issuing pg_try_advisory_lock against
+            # the wrong backend fails the whole recovery.
+            use_lock = db.get_bind().dialect.name == "postgresql"
+
+            if use_lock:
+                acquired = db.execute(
+                    text("SELECT pg_try_advisory_lock(:key)"),
+                    {"key": _RECOVERY_LOCK_KEY},
+                ).scalar()
+
+                if not acquired:
+                    logger.info("Recovery: another worker holds the lock, skipping")
+                    return
+
+            try:
+                stuck_docs = (
+                    db.query(Document)
+                    .filter(
+                        Document.status.in_(
+                            [DocumentStatus.PROCESSING, DocumentStatus.ANALYZING]
+                        )
+                    )
+                    .all()
+                )
+                doc_ids = [str(doc.id) for doc in stuck_docs]
+                for doc in stuck_docs:
+                    doc.status = DocumentStatus.PENDING
+                    doc.processing_error = "Reset after server restart"
+
+                stuck_audits = (
+                    db.query(ComplianceAudit)
+                    .filter(ComplianceAudit.status == AuditStatus.RUNNING)
+                    .all()
+                )
+                audit_ids = [str(a.id) for a in stuck_audits]
+                for audit in stuck_audits:
+                    audit.status = AuditStatus.PENDING
+                    audit.processing_error = "Reset after server restart"
+
+                db.commit()
+            finally:
+                if use_lock:
+                    db.execute(
+                        text("SELECT pg_advisory_unlock(:key)"),
+                        {"key": _RECOVERY_LOCK_KEY},
+                    )
+
+        # Requeue only after the reset is durably committed, so a crash here
+        # leaves rows in PENDING for the next startup rather than in a state
+        # no one will pick up.
+        for document_id in doc_ids:
+            enqueue_document_task(document_id)
+        for audit_id in audit_ids:
+            await enqueue_compliance_task(audit_id)
+
+        if doc_ids or audit_ids:
+            logger.info(
+                f"Recovery: requeued {len(doc_ids)} document(s) and "
+                f"{len(audit_ids)} audit(s) interrupted by the last restart"
+            )
+        else:
+            logger.info("Recovery: nothing was interrupted")
+
+    except Exception as e:
+        # Recovery is best-effort; a failure here must not stop the app booting.
+        logger.warning(f"Recovery failed: {e}", exc_info=True)
 
 
 @asynccontextmanager
@@ -64,50 +166,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning(f"Database table creation warning: {e}")
 
-        # Recovery: reset documents stuck in transient states from a previous crash/restart
-        try:
-            from app.db.session import get_db_context
-            from app.models.document import Document, DocumentStatus
-
-            with get_db_context() as db:
-                stuck_docs = (
-                    db.query(Document)
-                    .filter(Document.status.in_(["processing", "analyzing"]))
-                    .all()
-                )
-                if stuck_docs:
-                    for doc in stuck_docs:
-                        doc.status = DocumentStatus.PENDING
-                        doc.processing_error = "Reset after server restart"
-                    db.commit()
-                    logger.info(
-                        f"Recovery: reset {len(stuck_docs)} stuck document(s) to PENDING"
-                    )
-                else:
-                    logger.info("Recovery: no stuck documents found")
-        except Exception as e:
-            logger.warning(f"Document recovery warning: {e}")
-
-        # Recovery: reset compliance audits stuck in running state
-        try:
-            from app.models.compliance import AuditStatus, ComplianceAudit
-
-            with get_db_context() as db:
-                stuck_audits = (
-                    db.query(ComplianceAudit)
-                    .filter(ComplianceAudit.status.in_(["running"]))
-                    .all()
-                )
-                if stuck_audits:
-                    for audit in stuck_audits:
-                        audit.status = AuditStatus.PENDING
-                        audit.processing_error = "Reset after server restart"
-                    db.commit()
-                    logger.info(
-                        f"Recovery: reset {len(stuck_audits)} stuck audit(s) to PENDING"
-                    )
-        except Exception as e:
-            logger.warning(f"Audit recovery warning: {e}")
+        await _recover_interrupted_work()
     else:
         logger.warning("Database connection failed - some features may not work")
 
@@ -159,19 +218,19 @@ specifically designed for the coal mining industry.
 # Rate Limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
-# CORS Configuration
-_EXTRA_ORIGINS = ["http://localhost:3000", "http://localhost:3001"]
-
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
+# CORS. Exact origins go in allow_origins; patterns (Vercel previews) go in
+# allow_origin_regex — Starlette does NOT expand '*' inside allow_origins.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS + _EXTRA_ORIGINS,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX or None,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
 )
 
 
@@ -180,31 +239,39 @@ app.add_middleware(
 
 def _get_cors_headers(request: Request) -> dict:
     """
-    Build CORS headers to attach to error responses.
-    This is needed because FastAPI's HTTPBearer can short-circuit before
-    CORSMiddleware has a chance to add Access-Control-Allow-Origin headers,
-    causing the browser to report a CORS error instead of the real auth error.
+    Build CORS headers for the *unhandled* exception path only.
+
+    Responses from FastAPI's normal exception handlers pass back out through
+    CORSMiddleware, which attaches the headers itself — duplicating that logic
+    here is how the two implementations drifted apart in the first place. But
+    the catch-all Exception handler is installed in ServerErrorMiddleware,
+    which sits *outside* CORSMiddleware, so a 500 would otherwise reach the
+    browser with no CORS headers and surface as a misleading CORS error.
     """
     origin = request.headers.get("origin", "")
-    allowed_origins = settings.CORS_ORIGINS + _EXTRA_ORIGINS
-    if origin in allowed_origins or any(
-        origin.endswith(o.lstrip("*")) for o in allowed_origins if "*" in o
-    ):
+    if not origin:
+        return {}
+
+    allowed = origin in settings.CORS_ORIGINS
+    if not allowed and settings.CORS_ORIGIN_REGEX:
+        allowed = bool(re.fullmatch(settings.CORS_ORIGIN_REGEX, origin))
+
+    if allowed:
         return {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
         }
     return {}
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle HTTP exceptions with CORS headers so auth failures are visible to the browser"""
-    headers = {**(exc.headers or {}), **_get_cors_headers(request)}
+    """Handle HTTP exceptions. CORSMiddleware attaches the CORS headers."""
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
-        headers=headers,
+        headers=exc.headers or None,
     )
 
 
@@ -217,9 +284,22 @@ async def miningniti_exception_handler(request: Request, exc: MiningNitiExceptio
             "error": exc.message,
             "code": exc.code,
             "details": exc.details,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
-        headers=_get_cors_headers(request),
+    )
+
+
+@app.exception_handler(UnsafeURLError)
+async def unsafe_url_exception_handler(request: Request, exc: UnsafeURLError):
+    """A URL was rejected by the SSRF guard — that is a client error, not a bug."""
+    logger.warning(f"Blocked unsafe URL request: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "error": str(exc),
+            "code": "UNSAFE_URL",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        },
     )
 
 
@@ -232,9 +312,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error": "Validation failed",
             "code": "VALIDATION_ERROR",
             "details": exc.errors(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
-        headers=_get_cors_headers(request),
     )
 
 
@@ -242,12 +321,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler for unhandled errors"""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    # This handler runs outside CORSMiddleware, so the headers are added by hand.
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Internal server error",
             "code": "INTERNAL_SERVER_ERROR",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
         headers=_get_cors_headers(request),
     )
@@ -273,7 +353,7 @@ async def root():
 @app.get("/health", tags=["Root"])
 async def health():
     """Quick health check for load balancers"""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
 # Run with: uvicorn app.main:app --reload
