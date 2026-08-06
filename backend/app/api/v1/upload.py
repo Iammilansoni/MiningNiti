@@ -9,10 +9,20 @@ import os
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_id
+from app.config import settings
+from app.core.url_guard import build_storage_url
 from app.db.session import get_db
 from app.models.audit import AuditAction, create_audit_log
 from app.models.document import Document, DocumentStatus
@@ -22,8 +32,20 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads")
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+UPLOAD_DIR = settings.UPLOAD_DIR
+MAX_FILE_SIZE = settings.MAX_FILE_SIZE_MB * 1024 * 1024
+
+# Body is streamed in chunks of this size so a large upload never has to be
+# held in memory in full.
+_CHUNK_SIZE = 1024 * 1024  # 1MB
+
+# On-disk extension is chosen from the validated content type, so a filename
+# like "invoice.pdf.exe" cannot influence what lands on the volume.
+_EXTENSION_FOR_TYPE = {
+    "application/pdf": "pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+    "text/plain": "txt",
+}
 
 
 @router.post(
@@ -35,26 +57,72 @@ async def upload_document(
     db: Session = Depends(get_db),
 ):
     """
-    Upload a document directly (bypasses UploadThing).
-    Saves file locally and triggers AI processing.
+    Upload a document directly and queue it for AI processing.
+
+    The body is streamed to disk with a hard size ceiling rather than buffered
+    in memory, and the declared content type must be one this service can
+    actually parse.
     """
     if not file.filename:
-        return {"error": "No filename provided"}
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No filename provided",
+        )
 
-    content = await file.read()
-
-    if len(content) > MAX_FILE_SIZE:
-        return {"error": f"File too large. Max size: {MAX_FILE_SIZE // (1024*1024)}MB"}
+    content_type = (file.content_type or "").split(";")[0].strip().lower()
+    if content_type not in settings.ALLOWED_FILE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=(
+                f"Unsupported file type '{content_type or 'unknown'}'. "
+                f"Allowed: {', '.join(settings.ALLOWED_FILE_TYPES)}"
+            ),
+        )
 
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "bin"
+
+    # The extension is derived from the validated content type, never from the
+    # user-supplied filename — the filename is attacker-controlled and only
+    # kept for display.
+    ext = _EXTENSION_FOR_TYPE.get(content_type, "bin")
     local_filename = f"{uuid.uuid4().hex}.{ext}"
     local_path = os.path.join(UPLOAD_DIR, local_filename)
 
-    with open(local_path, "wb") as f:
-        f.write(content)
+    # Stream to disk in fixed-size chunks. Reading the whole body first (the
+    # previous behaviour) let a client pin arbitrary bytes in RAM before the
+    # size check ever ran.
+    file_size = 0
+    try:
+        with open(local_path, "wb") as f:
+            while chunk := await file.read(_CHUNK_SIZE):
+                file_size += len(chunk)
+                if file_size > MAX_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail=(
+                            f"File too large. Max size: "
+                            f"{settings.MAX_FILE_SIZE_MB}MB"
+                        ),
+                    )
+                f.write(chunk)
 
-    file_url = f"file://{os.path.abspath(local_path)}"
+        if file_size == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded file is empty",
+            )
+    except Exception:
+        # Never leave a partial or oversized file behind on the volume.
+        try:
+            os.unlink(local_path)
+        except OSError:
+            pass
+        raise
+
+    # Internal storage reference — resolved only against UPLOAD_DIR. Storing a
+    # bare key rather than an absolute path keeps the row portable across
+    # containers and gives the SSRF guard a value it can safely confine.
+    file_url = build_storage_url(local_filename)
 
     document = Document(
         user_id=user_id,
@@ -62,8 +130,8 @@ async def upload_document(
             file.filename.rsplit(".", 1)[0] if "." in file.filename else file.filename
         ),
         file_name=file.filename,
-        file_size=len(content),
-        file_type=file.content_type or "application/octet-stream",
+        file_size=file_size,
+        file_type=content_type,
         file_url=file_url,
         status=DocumentStatus.PENDING,
         tags=["upload"],
@@ -77,7 +145,7 @@ async def upload_document(
         user_id=user_id,
         resource_type="document",
         resource_id=str(document.id),
-        details={"file_name": file.filename, "file_size": len(content)},
+        details={"file_name": file.filename, "file_size": file_size},
     )
     db.add(audit)
     db.commit()
