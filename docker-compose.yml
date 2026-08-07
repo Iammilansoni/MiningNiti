@@ -1,11 +1,19 @@
-version: '3.8'
+# Local development stack.
+#
+# Everything runs against containers on your machine — no Supabase, no Upstash,
+# no HuggingFace. Copy backend/.env.example to backend/.env and
+# frontend/.env.example to frontend/.env.local first; the DATABASE_URL and
+# REDIS_URL below override whatever those files contain so they point at the
+# containers here.
+#
+# For the production stack see docker-compose.prod.yml.
 
 services:
   # ==========================================================================
   # Backend API - FastAPI
   # ==========================================================================
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
@@ -16,33 +24,24 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=development
       - DEBUG=true
+      # Dev frontend origin. CORS_ORIGINS defaults to localhost:3000 anyway,
+      # but being explicit here means .env cannot accidentally lock you out.
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:3001"]
     volumes:
       - ./backend:/app
       - uploads:/app/uploads
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-  # ==========================================================================
-  # Celery Worker - Background Jobs
-  # ==========================================================================
-  celery-worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    env_file: ./backend/.env
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/miningniti
-      - REDIS_URL=redis://redis:6379/0
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - redis
-      - postgres
-    restart: unless-stopped
-    command: celery -A app.workers.celery_app worker -l info -c 2
+    # --reload replaces the image's entrypoint, so migrations are run here
+    # explicitly. Without this the schema is never created and every request
+    # fails on a missing table.
+    command: >
+      sh -c "python -m scripts.migrate &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   # ==========================================================================
   # Frontend - Next.js
@@ -53,8 +52,12 @@ services:
       - "3000:3000"
     env_file: ./frontend/.env.local
     environment:
+      # The browser resolves this, not the container, so it is localhost rather
+      # than the 'backend' service name.
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
       - HOSTNAME=0.0.0.0
+    depends_on:
+      - backend
     restart: unless-stopped
 
   # ==========================================================================
@@ -78,7 +81,7 @@ services:
       retries: 5
 
   # ==========================================================================
-  # Redis - Message Queue & Cache
+  # Redis - analytics cache
   # ==========================================================================
   redis:
     image: redis:7-alpine
@@ -92,6 +95,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+# NOTE: there is no celery-worker service. One used to be defined here running
+# `celery -A app.workers.celery_app`, but app/workers/ does not exist and celery
+# is not a dependency, so it crash-looped on every `docker compose up`.
+# Background processing currently runs in-process inside the API container
+# (app/services/queue.py).
 
 volumes:
   postgres_data:
