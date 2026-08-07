@@ -1,19 +1,55 @@
-version: '3.8'
+# Production stack.
+#
+# Note on scaling: document processing currently runs on an in-process
+# asyncio.Queue inside the API process (app/services/queue.py), so work is not
+# shared between replicas and does not survive a restart. That constrains the
+# worker count below. Moving to a durable broker is tracked as the next step;
+# until then, do not raise the worker count expecting more throughput.
 
 services:
+  # ==========================================================================
+  # Schema migrations — runs to completion before the API starts
+  # ==========================================================================
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      # Settings validation requires these even for a migration run.
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
+      - CLERK_JWKS_URL=${CLERK_JWKS_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    command: alembic upgrade head
+
   # ==========================================================================
   # Backend API - FastAPI (Production)
   # ==========================================================================
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      # All four provider keys are required Fields in app/config.py. Omitting
+      # any of them raises a ValidationError at import and the container never
+      # starts.
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
       - CLERK_JWKS_URL=${CLERK_JWKS_URL}
+      - CLERK_AUTHORIZED_PARTIES=${CLERK_AUTHORIZED_PARTIES}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - CORS_ORIGIN_REGEX=${CORS_ORIGIN_REGEX}
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=production
       - DEBUG=false
@@ -24,35 +60,31 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: always
-    # Using gunicorn with uvicorn workers for production
-    command: gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000
-
-  # ==========================================================================
-  # Celery Worker - Background Jobs (Production)
-  # ==========================================================================
-  celery-worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - REDIS_URL=redis://redis:6379/0
-      - ENVIRONMENT=production
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    restart: always
-    command: celery -A app.workers.celery_app worker -l warning -c 4
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    # Two workers, not four: each one loads its own copy of the cross-encoder
+    # (~400MB resident with torch) and runs its own background queue.
+    command: >
+      gunicorn app.main:app
+      -w 2
+      -k uvicorn.workers.UvicornWorker
+      -b 0.0.0.0:8000
+      --timeout 120
+      --graceful-timeout 30
+      --access-logfile -
 
   # ==========================================================================
   # Frontend - Next.js (Production)
   # ==========================================================================
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
@@ -62,8 +94,9 @@ services:
       - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
       - NODE_ENV=production
+    depends_on:
+      - backend
     restart: always
-    # No volumes in production to use the built image files
 
   # ==========================================================================
   # PostgreSQL with pgvector (Production)
@@ -73,9 +106,11 @@ services:
     environment:
       - POSTGRES_DB=miningniti
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+    # Bound to loopback: in production the database must not be reachable from
+    # outside the host. Use a bastion or `docker compose exec` for access.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
@@ -86,12 +121,12 @@ services:
       retries: 5
 
   # ==========================================================================
-  # Redis - Message Queue & Cache (Production)
+  # Redis - Cache (Production)
   # ==========================================================================
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     restart: always

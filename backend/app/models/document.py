@@ -46,6 +46,22 @@ class DocumentStatus(str, Enum):
     FAILED = "failed"
 
 
+def db_status(member: DocumentStatus) -> str:
+    """
+    The literal PostgreSQL actually stores for a DocumentStatus.
+
+    SQLAlchemy's Enum type persists member *names* ('COMPLETED'), not values
+    ('completed'), unless values_callable is set. ORM queries are coerced
+    automatically, but raw SQL is not — so hand-written SQL must compare
+    against this, never against `.value`.
+
+    Anything that changes how the column is persisted must change this function
+    too; routing every raw-SQL comparison through here means retrieval fails
+    loudly at one place instead of silently returning zero rows everywhere.
+    """
+    return member.name
+
+
 class ComplianceStatus(str, Enum):
     """Safety compliance status"""
 

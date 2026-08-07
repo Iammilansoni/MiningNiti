@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 
 class DocumentCategory(str, Enum):
@@ -46,14 +46,34 @@ class ComplianceStatus(str, Enum):
 
 
 class DocumentCreate(BaseModel):
-    """Request model for creating a document from UploadThing"""
+    """Request model for creating a document from an external URL"""
 
-    file_url: str = Field(..., description="UploadThing file URL")
+    file_url: str = Field(
+        ...,
+        description="Public https:// URL of the file to ingest",
+        max_length=2048,
+    )
     file_name: str = Field(..., description="Original file name")
     file_size: int = Field(..., gt=0, description="File size in bytes")
     file_type: str = Field(..., description="MIME type")
     title: Optional[str] = Field(None, description="Custom document title")
     tags: Optional[List[str]] = Field(default=[], description="User-defined tags")
+
+    @field_validator("file_url")
+    @classmethod
+    def _reject_non_https(cls, v: str) -> str:
+        """
+        First line of defence against SSRF and local file disclosure.
+
+        `storage://` and `file://` address this backend's own filesystem and
+        must never be settable by a client — only the upload endpoint mints
+        those. The full IP-level check runs later in the SSRF guard; this
+        rejects the obvious cases with a clean 422 instead of a 500.
+        """
+        candidate = v.strip()
+        if not candidate.lower().startswith("https://"):
+            raise ValueError("file_url must be a public https:// URL")
+        return candidate
 
 
 class DocumentUploadResponse(BaseModel):
