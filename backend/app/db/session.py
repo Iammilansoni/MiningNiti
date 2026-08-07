@@ -1,15 +1,29 @@
 """
 Database Session Management
-SQLAlchemy engine and session configuration with connection pooling
+SQLAlchemy engine and session configuration with connection pooling.
+
+Two engines exist here on purpose:
+
+  async_engine / AsyncSessionLocal
+      What request handlers use. Every endpoint is `async def`, so a
+      synchronous DB call inside one blocks the event loop for its whole
+      duration — every other request served by that worker waits behind it.
+
+  engine / SessionLocal  (synchronous)
+      Retained for the things that genuinely are not async: Alembic, the
+      migration runner, and startup schema checks. Also still used by the
+      handlers that have not been converted yet; both paths work against the
+      same database while the conversion proceeds module by module.
 """
 
 import logging
-from contextlib import contextmanager
-from typing import Generator
+from contextlib import asynccontextmanager, contextmanager
+from typing import AsyncGenerator, Generator
 
 from sqlalchemy import create_engine, event, text
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import QueuePool
+from sqlalchemy.pool import NullPool, QueuePool
 
 from app.config import settings
 
@@ -41,6 +55,81 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+# ── Async engine ───────────────────────────────────────────────────────────────
+
+
+def _async_url(url: str) -> str:
+    """
+    Translate a sync DATABASE_URL to its async driver equivalent.
+
+    Deployments set DATABASE_URL with a sync driver (Supabase hands you
+    `postgresql://`, and this project's compose files use
+    `postgresql+psycopg2://`). Rather than require every environment to be
+    edited — including the HuggingFace Space, where a mistake means a failed
+    boot — the async driver is substituted here.
+
+    psycopg3 is used rather than asyncpg because `psycopg[binary,pool]` is
+    already a dependency and psycopg3 speaks both sync and async, so the two
+    engines share one driver.
+    """
+    if url.startswith("postgresql+psycopg2://"):
+        return url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    if url.startswith("postgres://"):  # legacy Heroku-style
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    if url.startswith("sqlite://") and "+aiosqlite" not in url:
+        return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+    return url
+
+
+def _is_transaction_pooler(url: str) -> bool:
+    """
+    Detect Supabase's transaction pooler (port 6543).
+
+    PgBouncer in transaction mode multiplexes one server connection across
+    clients, so server-side prepared statements leak between sessions and
+    error with "prepared statement already exists". psycopg3 prepares
+    automatically after a few executions, so it has to be told not to.
+    """
+    return ":6543" in url or "pgbouncer=true" in url.lower()
+
+
+ASYNC_DATABASE_URL = _async_url(settings.DATABASE_URL)
+
+_async_connect_args = dict(connect_args)
+_async_engine_args = dict(engine_args)
+
+if ASYNC_DATABASE_URL.startswith("postgresql+psycopg"):
+    if _is_transaction_pooler(ASYNC_DATABASE_URL):
+        # Disable prepared statements, and do not hold a client-side pool on
+        # top of the server-side one — that is how you exhaust a pooler.
+        _async_connect_args["prepare_threshold"] = None
+        _async_engine_args = {"poolclass": NullPool, "echo": False}
+        logger.info("Transaction pooler detected: prepared statements disabled")
+elif ASYNC_DATABASE_URL.startswith("sqlite"):
+    # SQLite (tests) supports none of the pool tuning above.
+    _async_engine_args = {"echo": False}
+    _async_connect_args = {}
+
+async_engine = create_async_engine(
+    ASYNC_DATABASE_URL,
+    connect_args=_async_connect_args,
+    **_async_engine_args,
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    # Attributes stay usable after commit(); without this every commit
+    # invalidates loaded objects and the next attribute read emits a lazy
+    # refresh, which raises MissingGreenlet outside a greenlet context.
+    expire_on_commit=False,
+)
+
+
 # Connection event listeners for debugging
 @event.listens_for(engine, "connect")
 def on_connect(dbapi_conn, connection_record):
@@ -67,6 +156,44 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Dependency for async FastAPI endpoints.
+
+    Usage:
+        @router.get("/items")
+        async def get_items(db: AsyncSession = Depends(get_async_db)):
+            result = await db.execute(select(Item))
+            return result.scalars().all()
+
+    The session is rolled back on an unhandled exception rather than left for
+    the pool to reset, so a failed request cannot hand a dirty transaction to
+    the next one that checks the connection out.
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+
+
+@asynccontextmanager
+async def get_async_db_context() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Async session for use outside FastAPI — background workers and scripts.
+
+    Commits on clean exit, rolls back on exception.
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 @contextmanager

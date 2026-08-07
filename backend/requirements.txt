@@ -17,8 +17,15 @@ pydantic-settings==2.5.0
 # Database & ORM
 # -----------------------------------------------------------------------------
 sqlalchemy==2.0.35
+# psycopg3 drives both engines: sync (Alembic, migration runner, startup
+# checks) and async (request handlers). See app/db/session.py.
 psycopg[binary,pool]==3.2.3
 psycopg2-binary==2.9.10
+# SQLAlchemy's async layer runs the DBAPI inside a greenlet; it is a hard
+# requirement, not an optional extra.
+greenlet>=3.0.0
+# Async SQLite driver, used by the test suite only.
+aiosqlite==0.22.1
 pgvector==0.3.0
 alembic==1.13.0
 
