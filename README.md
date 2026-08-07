@@ -278,7 +278,7 @@ npm run dev                     # http://localhost:3000
 | `MISTRAL_API_KEY` | Yes | Mistral API key from [console.mistral.ai](https://console.mistral.ai) |
 | `CEREBRAS_API_KEY` | Yes | Cerebras API key from [cloud.cerebras.ai](https://cloud.cerebras.ai) |
 | `CLERK_JWKS_URL` | Yes | Clerk JWKS endpoint for JWT verification |
-| `REDIS_URL` | Yes | Upstash Redis URL (with `?tls=true`) |
+| `REDIS_URL` | No | Upstash Redis URL. Use the `rediss://` scheme for TLS — **not** `?tls=true`, which redis-py rejects with `unexpected keyword argument 'tls'`. |
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend (e.g. `https://your-space.hf.space`) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key for frontend auth |
 | `CLERK_SECRET_KEY` | Yes | Clerk secret key for backend auth |
@@ -396,7 +396,7 @@ The entire application runs on **free-tier services** with zero infrastructure c
 ### Setup Steps
 
 1. **Database** (Supabase): Create project, copy Transaction pooler connection string (port 6543), run `CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pg_trgm;`
-2. **Redis** (Upstash): Create Redis database, copy URL with `?tls=true`
+2. **Redis** (Upstash, optional): Create Redis database, copy the `rediss://` URL (TLS is implied by the scheme; do not append `?tls=true`)
 3. **Auth** (Clerk): Create app, copy Publishable Key, Secret Key, and JWKS URL
 4. **AI Keys** (all free): [Gemini](https://aistudio.google.com/apikey), [Groq](https://console.groq.com), [Cerebras](https://cloud.cerebras.ai), [Mistral](https://console.mistral.ai)
 5. **Backend** (HuggingFace Spaces): Create Docker space, clone, copy `backend/` files, push, add env vars in Settings
@@ -412,7 +412,7 @@ The entire application runs on **free-tier services** with zero infrastructure c
 | `MISTRAL_API_KEY` | Yes | Mistral API key |
 | `CEREBRAS_API_KEY` | Yes | Cerebras API key |
 | `CLERK_JWKS_URL` | Yes | Clerk JWKS endpoint |
-| `REDIS_URL` | Yes | Upstash Redis URL (with `?tls=true`) |
+| `REDIS_URL` | No | Upstash Redis URL. Use the `rediss://` scheme for TLS — **not** `?tls=true`, which redis-py rejects with `unexpected keyword argument 'tls'`. |
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
 | `CLERK_SECRET_KEY` | Yes | Clerk secret key |
