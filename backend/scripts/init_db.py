@@ -10,8 +10,8 @@ Usage:
 """
 
 import logging
-import sys
 import os
+import sys
 
 # Add the parent directory to path so app imports work
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,7 +25,7 @@ def main():
 
     try:
         from app.config import settings
-        from app.db.session import engine, init_db, check_db_connection
+        from app.db.session import check_db_connection, engine, init_db
 
         # Check connection
         logger.info(f"Connecting to database...")
@@ -38,13 +38,16 @@ def main():
         # Try to enable pgvector extension
         try:
             from sqlalchemy import text
+
             with engine.connect() as conn:
                 conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 conn.commit()
             logger.info("✅ pgvector extension enabled")
         except Exception as e:
             logger.warning(f"⚠️  Could not enable pgvector extension: {e}")
-            logger.warning("   Vector search will not work. Install pgvector or use Supabase.")
+            logger.warning(
+                "   Vector search will not work. Install pgvector or use Supabase."
+            )
 
         # Create all tables
         logger.info("Creating database tables...")
@@ -53,6 +56,7 @@ def main():
 
         # Verify tables exist
         from sqlalchemy import inspect
+
         inspector = inspect(engine)
         tables = inspector.get_table_names()
         logger.info(f"✅ Tables in database: {', '.join(sorted(tables))}")
@@ -62,6 +66,7 @@ def main():
     except Exception as e:
         logger.error(f"❌ Initialization failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

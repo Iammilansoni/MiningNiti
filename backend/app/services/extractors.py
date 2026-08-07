@@ -7,6 +7,7 @@ dedicated extractor classes that track page boundaries — required for
 context-aware answers that cite page numbers.
 """
 
+import asyncio
 import io
 import logging
 import os
@@ -16,7 +17,24 @@ from typing import List, Optional
 
 import httpx
 
+from app.config import settings
+from app.core.url_guard import (
+    fetch_remote_file,
+    is_internal_storage_url,
+    resolve_storage_path,
+)
+
 logger = logging.getLogger(__name__)
+
+
+def _read_capped(path: str, max_bytes: int) -> bytes:
+    """Read a local file, refusing anything over the size ceiling."""
+    if os.path.getsize(path) > max_bytes:
+        raise ValueError(
+            f"Stored file exceeds the {max_bytes // (1024 * 1024)}MB limit"
+        )
+    with open(path, "rb") as f:
+        return f.read()
 
 
 # ── Data structures ────────────────────────────────────────────────────────────
@@ -52,13 +70,88 @@ class ExtractedDocument:
 
 class PDFExtractor:
     """
-    Page-aware PDF text extraction using pypdf.
+    Page-aware PDF extraction.
 
-    Iterates page-by-page to build a per-page text map, which is then used
-    by ChunkingService to annotate each chunk with its page numbers.
+    Primary path is pdfplumber, which additionally recovers tables (rendered
+    as Markdown) and lets pages that yield no text be sent to OCR — both
+    essential for mining documents, which are heavily tabular and frequently
+    scanned. See app/services/pdf_layout.py.
+
+    Falls back to plain pypdf if pdfplumber is unavailable or errors, so the
+    ingest path never hard-fails on a library problem.
     """
 
     def extract(self, file_path: str) -> ExtractedDocument:
+        try:
+            return self._extract_with_layout(file_path)
+        except ImportError:
+            logger.info("pdfplumber not installed — using pypdf text-only path")
+        except Exception as e:
+            logger.warning(
+                f"Layout-aware extraction failed ({e}); falling back to pypdf",
+                exc_info=True,
+            )
+        return self._extract_with_pypdf(file_path)
+
+    def _extract_with_layout(self, file_path: str) -> ExtractedDocument:
+        """pdfplumber path: prose + Markdown tables + OCR for scanned pages."""
+        import pdfplumber
+
+        from app.services.pdf_layout import extract_page
+
+        pages: List[PageContent] = []
+        char_offset = 0
+        total_tables = 0
+        ocr_pages = 0
+        ocr_budget = [settings.OCR_MAX_PAGES]
+
+        with pdfplumber.open(file_path) as pdf:
+            for page_num, plumber_page in enumerate(pdf.pages, start=1):
+                result = extract_page(
+                    plumber_page=plumber_page,
+                    pdf_path=file_path,
+                    page_number=page_num,
+                    ocr_budget=ocr_budget,
+                )
+                total_tables += result.tables_found
+                ocr_pages += 1 if result.used_ocr else 0
+
+                pages.append(
+                    PageContent(
+                        page_number=page_num,
+                        text=result.text,
+                        char_start=char_offset,
+                        char_end=char_offset + len(result.text),
+                    )
+                )
+                char_offset += len(result.text)
+
+            metadata = {}
+            if pdf.metadata:
+                for key, val in pdf.metadata.items():
+                    if val:
+                        metadata[str(key).lstrip("/").lower()] = str(val)
+
+        full_text = "".join(p.text for p in pages)
+
+        if total_tables or ocr_pages:
+            logger.info(
+                f"Layout extraction: {len(pages)} pages, "
+                f"{total_tables} table(s), {ocr_pages} page(s) via OCR"
+            )
+
+        metadata["tables_extracted"] = total_tables
+        metadata["ocr_pages"] = ocr_pages
+
+        return ExtractedDocument(
+            full_text=full_text,
+            pages=pages,
+            total_pages=len(pages),
+            file_type="application/pdf",
+            metadata=metadata,
+        )
+
+    def _extract_with_pypdf(self, file_path: str) -> ExtractedDocument:
         from pypdf import PdfReader
 
         pages: List[PageContent] = []
@@ -194,39 +287,35 @@ _extractors = {
 
 async def download_and_extract(file_url: str, file_type: str) -> ExtractedDocument:
     """
-    Download a file from URL and extract its text content with page tracking.
+    Read a document's bytes and extract its text content with page tracking.
+
+    Two sources are supported, and they are deliberately not interchangeable:
+
+      storage:// (or legacy file://)  — a file this backend stored itself.
+                                        Resolved inside UPLOAD_DIR only.
+      https://                        — a remote URL. Passed through the SSRF
+                                        guard, size-capped, redirects revalidated.
 
     Args:
-        file_url: Remote URL or local file:// path
+        file_url: Internal storage URL or a public https URL
         file_type: MIME type string
 
     Returns:
         ExtractedDocument with full text and per-page content
+
+    Raises:
+        UnsafeURLError: if the URL is not fetchable safely
     """
     suffix = EXTENSION_MAP.get(file_type, ".tmp")
+    max_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
 
-    from urllib.parse import urlparse
-
-    parsed = urlparse(file_url)
-
-    # Handle local file:// URLs
-    if parsed.scheme == "file":
-        import os
-
-        local_path = parsed.path
-        if os.name == "nt" and local_path.startswith("/"):
-            local_path = local_path[1:]
-
-        with open(local_path, "rb") as f:
-            file_bytes = f.read()
+    if is_internal_storage_url(file_url):
+        # Path is confined to UPLOAD_DIR by the guard; traversal is rejected.
+        local_path = await asyncio.to_thread(resolve_storage_path, file_url)
+        file_bytes = await asyncio.to_thread(_read_capped, local_path, max_bytes)
     else:
-        if parsed.scheme not in ("https", "http"):
-            raise ValueError(f"Unsupported URL scheme: {parsed.scheme}")
-
-        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
-            response = await client.get(file_url)
-        response.raise_for_status()
-        file_bytes = response.content
+        # User-supplied URL: https only, public addresses only, size-capped.
+        file_bytes = await fetch_remote_file(file_url, max_bytes=max_bytes)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(file_bytes)

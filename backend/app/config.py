@@ -23,7 +23,17 @@ class Settings(BaseSettings):
     # API
     API_V1_PREFIX: str = "/api/v1"
     CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:3000", "https://*.vercel.app"]
+        default=["http://localhost:3000", "http://localhost:3001"],
+        description="Exact allowed origins. Wildcards do NOT work here — "
+        "Starlette compares these as literal strings. Use CORS_ORIGIN_REGEX "
+        "for patterns.",
+    )
+    CORS_ORIGIN_REGEX: str = Field(
+        default="",
+        description="Regex for dynamic origins, e.g. Vercel preview deploys: "
+        r"'^https://miningniti-[a-z0-9-]+\.vercel\.app$'. Scope it to your own "
+        "project — a bare '.*\\.vercel\\.app' would let any site hosted on "
+        "Vercel call this API with credentials.",
     )
 
     # Database
@@ -57,8 +67,25 @@ class Settings(BaseSettings):
 
     # Authentication - Clerk
     CLERK_JWKS_URL: str = Field(..., description="Clerk JWKS URL for JWT verification")
+    CLERK_ISSUER: str = Field(
+        default="",
+        description="Expected 'iss' claim. Defaults to the origin of "
+        "CLERK_JWKS_URL, which is correct for standard Clerk setups.",
+    )
+    CLERK_AUTHORIZED_PARTIES: List[str] = Field(
+        default=[],
+        description="Allowed 'azp' claim values (your frontend origins). Clerk "
+        "sets azp to the origin that requested the token; validating it stops a "
+        "token minted for another site on the same Clerk instance from being "
+        "replayed here. Empty disables the check (logged as a warning).",
+    )
 
     # Document Processing
+    UPLOAD_DIR: str = Field(
+        default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads"),
+        description="Root directory for locally stored uploads. All storage:// "
+        "URLs resolve inside this directory and may not escape it.",
+    )
     MAX_FILE_SIZE_MB: int = Field(default=50)
     ALLOWED_FILE_TYPES: List[str] = Field(
         default=[
@@ -67,8 +94,49 @@ class Settings(BaseSettings):
             "text/plain",
         ]
     )
-    CHUNK_SIZE: int = Field(default=1000)
-    CHUNK_OVERLAP: int = Field(default=200)
+    CHUNK_SIZE: int = Field(default=1000, description="Target chunk size in words")
+    CHUNK_OVERLAP: int = Field(default=200, description="Overlap in words")
+    MAX_CHUNK_CHARS: int = Field(
+        default=4000,
+        description="Hard ceiling on characters per chunk, enforced after "
+        "sentence grouping. CHUNK_SIZE alone cannot enforce this: a Markdown "
+        "table contains no sentence-ending punctuation, so the whole table is "
+        "one 'sentence' and is emitted regardless of size. Measured: a 400-row "
+        "table produced a single 14,703-character chunk. "
+        "gemini-embedding-001 accepts ~2048 tokens (~8000 chars), so an "
+        "oversized chunk is silently truncated and most of the table is never "
+        "indexed. 4000 leaves comfortable headroom.",
+    )
+
+    # ── Document extraction ───────────────────────────────────────────────────
+    ENABLE_TABLE_EXTRACTION: bool = Field(
+        default=True,
+        description="Extract tables as Markdown alongside prose. Mining "
+        "regulations and equipment manuals are largely tabular, and plain "
+        "text extraction flattens a table into unreadable runs of numbers.",
+    )
+    ENABLE_OCR: bool = Field(
+        default=True,
+        description="Run OCR on pages that yield almost no extractable text "
+        "(i.e. scanned pages). Degrades to a warning if Tesseract is not "
+        "installed, so local development without the binary still works.",
+    )
+    OCR_MIN_CHARS: int = Field(
+        default=100,
+        description="A page with fewer extractable characters than this is "
+        "treated as scanned and sent to OCR.",
+    )
+    OCR_LANGUAGE: str = Field(default="eng", description="Tesseract language code")
+    OCR_DPI: int = Field(
+        default=200,
+        description="Rasterisation DPI for OCR. 200 is the accuracy/speed "
+        "knee for document scans; 300 helps only on small or degraded type.",
+    )
+    OCR_MAX_PAGES: int = Field(
+        default=50,
+        description="Cap on pages OCR'd per document. OCR is ~1-3s/page, so "
+        "an uncapped 500-page scan would occupy a worker for 20 minutes.",
+    )
 
     # Mining AI Settings
     SAFETY_SCORE_THRESHOLD: float = Field(default=70.0)

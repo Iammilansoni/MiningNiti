@@ -56,7 +56,8 @@ docker-compose -f docker-compose.prod.yml up -d
 
 - **API prefix**: All endpoints live under `/api/v1` (configured via `settings.API_V1_PREFIX`)
 - **Auth**: Clerk JWT verified server-side via JWKS endpoint. User ID comes from JWT `sub` claim.
-- **Database**: PostgreSQL 16 with `pgvector` extension. Tables auto-created on startup (`init_db()`). `pgvector` extension created via raw SQL if missing.
+- **Database**: PostgreSQL 16 with `pgvector` + `pg_trgm`. Schema is owned by Alembic (`alembic upgrade head`, run automatically by `scripts/migrate.py` at container start). `init_db()` still runs `create_all()` as a safety net and calls `ensure_indexes()`, which idempotently creates the HNSW and GIN trigram indexes that `create_all()` cannot express.
+  - `scripts/migrate.py` handles three cases: fresh DB, a legacy DB built by `create_all()` with no `alembic_version` (stamped at `001`, then indexes ensured), and a DB already under Alembic.
 - **Agent pipeline**: Document upload → Orchestrator runs 4 agents in parallel (classifier, safety, entity extraction, summarizer) → chunks + embeddings saved to pgvector
 - **Background work**: Uses FastAPI `BackgroundTasks` in dev; Celery worker available for production scaling (`celery -A app.workers.celery_app worker`)
 - **Crash recovery**: On startup, documents stuck in `processing`/`analyzing` state are auto-reset to `PENDING`
@@ -78,9 +79,11 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## Deployment
 
-- **Production deploy**: Push to `main` triggers GitHub Actions → builds Docker image → pushes to AWS ECR → deploys to ECS
+- **Backend**: Push to `main` touching `backend/**` triggers `.github/workflows/deploy.yml`, which uploads `backend/` to a HuggingFace Docker Space. Requires the `HF_TOKEN` secret and the `HF_SPACE_ID` variable. Space config lives in `backend/README.md` frontmatter (`sdk: docker`, `app_port: 8000`).
+  - There is no AWS/ECS deployment. The previous workflow referenced a `backend/task-definition.json` that never existed and failed on every push.
 - **Frontend**: Vercel (uses `output: "standalone"` for Docker compatibility)
 - **Backend Dockerfile**: Multi-stage build (builder + runtime), runs as non-root user `appuser`
+- **Migrations run at container start** via `entrypoint.sh` → `python -m scripts.migrate`, before gunicorn binds. A failed migration stops the deploy rather than serving on a half-built schema.
 
 ## Gotchas
 

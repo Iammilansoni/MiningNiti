@@ -1,59 +1,94 @@
-name: Deploy Production
+name: Deploy Backend to HuggingFace Spaces
+
+# Replaces the previous AWS ECS workflow, which failed on every run: it
+# referenced backend/task-definition.json, a file that has never existed in
+# this repository. The deployment target is a HuggingFace Docker Space, whose
+# configuration already lives in backend/README.md (sdk: docker, app_port: 8000).
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
 
-env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: miningniti-backend
-  ECS_SERVICE: miningniti-api-service
-  ECS_CLUSTER: miningniti-cluster
+concurrency:
+  # Never let two deploys race to push the same Space.
+  group: deploy-hf-space
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy to AWS ECS
+    name: Push backend to HF Space
     runs-on: ubuntu-latest
     environment: production
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: Install huggingface_hub
+        run: pip install --no-cache-dir "huggingface_hub>=0.25"
 
-    - name: Build, tag, and push image to Amazon ECR
-      id: build-image
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f backend/Dockerfile backend/
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+      - name: Verify required secrets are present
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::HF_TOKEN secret is not set (Settings > Secrets and variables > Actions)"
+            exit 1
+          fi
+          if [ -z "$HF_SPACE_ID" ]; then
+            echo "::error::HF_SPACE_ID variable is not set, e.g. 'your-user/miningniti-api'"
+            exit 1
+          fi
 
-    - name: Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: backend/task-definition.json
-        container-name: miningniti-api
-        image: ${{ steps.build-image.outputs.image }}
+      - name: Upload backend/ to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
 
-    - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ env.ECS_SERVICE }}
-        cluster: ${{ env.ECS_CLUSTER }}
-        wait-for-service-stability: true
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_folder(
+              folder_path="backend",
+              repo_id=os.environ["HF_SPACE_ID"],
+              repo_type="space",
+              commit_message=f"Deploy {os.environ['GIT_SHA'][:8]} from GitHub Actions",
+              # Never ship local artefacts, caches, or a developer's .env into
+              # a Space — Space repos are world-readable by default.
+              ignore_patterns=[
+                  ".env",
+                  ".env.*",
+                  "venv/**",
+                  "**/__pycache__/**",
+                  "*.pyc",
+                  ".pytest_cache/**",
+                  ".mypy_cache/**",
+                  "uploads/**",
+                  "test.db",
+                  "htmlcov/**",
+                  ".coverage",
+              ],
+          )
+          print(f"Deployed to https://huggingface.co/spaces/{os.environ['HF_SPACE_ID']}")
+          PY
+
+      - name: Summary
+        run: |
+          echo "### Deployed to HuggingFace Spaces :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Space: \`${{ vars.HF_SPACE_ID }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Migrations run automatically on container start (entrypoint.sh)." >> $GITHUB_STEP_SUMMARY
