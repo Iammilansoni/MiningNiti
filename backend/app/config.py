@@ -6,8 +6,9 @@ Centralized settings management using Pydantic Settings
 import os
 from functools import lru_cache
 from typing import List, Optional
+from urllib.parse import urlparse
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -79,6 +80,38 @@ class Settings(BaseSettings):
         "token minted for another site on the same Clerk instance from being "
         "replayed here. Empty disables the check (logged as a warning).",
     )
+
+    @field_validator("CLERK_JWKS_URL")
+    @classmethod
+    def _jwks_url_must_be_absolute(cls, v: str) -> str:
+        """
+        Reject a JWKS URL that is not absolute, at startup.
+
+        Without this, a value missing its scheme —
+        "your-app.clerk.accounts.dev/.well-known/jwks.json" instead of
+        "https://your-app.clerk.accounts.dev/.well-known/jwks.json" — lets the
+        application boot normally and report healthy, while *every* authenticated
+        request fails with a generic 401 and this in the logs:
+
+            Failed to fetch JWKS: Request URL is missing an 'http://' or
+            'https://' protocol.
+
+        That happened in production. A service that cannot authenticate anyone
+        is not healthy, so it should refuse to start rather than accept traffic
+        it can only reject.
+        """
+        v = v.strip()
+        if not v:
+            raise ValueError("CLERK_JWKS_URL must not be empty")
+
+        parsed = urlparse(v)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValueError(
+                f"CLERK_JWKS_URL must be an absolute http(s) URL, got {v!r}. "
+                f"Expected something like "
+                f"'https://your-app.clerk.accounts.dev/.well-known/jwks.json'"
+            )
+        return v
 
     # Document Processing
     UPLOAD_DIR: str = Field(

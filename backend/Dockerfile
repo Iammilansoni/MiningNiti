@@ -52,9 +52,19 @@ ENV SENTENCE_TRANSFORMERS_HOME=/app/.cache/sentence-transformers
 RUN groupadd --gid 1001 appgroup \
     && useradd --uid 1001 --gid appgroup --shell /bin/sh --create-home appuser
 
-# Create cache directory for model downloads
-RUN mkdir -p /app/.cache/huggingface /app/.cache/sentence-transformers \
-    && chown -R appuser:appgroup /app/.cache
+# Create cache and upload directories.
+#
+# /app/uploads must exist and be writable *before* the app runs. WORKDIR
+# creates /app owned by root, and `COPY --chown` only changes the ownership of
+# the files copied into it — not the directory itself. So appuser could read
+# /app but not create entries in it, and the upload endpoint died with:
+#
+#   PermissionError: [Errno 13] Permission denied: '/app/uploads'
+#
+# from os.makedirs() on the very first upload. Creating it here, and taking
+# ownership of /app itself, fixes that.
+RUN mkdir -p /app/.cache/huggingface /app/.cache/sentence-transformers /app/uploads \
+    && chown -R appuser:appgroup /app
 
 # Copy application code
 COPY --chown=appuser:appgroup . .
@@ -62,6 +72,10 @@ COPY --chown=appuser:appgroup . .
 # The entrypoint must be executable regardless of the checkout's file mode,
 # which is not preserved on Windows clones.
 RUN chmod +x /app/entrypoint.sh
+
+# Re-assert ownership: the COPY above can reintroduce root-owned paths, and
+# /app must stay writable for uploads.
+RUN chown -R appuser:appgroup /app
 
 # Switch to non-root user
 USER appuser
