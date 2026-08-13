@@ -168,7 +168,7 @@ export default function ChatPage() {
       <div className="absolute bottom-0 w-full bg-gradient-to-t from-background via-background/98 to-transparent pt-14 pb-6 px-4 md:px-8 pointer-events-none">
         <div className="max-w-3xl mx-auto pointer-events-auto">
           <form onSubmit={handleSubmit} className="relative">
-            <div className="relative bg-card border border-border rounded-2xl shadow-lg shadow-black/5 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200">
+            <div className="panel-raised relative transition-all duration-200 focus-within:border-primary/40 focus-within:shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.07),0_0_0_3px_hsl(var(--primary)/0.12),0_8px_28px_-8px_hsl(0_0%_0%/0.6)]">
               <Textarea
                 ref={inputRef}
                 value={input}
@@ -227,42 +227,53 @@ export default function ChatPage() {
 
 function EmptyState({ onSuggestionClick }: { onSuggestionClick: (s: string) => void }) {
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center px-4">
-      {/* Icon */}
-      <div className="relative mb-8">
-        <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center border border-primary/15 relative z-10">
-          <Sparkles className="w-9 h-9 text-primary" />
+    <div className="h-full flex flex-col items-center justify-center px-4">
+      <div className="w-full max-w-2xl">
+        {/* ── Masthead ────────────────────────────────────────────────────
+            Left-aligned rather than centred: the transcript that replaces
+            it is left-aligned, so centring here makes the first answer
+            feel like the layout shifted underneath you. */}
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+            <span className="status-pulse bg-primary text-primary" />
+            Grounded in your documents
+          </span>
         </div>
-        <div className="absolute inset-0 rounded-3xl bg-primary/5 blur-xl" />
-      </div>
 
-      {/* Title */}
-      <h2 className="text-3xl font-bold text-foreground tracking-tight mb-2">
-        Mining Intelligence
-      </h2>
-      <p className="text-muted-foreground max-w-md text-sm leading-relaxed">
-        Ask questions about mining regulations, safety compliance, and operational procedures.
-        The AI answers using your uploaded documents.
-      </p>
+        <h2 className="mt-5 text-[2rem] leading-[1.1] font-semibold tracking-[-0.03em] text-foreground">
+          What do you need to know?
+        </h2>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground max-w-lg">
+          Ask about regulations, safety compliance, or operational procedures.
+          Every answer cites the document and page it came from.
+        </p>
 
-      {/* Suggestion Cards */}
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl w-full">
-        {SUGGESTIONS.map((s, i) => (
-          <button
-            key={i}
-            onClick={() => onSuggestionClick(s.prompt)}
-            className="group flex items-start gap-3 p-4 text-left bg-card border border-border rounded-xl transition-all duration-200 hover:border-primary/30 hover:shadow-md hover:shadow-primary/5 hover:-translate-y-0.5 active:scale-[0.98]"
-          >
-            <div className={`w-9 h-9 rounded-lg ${s.bg} flex items-center justify-center shrink-0 mt-0.5`}>
-              <s.icon className={`w-4 h-4 ${s.color}`} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{s.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{s.subtitle}</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary/50 shrink-0 mt-1 transition-all group-hover:translate-x-0.5" />
-          </button>
-        ))}
+        {/* ── Starters ────────────────────────────────────────────────────
+            Each card shows the question it will actually ask. The previous
+            version showed a category and sent a different question, so the
+            result never matched what the card promised. */}
+        <div className="mt-9 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {SUGGESTIONS.map((s, i) => (
+            <button
+              key={i}
+              onClick={() => onSuggestionClick(s.prompt)}
+              className="panel-interactive group flex flex-col gap-3 p-4 text-left"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className={`flex size-7 items-center justify-center rounded-lg ${s.bg} shrink-0`}>
+                  <s.icon className={`size-3.5 ${s.color}`} />
+                </span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  {s.title}
+                </span>
+                <ChevronRight className="ml-auto size-3.5 text-muted-foreground/25 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary/60" />
+              </div>
+              <p className="text-[13.5px] leading-snug text-foreground/85 transition-colors group-hover:text-foreground">
+                {s.prompt}
+              </p>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

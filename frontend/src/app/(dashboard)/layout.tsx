@@ -7,7 +7,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen w-full bg-background relative overflow-hidden text-foreground">
+    <div className="grain flex h-screen w-full bg-background relative overflow-hidden text-foreground">
       
       {/* Edge-to-edge Sidebar */}
       <div className="hidden md:flex relative z-20 h-screen border-r border-white/[0.05] bg-sidebar/95 backdrop-blur-xl">
