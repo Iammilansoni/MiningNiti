@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { User, Bot, ExternalLink } from 'lucide-react';
+import { User, Bot, ExternalLink, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Citation } from '@/components/ui/citation';
 import type { ChatMessage as ChatMessageType, ChatSource } from '@/hooks/use-chat-stream';
@@ -13,6 +13,19 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, isStreaming, onCitationClick }: ChatMessageProps) {
   const isUser = message.role === 'user';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!message.content) return;
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard is unavailable over plain HTTP and when permission is
+      // refused. Silently leaving the icon unchanged is the honest signal.
+    }
+  };
 
   const uniqueSources = useMemo(() => {
     if (!message.sources || message.sources.length === 0) return [];
@@ -55,7 +68,7 @@ export function ChatMessage({ message, isStreaming, onCitationClick }: ChatMessa
 
   return (
     <div className={cn(
-      "py-6 px-4 md:px-8 w-full transition-all duration-200",
+      "group py-7 px-4 md:px-8 w-full transition-all duration-200",
       isUser
         ? "bg-transparent"
         : "bg-primary/[0.02] border-y border-border/30"
@@ -87,11 +100,32 @@ export function ChatMessage({ message, isStreaming, onCitationClick }: ChatMessa
                 generating
               </span>
             )}
+
+            {/* Copy. Revealed on hover so the transcript stays quiet at rest,
+                but kept focusable so it is reachable from the keyboard. */}
+            {!isUser && message.content && !isStreaming && (
+              <button
+                type="button"
+                onClick={handleCopy}
+                aria-label={copied ? 'Copied' : 'Copy message'}
+                className={cn(
+                  "ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium",
+                  "text-muted-foreground/70 opacity-0 transition-all duration-150",
+                  "hover:bg-muted hover:text-foreground focus-visible:opacity-100",
+                  "group-hover:opacity-100",
+                  copied && "opacity-100 text-emerald-400"
+                )}
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            )}
           </div>
 
           {/* Message body */}
           <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-foreground/85 prose-headings:text-foreground prose-strong:text-foreground prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[13px] prose-code:before:content-none prose-code:after:content-none">
             {message.content ? (
+              <>
               <ReactMarkdown
                 urlTransform={(value) => value}
                 components={{
@@ -139,11 +173,22 @@ export function ChatMessage({ message, isStreaming, onCitationClick }: ChatMessa
               >
                 {processedContent}
               </ReactMarkdown>
+              {isStreaming && (
+                <span
+                  aria-hidden
+                  className="ml-0.5 inline-block h-4 w-[2px] translate-y-0.5 rounded-full bg-primary animate-caret-blink"
+                />
+              )}
+              </>
             ) : (
               isStreaming && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-                  <span className="text-sm">Thinking...</span>
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce [animation-delay:0ms]" />
+                    <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce [animation-delay:150ms]" />
+                    <span className="w-1.5 h-1.5 bg-primary/70 rounded-full animate-bounce [animation-delay:300ms]" />
+                  </span>
+                  <span className="text-sm">Searching your documents…</span>
                 </div>
               )
             )}

@@ -91,7 +91,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-[var(--header-height)])] -m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)] relative overflow-hidden bg-background">
+    <div className="flex flex-col h-[calc(100vh-var(--header-height))] -m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)] relative overflow-hidden bg-background">
 
       {/* Ambient Background */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">

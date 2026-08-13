@@ -143,10 +143,30 @@ export default function DocumentsPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
+                // Mirror the real column layout rather than one bar spanning
+                // the table: a skeleton that reflows on load reads as a glitch.
                 [...Array(5)].map((_, i) => (
-                  <tr key={i}>
-                    <td colSpan={6} className="px-6 py-3">
-                      <div className="h-4 bg-muted/60 rounded animate-pulse w-full" />
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-4 rounded bg-muted/60 shrink-0" />
+                        <div className="h-4 w-40 rounded bg-muted/60" />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 hidden md:table-cell">
+                      <div className="h-4 w-20 rounded bg-muted/60" />
+                    </td>
+                    <td className="px-6 py-4 hidden lg:table-cell">
+                      <div className="h-4 w-12 rounded bg-muted/60" />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-5 w-20 rounded-full bg-muted/60" />
+                    </td>
+                    <td className="px-6 py-4 hidden sm:table-cell">
+                      <div className="h-4 w-24 rounded bg-muted/60" />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="ml-auto size-4 rounded bg-muted/60" />
                     </td>
                   </tr>
                 ))

@@ -5,6 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Brand accent. This overrides Tailwind's stock purple-400 (#c084fc) so the
+     21 component files that reach for `purple-400` render the brand colour.
+     It previously lived in an `@theme` block nested inside `:root` in
+     design-tokens.css, which Tailwind does not process — every one of those
+     components was silently painting stock purple. */
+  --color-purple-400: #947afc;
+
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -275,6 +282,18 @@ h2 { letter-spacing: -0.03em; }
   background: hsl(var(--muted-foreground) / 0.25);
 }
 
+/* Hide the scrollbar on a scroll container that has its own affordances
+   (the chat transcript fades at both edges instead). Referenced by the chat
+   page, which previously used this class without it being defined anywhere. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ═══════════════════════════════════════════════════════════
    Surface System — Elevation & Cards
    ═══════════════════════════════════════════════════════════ */
@@ -505,6 +524,17 @@ h2 { letter-spacing: -0.03em; }
 
 .animate-fade-in-up {
   animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Terminal-style caret trailing the streamed answer, so a slow token stream
+   still reads as active rather than stalled. */
+.animate-caret-blink {
+  animation: caret-blink 1s steps(2, start) infinite;
+}
+
+@keyframes caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 @keyframes fadeInUp {
