@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { PageHeader } from '@/components/product/page-header';
 
 type TabId = 'profile' | 'security' | 'notifications';
 
@@ -31,12 +32,11 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-[1000px] mx-auto space-y-8 animate-fade-in-up">
-      <div className="relative z-10">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-2">
-          Manage your account preferences and application settings.
-        </p>
-      </div>
+      <PageHeader
+        className="relative z-10"
+        title="Settings"
+        description="Manage your account preferences and application settings."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10 items-start">
         {/* Navigation Sidebar */}
