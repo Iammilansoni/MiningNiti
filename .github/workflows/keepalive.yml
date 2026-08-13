@@ -1,0 +1,80 @@
+name: Keep Backend Awake
+
+# A free HuggingFace Space sleeps after a period of inactivity, and waking it
+# takes roughly a minute: the container restarts, migrations run, and the
+# cross-encoder is pulled from the Hub before the first request is answered.
+#
+# That is fine for a service with real traffic and fatal for a portfolio demo.
+# Someone opening the live link hits a dead frontend, waits, and leaves. This
+# workflow pings the health endpoint often enough that the Space never sleeps.
+#
+# Note: GitHub disables scheduled workflows on repositories with no activity
+# for 60 days. If the demo goes cold again, check whether this is still enabled
+# under Actions before debugging the Space itself.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    name: Ping health endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Ping /api/v1/health until the Space answers
+        env:
+          # Reuses the variable the deploy workflow already needs, so there is
+          # one place to change if the Space is renamed. HF derives the hostname
+          # by replacing the owner/name slash with a hyphen.
+          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$HF_SPACE_ID" ]; then
+            echo "::error::HF_SPACE_ID variable is not set, e.g. 'your-user/miningniti-api'"
+            exit 1
+          fi
+
+          host="https://$(echo "$HF_SPACE_ID" | tr '/' '-').hf.space"
+          url="$host/api/v1/health"
+          echo "Pinging $url"
+
+          # A cold Space can take ~60s to answer, so allow a generous timeout
+          # and retry rather than reporting a false outage on the wake-up path.
+          for attempt in 1 2 3; do
+            code=$(curl -s -o /tmp/health.json -w '%{http_code}' --max-time 120 "$url" || echo "000")
+
+            if [ "$code" = "200" ]; then
+              echo "Healthy on attempt $attempt"
+              cat /tmp/health.json
+              {
+                echo "### Backend is awake :white_check_mark:"
+                echo ""
+                echo "\`$url\` returned 200 on attempt $attempt."
+                echo ""
+                echo '```json'
+                cat /tmp/health.json
+                echo ""
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+
+            echo "Attempt $attempt returned $code, retrying..."
+            sleep 15
+          done
+
+          echo "::error::$url did not return 200 after 3 attempts (last: $code)"
+          {
+            echo "### Backend did not wake :x:"
+            echo ""
+            echo "\`$url\` did not return 200 after 3 attempts. Last status: \`$code\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
