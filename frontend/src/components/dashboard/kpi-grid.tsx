@@ -18,8 +18,20 @@ export function KPIGrid() {
   if (isLoading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        {/* Shaped like MetricCard — label, value, trend — so the grid does not
+            visibly reflow when the real numbers arrive. */}
         {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-28 rounded-xl border border-border" />
+          <div
+            key={i}
+            className="h-28 rounded-xl border border-border bg-card p-5 flex flex-col justify-between"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <Skeleton className="h-3 w-24 rounded" />
+              <Skeleton className="size-8 rounded-lg shrink-0" />
+            </div>
+            <Skeleton className="h-8 w-16 rounded" />
+            <Skeleton className="h-3 w-20 rounded" />
+          </div>
         ))}
       </div>
     );
