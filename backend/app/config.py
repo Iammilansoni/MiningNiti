@@ -150,6 +150,32 @@ class Settings(BaseSettings):
         description="Root directory for locally stored uploads. All storage:// "
         "URLs resolve inside this directory and may not escape it.",
     )
+    # ── Durable object storage ────────────────────────────────────────────────
+    # UPLOAD_DIR lives on the container filesystem, which is ephemeral on
+    # HuggingFace Spaces: a restart returns it to the state baked into the
+    # image, i.e. empty, while the Postgres rows describing those files
+    # survive. Documents then appear healthy until something needs the
+    # original bytes, at which point extraction fails with "Stored file no
+    # longer exists". Setting these moves the bytes somewhere that outlives
+    # the container; leaving them unset keeps the previous local-disk
+    # behaviour so local development needs no cloud credentials.
+    SUPABASE_URL: str = Field(
+        default="",
+        description="Supabase project URL, e.g. https://xxxx.supabase.co. "
+        "Enables durable upload storage when set together with "
+        "SUPABASE_SERVICE_KEY.",
+    )
+    SUPABASE_SERVICE_KEY: str = Field(
+        default="",
+        description="Supabase service role key. The uploads bucket is private "
+        "and only this backend reads it, so the anon key is not sufficient.",
+    )
+    SUPABASE_STORAGE_BUCKET: str = Field(
+        default="documents",
+        description="Bucket name for uploaded documents. Create it as a "
+        "private bucket in the Supabase dashboard.",
+    )
+
     MAX_FILE_SIZE_MB: int = Field(default=50)
     ALLOWED_FILE_TYPES: List[str] = Field(
         default=[
