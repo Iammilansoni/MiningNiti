@@ -21,6 +21,15 @@ const iconBgStyles: Record<Tone, string> = {
   neutral: 'bg-foreground/5',
 };
 
+// Fades out toward both ends so the rule reads as lit rather than painted on.
+const toneRuleStyles: Record<Tone, string> = {
+  info: 'bg-gradient-to-r from-transparent via-blue-400/70 to-transparent',
+  success: 'bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent',
+  warning: 'bg-gradient-to-r from-transparent via-amber-400/70 to-transparent',
+  danger: 'bg-gradient-to-r from-transparent via-rose-400/70 to-transparent',
+  neutral: 'bg-gradient-to-r from-transparent via-white/25 to-transparent',
+};
+
 const hoverGlowStyles: Record<Tone, string> = {
   info: 'group-hover:shadow-[0_0_30px_-5px_rgba(59,130,246,0.15)] group-hover:border-blue-500/30',
   success: 'group-hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.15)] group-hover:border-emerald-500/30',
@@ -71,12 +80,22 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        'group rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-md p-5 flex flex-col gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-500 relative overflow-hidden',
+        'panel-interactive group p-5 flex flex-col gap-3 overflow-hidden',
         hoverGlowStyles[tone],
-        'hover:-translate-y-1',
         className
       )}
     >
+      {/* Tone rule along the top edge — a quiet signal of what the metric is
+          about, readable before the icon or the label are parsed. It sits
+          above the panel's own inset highlight. */}
+      <span
+        aria-hidden
+        className={cn(
+          'absolute inset-x-0 top-0 h-px opacity-50 transition-opacity duration-500 group-hover:opacity-100',
+          toneRuleStyles[tone]
+        )}
+      />
+
       {/* Subtle radial background glow for depth */}
       <div className={cn("absolute -top-10 -right-10 w-32 h-32 rounded-full blur-[50px] opacity-0 group-hover:opacity-40 transition-opacity duration-700", iconBgStyles[tone])} />
 

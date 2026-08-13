@@ -82,6 +82,46 @@ def test_plain_http_is_allowed_for_local_development():
     assert s.CLERK_JWKS_URL.startswith("http://")
 
 
+# ── API keys ───────────────────────────────────────────────────────────────────
+#
+# A second incident, same shape as the first. GROQ_API_KEY was stored with a
+# trailing newline. The application booted, reported healthy, retrieved and
+# cited documents correctly — and then every chat completion failed with
+# `openai.APIConnectionError: Connection error.`, because httpx will not put a
+# newline into an Authorization header. The byte was invisible in every UI that
+# displayed the secret.
+
+VALID_JWKS = "https://x.clerk.accounts.dev/.well-known/jwks.json"
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["GEMINI_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY", "CEREBRAS_API_KEY"],
+)
+def test_trailing_newline_on_an_api_key_is_stripped(key):
+    """The exact value that broke chat in production."""
+    s = build(CLERK_JWKS_URL=VALID_JWKS, **{key: "gsk_abc123\n"})
+    assert getattr(s, key) == "gsk_abc123"
+
+
+@pytest.mark.parametrize(
+    "key",
+    ["GEMINI_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY", "CEREBRAS_API_KEY"],
+)
+@pytest.mark.parametrize("bad", ["gsk_abc\ndef", "gsk abc", "gsk_abc\tdef"])
+def test_internal_whitespace_in_an_api_key_is_rejected(key, bad):
+    """Stripping cannot save a key that is mangled in the middle."""
+    with pytest.raises(ValidationError, match="whitespace"):
+        build(CLERK_JWKS_URL=VALID_JWKS, **{key: bad})
+
+
+def test_api_key_error_explains_the_likely_cause():
+    with pytest.raises(ValidationError) as exc:
+        build(CLERK_JWKS_URL=VALID_JWKS, GROQ_API_KEY="gsk_a b")
+
+    assert "pasted" in str(exc.value)
+
+
 # ── The failure is legible ─────────────────────────────────────────────────────
 
 

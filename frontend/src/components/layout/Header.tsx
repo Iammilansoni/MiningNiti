@@ -13,15 +13,35 @@ const UserButton = dynamic(
   { ssr: false, loading: () => <div className="size-8 rounded-full bg-muted animate-pulse" /> }
 );
 
+// Sections carry a name the sidebar already uses; deriving the label from the
+// URL segment gave "Chat" where the nav says "AI Intelligence", and detail
+// routes rendered a raw UUID as the page title.
+const SECTION_LABELS: Record<string, string> = {
+  dashboard: 'Dashboard',
+  chat: 'AI Intelligence',
+  documents: 'Documents',
+  compliance: 'Compliance',
+  prompts: 'Prompts',
+  analytics: 'Analytics',
+  settings: 'Settings',
+};
+
 export function Header() {
   const pathname = usePathname();
   const { setMobileMenuOpen } = useUIStore();
 
-  // Simple breadcrumb logic based on pathname
   const pathSegments = pathname.split('/').filter(Boolean);
-  const currentPage = pathSegments.length > 1 
-    ? pathSegments[pathSegments.length - 1].charAt(0).toUpperCase() + pathSegments[pathSegments.length - 1].slice(1)
+  const [section, ...rest] = pathSegments;
+
+  // The previous condition was `length > 1`, so every top-level route — /chat,
+  // /documents, /analytics — has one segment and fell through to "Dashboard".
+  const sectionLabel = section
+    ? SECTION_LABELS[section] ??
+      section.charAt(0).toUpperCase() + section.slice(1)
     : 'Dashboard';
+
+  // Detail routes append "Detail" rather than an opaque identifier.
+  const isDetail = rest.length > 0;
 
   return (
     <header className="sticky top-0 z-40 flex h-(--header-height) w-full items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md">
@@ -37,11 +57,19 @@ export function Header() {
         </button>
 
         {/* Breadcrumbs / Page Title */}
-        <div className="hidden md:flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">MiningNiti</span>
-          <span className="text-muted-foreground/50">/</span>
-          <span className="font-medium text-foreground">{currentPage}</span>
-        </div>
+        <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground/70">MiningNiti</span>
+          <span className="text-muted-foreground/30" aria-hidden>/</span>
+          {isDetail ? (
+            <>
+              <span className="text-muted-foreground/70">{sectionLabel}</span>
+              <span className="text-muted-foreground/30" aria-hidden>/</span>
+              <span className="font-medium text-foreground" aria-current="page">Detail</span>
+            </>
+          ) : (
+            <span className="font-medium text-foreground" aria-current="page">{sectionLabel}</span>
+          )}
+        </nav>
       </div>
 
       <div className="flex items-center gap-3">
