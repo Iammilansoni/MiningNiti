@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UploadModal } from '@/components/documents/UploadModal';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/product/page-header';
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -81,13 +82,11 @@ export default function DocumentsPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Document Registry</h1>
-          <p className="text-muted-foreground mt-2 font-medium">
-            Manage, upload, and track compliance documents.
-          </p>
-        </div>
+      <PageHeader
+        className="relative z-10"
+        title="Document Registry"
+        description="Manage, upload, and track compliance documents."
+        actions={
         <div className="flex gap-3">
           <Button variant="outline" className="gap-2" onClick={() => refetch()}>
             <RefreshCw className="w-4 h-4" />
@@ -97,11 +96,12 @@ export default function DocumentsPage() {
             <Upload className="w-4 h-4" /> Upload Document
           </Button>
         </div>
-      </div>
+        }
+      />
 
       <UploadModal open={isUploadOpen} onOpenChange={setIsUploadOpen} />
 
-      <SectionCard className="p-0 border border-border bg-card shadow-sm overflow-hidden z-10 relative">
+      <SectionCard className="panel p-0 overflow-hidden z-10">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 justify-between bg-muted/20">
           {/* ── Search (now wired!) ── */}
           <div className="relative max-w-md w-full">

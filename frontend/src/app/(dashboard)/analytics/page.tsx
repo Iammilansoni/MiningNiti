@@ -10,6 +10,7 @@ import { getSafetyAnalytics, getDocumentAnalytics } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
 import { formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, Eye } from 'lucide-react';
+import { PageHeader } from '@/components/product/page-header';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -107,29 +108,28 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
-      <div className="relative z-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Compliance Analytics</h1>
-        <p className="text-muted-foreground mt-2 font-medium">
-          Overview of safety scores, hazards, and document processing metrics.
-        </p>
-      </div>
+      <PageHeader
+        className="relative z-10"
+        title="Compliance Analytics"
+        description="Overview of safety scores, hazards, and document processing metrics."
+      />
 
       <div className="relative z-10">
         <EntityMetrics metrics={metricsData} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
-        <div className="col-span-1 lg:col-span-2 rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="panel col-span-1 lg:col-span-2 p-6">
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-foreground">Document Uploads (7-day)</h2>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">Document Uploads (7-day)</h2>
             <p className="text-sm text-muted-foreground">Daily upload volume over the past week</p>
           </div>
           <SafetyScoreChart data={scoreData} />
         </div>
 
-        <div className="col-span-1 rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="panel col-span-1 p-6">
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-foreground">Document Categories</h2>
+            <h2 className="text-base font-semibold tracking-tight text-foreground">Document Categories</h2>
             <p className="text-sm text-muted-foreground">Distribution by document type</p>
           </div>
           <HazardsBreakdown data={hazardsData} />
@@ -137,7 +137,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Real Violations Table */}
-      <div className="rounded-xl border border-border bg-card shadow-sm relative overflow-hidden z-10">
+      <div className="panel relative overflow-hidden z-10">
         <div className="p-6 border-b border-border flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-500" />
           <div>

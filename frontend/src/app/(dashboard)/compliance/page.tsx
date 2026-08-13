@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/product/page-header';
 
 export default function CompliancePage() {
   const router = useRouter();
@@ -122,13 +123,10 @@ export default function CompliancePage() {
   return (
     <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Compliance Audits</h1>
-          <p className="text-muted-foreground mt-1">
-            Cross-reference operational documents against regulatory requirements
-          </p>
-        </div>
+      <PageHeader
+        title="Compliance Audits"
+        description="Cross-reference operational documents against regulatory requirements"
+        actions={
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -204,7 +202,8 @@ export default function CompliancePage() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       {/* Audit List */}
       <SectionCard>
@@ -215,12 +214,37 @@ export default function CompliancePage() {
             ))}
           </div>
         ) : audits.length === 0 ? (
-          <div className="text-center py-12">
-            <ShieldCheck className="mx-auto size-12 text-muted-foreground/40 mb-4" />
-            <h3 className="text-lg font-semibold">No compliance audits yet</h3>
-            <p className="text-muted-foreground mt-1">
-              Upload regulatory documents and run your first compliance audit.
+          <div className="flex flex-col items-center py-14 text-center">
+            <div className="relative mb-5">
+              <div className="flex size-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10">
+                <ShieldCheck className="size-6 text-primary" />
+              </div>
+              <div className="absolute inset-0 rounded-2xl bg-primary/10 blur-xl" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground">
+              No compliance audits yet
+            </h3>
+            <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
+              An audit cross-references an operational document against a
+              regulatory one and returns a per-clause matrix of pass, fail and
+              not-addressed.
             </p>
+            {/* The empty state says what is needed to proceed. Without a
+                regulatory document there is nothing to audit against, so
+                pointing at the upload is more useful than a disabled button. */}
+            <Button
+              className="mt-6"
+              onClick={() => setIsCreateOpen(true)}
+              disabled={regDocs.length === 0}
+            >
+              <Plus className="mr-2 size-4" />
+              Run your first audit
+            </Button>
+            {regDocs.length === 0 && (
+              <p className="mt-3 text-xs text-muted-foreground/70">
+                Upload a document categorised as regulatory to enable this.
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
