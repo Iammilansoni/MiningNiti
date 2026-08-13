@@ -39,8 +39,60 @@ MiningNiti is a full-stack AI platform that transforms how coal mining organizat
 
 ---
 
+## Live Demo
+
+<div align="center">
+
+### **[▶ miningniti.vercel.app](https://miningniti.vercel.app)**
+
+<sub>Backend runs on a free HuggingFace Space. It is kept warm by a scheduled ping, but if it has been idle the first request may take up to a minute while the container wakes.</sub>
+
+<br/>
+
+![RAG chat answering a mining regulation question with page-level citations](docs/assets/rag-chat-demo.gif)
+
+<sub><i>Asking a regulatory question. Hybrid search retrieves and reranks, the answer streams back, and every claim carries the document and page it came from.</i></sub>
+
+</div>
+
+---
+
+### Screenshots
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/assets/chat.jpg" alt="Chat entry point with suggested starter questions" />
+      <sub><b>Ask anything</b> — starter questions show exactly what they will ask.</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/assets/chat-answer.jpg" alt="Streamed answer with inline page-level citations" />
+      <sub><b>Cited answers</b> — every claim links to a document and page, opening in the PDF viewer.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <img src="docs/assets/dashboard.jpg" alt="Dashboard with KPI grid, recent documents and activity feed" />
+      <sub><b>Dashboard</b> — corpus size, query volume, compliance score and live activity.</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/assets/documents.jpg" alt="Document registry table with category, safety score and status" />
+      <sub><b>Document registry</b> — upload, track processing status and review AI analysis.</sub>
+    </td>
+  </tr>
+</table>
+
+> **Note on the answer shown above.** The model says the duties of a *manager*
+> are not spelled out in the retrieved context and offers the duties of the
+> *owner* instead, with citations. That is the intended behaviour: the system
+> prompt forbids answering beyond retrieved context, so a near-miss is reported
+> as a near-miss rather than confabulated into a confident answer.
+
+---
+
 ## Table of Contents
 
+- [Live Demo](#live-demo)
 - [The Problem](#the-problem)
 - [The Solution](#the-solution)
 - [Key Features](#key-features)
