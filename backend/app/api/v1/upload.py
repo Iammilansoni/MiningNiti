@@ -119,6 +119,32 @@ async def upload_document(
             pass
         raise
 
+    # Mirror the bytes into durable storage. UPLOAD_DIR is on the container
+    # filesystem, which is wiped on every restart in the deployed environment,
+    # so the local copy alone is a cache rather than storage. A failure here is
+    # logged and tolerated: the upload still works for this container's
+    # lifetime, and rejecting it outright would be a worse outcome than storing
+    # it with reduced durability.
+    from app.services import object_storage
+
+    if object_storage.is_configured():
+        with open(local_path, "rb") as f:
+            stored = await object_storage.put_object(
+                local_filename, f.read(), content_type
+            )
+        if not stored:
+            logger.warning(
+                "Upload %s is on local disk only and will not survive a "
+                "restart: durable storage write failed.",
+                local_filename,
+            )
+    else:
+        logger.warning(
+            "Durable storage is not configured; upload %s will be lost when "
+            "the container restarts. Set SUPABASE_URL and SUPABASE_SERVICE_KEY.",
+            local_filename,
+        )
+
     # Internal storage reference — resolved only against UPLOAD_DIR. Storing a
     # bare key rather than an absolute path keeps the row portable across
     # containers and gives the SSRF guard a value it can safely confine.

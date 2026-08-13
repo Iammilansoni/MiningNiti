@@ -334,6 +334,9 @@ npm run dev                     # http://localhost:3000
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend (e.g. `https://your-space.hf.space`) |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key for frontend auth |
 | `CLERK_SECRET_KEY` | Yes | Clerk secret key for backend auth |
+| `SUPABASE_URL` | Recommended | Supabase project URL. Enables durable upload storage — **without it, uploaded files are lost on every restart** |
+| `SUPABASE_SERVICE_KEY` | Recommended | Supabase service role key (the uploads bucket is private) |
+| `SUPABASE_STORAGE_BUCKET` | No | Bucket name, defaults to `documents` |
 
 ---
 
@@ -468,6 +471,9 @@ The entire application runs on **free-tier services** with zero infrastructure c
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
 | `CLERK_SECRET_KEY` | Yes | Clerk secret key |
+| `SUPABASE_URL` | Recommended | Supabase project URL. Enables durable upload storage — **without it, uploaded files are lost on every restart** |
+| `SUPABASE_SERVICE_KEY` | Recommended | Supabase service role key (the uploads bucket is private) |
+| `SUPABASE_STORAGE_BUCKET` | No | Bucket name, defaults to `documents` |
 
 ---
 
