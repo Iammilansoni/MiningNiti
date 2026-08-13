@@ -1,7 +1,7 @@
 'use client';
 
 import { SectionCard } from '@/components/product/section-card';
-import { FileText, MessageSquare } from 'lucide-react';
+import { FileText, MessageSquare, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { getDocuments, getChatSessions } from '@/lib/api';
@@ -73,9 +73,25 @@ export function ActivityTimeline() {
         <div className="absolute left-[19px] top-2 bottom-2 w-px bg-border" />
         <ul className="space-y-6 relative">
           {isLoading ? (
-            <li className="text-sm text-muted-foreground">Loading activity...</li>
+            // Shaped like a real timeline row so the list does not jump when
+            // the entries load.
+            [...Array(3)].map((_, i) => (
+              <li key={i} className="flex gap-4 animate-pulse">
+                <div className="relative z-10 size-8 rounded-lg shrink-0 ring-4 ring-card bg-muted/60" />
+                <div className="pt-1.5 flex flex-col gap-2 min-w-0 flex-1">
+                  <div className="h-3.5 w-3/4 rounded bg-muted/60" />
+                  <div className="h-3 w-20 rounded bg-muted/60" />
+                </div>
+              </li>
+            ))
           ) : recentActivities.length === 0 ? (
-            <li className="text-sm text-muted-foreground">No recent activity.</li>
+            <li className="flex flex-col items-center gap-2 py-6 text-center">
+              <Clock className="size-6 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No recent activity yet.</p>
+              <p className="text-xs text-muted-foreground/70">
+                Uploads and chats will appear here.
+              </p>
+            </li>
           ) : (
             recentActivities.map((item) => (
               <li key={item.id} className="flex gap-4">
