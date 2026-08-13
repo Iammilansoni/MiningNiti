@@ -53,6 +53,37 @@ class Settings(BaseSettings):
     MISTRAL_API_KEY: str = Field(..., description="Mistral API Key for Safety Analyzer")
     CEREBRAS_API_KEY: str = Field(default="", description="Cerebras API Key")
 
+    @field_validator(
+        "GEMINI_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY", "CEREBRAS_API_KEY"
+    )
+    @classmethod
+    def _api_key_must_not_contain_whitespace(cls, v: str) -> str:
+        """
+        Strip surrounding whitespace from an API key, and reject one that still
+        contains whitespace inside.
+
+        A trailing newline on a secret is invisible everywhere it matters — in
+        the provider dashboard, in the HuggingFace Space secrets UI, in `echo
+        $GROQ_API_KEY` — but it makes the Authorization header illegal. httpx
+        refuses to put a newline on the wire and raises LocalProtocolError,
+        which the OpenAI SDK then wraps as the maximally unhelpful:
+
+            openai.APIConnectionError: Connection error.
+
+        That happened in production. Retrieval succeeded and citations rendered,
+        so the chat UI showed sources and then died with what looked like a
+        network fault; the real cause was one byte at the end of a secret. Keys
+        never legitimately contain whitespace, so strip what we can and refuse
+        to boot on what we cannot.
+        """
+        v = v.strip()
+        if any(ch.isspace() for ch in v):
+            raise ValueError(
+                "API key must not contain whitespace. This usually means a "
+                "newline or space was included when the secret was pasted."
+            )
+        return v
+
     GEMINI_MODEL: str = Field(default="gemini-1.5-flash")
     EMBEDDING_MODEL: str = Field(default="models/gemini-embedding-001")
 

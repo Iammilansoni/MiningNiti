@@ -358,7 +358,7 @@ MiningNiti/
 │   │   ├── services/        # Business logic (RAG, hybrid search, reranker, compliance)
 │   │   ├── core/            # Security, exceptions, config
 │   │   └── db/              # SQLAlchemy engine + pgvector init
-│   ├── tests/unit/          # 47 unit tests (SQLite in-memory)
+│   ├── tests/unit/          # 168 unit tests (SQLite in-memory)
 │   ├── tests/integration/   # Integration tests (PostgreSQL + Redis)
 │   └── Dockerfile           # Docker build for HuggingFace Spaces
 ├── frontend/
@@ -423,14 +423,14 @@ The entire application runs on **free-tier services** with zero infrastructure c
 
 ```bash
 cd backend
-pytest tests/unit/ -v -m unit                           # 47 unit tests (SQLite in-memory)
+pytest tests/unit/ -v -m unit                           # 168 unit tests (SQLite in-memory)
 pytest tests/integration/ -v -m integration              # Needs PostgreSQL + Redis
 pytest tests/eval/test_rag_eval.py -v -m synthetic       # RAG eval (no DB, instant)
 pytest tests/eval/test_rag_eval.py -v -m live            # RAG eval (full pipeline)
 pytest tests/unit/ --cov=app --cov-report=html           # With coverage
 ```
 
-**Unit tests** cover all 5 AI agents (mocked), RAG chat service, hybrid search + reranking, text chunking, and document extractors.
+**227 tests in total.** The 168 unit tests cover all 5 AI agents (mocked), RAG chat service, hybrid search + reranking, text chunking, document extractors, and settings validation; the rest are integration and retrieval-evaluation tests.
 
 **Linting:** `isort` + `black` (backend), `npm run lint` (frontend).
 
