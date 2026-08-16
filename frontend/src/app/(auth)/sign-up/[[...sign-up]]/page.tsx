@@ -88,35 +88,23 @@ export default function Page() {
             appearance={{
               variables: {
                 colorPrimary: '#947AFC',
-                colorBackground: '#0A0A0A',
-                colorText: '#ffffff',
-                colorTextSecondary: 'rgba(255,255,255,0.5)',
-                colorInputBackground: '#111113',
-                colorInputText: '#ffffff',
+                colorPrimaryForeground: '#ffffff',
+                colorBackground: '#0A0A0B',
+                colorForeground: '#ffffff',
+                colorMutedForeground: 'rgba(255,255,255,0.55)',
+                colorInput: '#111113',
+                colorInputForeground: '#ffffff',
+                colorNeutral: '#ffffff',
+                colorBorder: 'rgba(255,255,255,0.14)',
+                colorMuted: 'rgba(255,255,255,0.06)',
                 borderRadius: '10px',
               },
               elements: {
-                rootBox: 'w-full',
-                cardBox: 'shadow-none w-full',
-                card: 'shadow-none bg-transparent p-0 gap-5',
-                headerTitle: 'hidden',
-                headerSubtitle: 'hidden',
-                header: 'hidden',
-                formButtonPrimary:
-                  'bg-purple-400 hover:bg-[#a88ffc] text-white font-semibold h-11 shadow-[0_0_20px_rgba(148,122,252,0.25)] hover:shadow-[0_0_28px_rgba(148,122,252,0.4)] transition-all',
-                formFieldInput:
-                  'bg-[#111113] border-white/10 text-white placeholder:text-white/30 focus:border-[#947AFC]/60 focus:ring-[#947AFC]/20 h-11',
-                formFieldLabel: 'text-white/60 text-[13px] font-medium',
-                identityPreviewText: 'text-white/70',
-                identityPreviewEditButton: 'text-purple-400',
-                footerActionLink: 'text-purple-400 hover:text-[#c4a0f0] text-[13px]',
-                dividerLine: 'bg-white/8',
-                dividerText: 'text-white/25 text-[12px]',
+                cardBox: 'border border-white/10 shadow-none',
+                footerActionLink: 'text-purple-400 hover:text-[#c4a0f0]',
                 socialButtonsBlockButton:
-                  'bg-white/[0.04] border-white/8 text-white hover:bg-white/8 transition-colors h-11',
-                socialButtonsBlockButtonText: 'text-white/70 text-[13px] font-medium',
-                formFieldActionLink: 'text-purple-400 hover:text-[#c4a0f0]',
-                footer: 'mt-2',
+                  'bg-white/[0.06] border-white/15 hover:bg-white/[0.12]',
+                socialButtonsBlockButtonText: 'text-white',
               },
             }}
           />
