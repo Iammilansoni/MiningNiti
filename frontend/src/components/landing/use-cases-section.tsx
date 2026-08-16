@@ -14,18 +14,18 @@ const useCases = [
     description: 'MiningNiti continuously monitors your safety logs, shift reports, and equipment inspection records against DGMS regulations. The moment a gap appears, your safety officer is notified — before the inspector arrives.',
     query: 'Were all ventilation checks completed on Shaft B in October?',
     answer: `Found 31 records for October.\n⚠ Missing: Oct 14 (Morning shift) — No signatures from Safety Officer.\n✓ All other 30 days complete.\n\nSources: Shaft_B_Safety_Log_Oct.pdf (Pages 12–43)`,
-    stat: { value: '92%', label: 'reduction in audit prep time' },
+    stat: { value: 'Cited', label: 'every claim links to document and page' },
     color: '#F59E0B',
   },
   {
     id: 'compliance',
     icon: FileCheck,
     label: 'Compliance Officers',
-    title: 'Audit-ready in 48 hours, not 4 weeks',
+    title: 'Answer auditor questions with citations, not guesswork',
     description: 'Connect your permit archives, ERP data, and regulatory correspondence. MiningNiti builds a compliance knowledge graph that answers auditor questions with precise, citation-backed responses in seconds.',
     query: 'List all active environmental permits and their expiry dates.',
     answer: `Found 8 active environmental permits:\n\n1. Water Discharge Permit WD-2024-11 — Expires Jun 2026\n2. Air Quality Permit AQ-2023-07 — Expires Dec 2025\n3. Mining Lease ML-0041 — Expires Mar 2027\n\nSee Permits/Environmental/ for full docs.`,
-    stat: { value: '48hrs', label: 'average audit preparation time' },
+    stat: { value: 'Pass / Fail', label: 'per-clause compliance matrix' },
     color: '#947AFC',
   },
   {
@@ -36,7 +36,7 @@ const useCases = [
     description: 'Surface patterns from 10+ years of bore logs, maintenance records, and incident reports. What used to require calling a retired engineer is now a query away.',
     query: 'What were the common failure modes for Drill Rig #7 between 2019–2022?',
     answer: `Analyzed 847 maintenance records for Rig #7.\n\nTop failure modes:\n1. Hydraulic seal failure — 34 incidents (avg every 41 days)\n2. Drill bit wear — 28 incidents\n3. Motor overheating — 19 incidents\n\nPeak failure months: June–August (heat stress).`,
-    stat: { value: '10yrs', label: 'of operational history queryable' },
+    stat: { value: 'Hybrid', label: 'vector + full-text search, then reranked' },
     color: '#34D399',
   },
 ];
@@ -70,6 +70,15 @@ export function UseCasesSection() {
           >
             Every team. One intelligence layer.
           </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-4 text-[13px] text-white/35"
+          >
+            The queries and answers below are illustrative examples, not records
+            from a live deployment.
+          </motion.p>
         </div>
 
         {/* Tab Switcher */}
