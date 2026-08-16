@@ -19,7 +19,6 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_id
-from app.config import settings
 from app.db.session import get_db
 from app.models.chat import ChatMessage, ChatSession
 from app.schemas.chat import ChatRequest
@@ -54,7 +53,7 @@ async def stream_chat(
         source.addEventListener('sources', (e) => renderSources(JSON.parse(e.data)))
         source.addEventListener('done', () => source.close())
     """
-    from app.services.chat_service import ChatService
+    from app.services.chat_service import CHAT_MODEL, ChatService
     from app.services.guardrails import MiningGuardrails
 
     # ── Input Guardrails ────────────────────────────────────────────────────
@@ -143,7 +142,7 @@ async def stream_chat(
                     role="assistant",
                     content=response_text,
                     sources=sources if request.include_sources else [],
-                    model_used=settings.GEMINI_MODEL,
+                    model_used=CHAT_MODEL,
                     tokens_used=tokens_used,
                 )
                 db.add(assistant_message)

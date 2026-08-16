@@ -185,7 +185,7 @@ def _get_llm_answer_sync(query: str, context_chunks: list[dict]) -> str:
 
     client = get_groq_client()
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": user_msg},

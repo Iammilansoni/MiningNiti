@@ -264,7 +264,7 @@ async def send_message(
     db.add(user_message)
 
     # Generate AI response with RAG
-    from app.services.chat_service import ChatService
+    from app.services.chat_service import CHAT_MODEL, ChatService
 
     chat_service = ChatService()
 
@@ -286,7 +286,7 @@ async def send_message(
             role="assistant",
             content=ai_response,
             sources=sources if request.include_sources else [],
-            model_used="gemini-2.5-flash",
+            model_used=CHAT_MODEL,
             response_time_ms=response_time_ms,
             tokens_used=tokens_used,
         )
@@ -330,7 +330,7 @@ async def send_message(
             content=ai_response,
             sources=sources if request.include_sources else [],
             created_at=assistant_message.created_at,
-            model_used="gemini-2.5-flash",
+            model_used=CHAT_MODEL,
             response_time_ms=response_time_ms,
         ),
         session_id=str(session.id),
