@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     q: 'How accurate is the AI extraction on old or low-quality scans?',
-    a: 'Our OCR and semantic parsing pipeline achieves 99.2% accuracy on standard digital PDFs. For low-quality scans (older documents, carbon copies, handwritten annotations), accuracy ranges from 91–96% depending on scan quality. We provide a confidence score on every extraction and flag low-confidence results for manual review, so your team always knows what to trust.',
+    a: 'Text is extracted with pdfplumber, and pages that come back empty — typically scans — fall back to OCR. We do not publish an extraction accuracy figure, because we have not measured one on a representative corpus and a number we cannot reproduce would be worse than none. What is measured is retrieval: against a labelled golden set, the pipeline scores 1.00 Hit Rate@5 and 0.97 nDCG@5, and that check runs as a blocking gate in CI. Every answer also cites the document and page it came from, so any claim can be checked against the source.',
   },
   {
     q: 'Is MiningNiti suitable for small mining operations or only large enterprises?',
