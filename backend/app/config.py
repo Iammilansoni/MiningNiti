@@ -84,18 +84,16 @@ class Settings(BaseSettings):
             )
         return v
 
-    GEMINI_MODEL: str = Field(default="gemini-1.5-flash")
+    # Read by the RAG generation-eval judge. Chat generation itself runs on
+    # Groq (chat_service.CHAT_MODEL), not here. gemini-1.5-flash is retired.
+    GEMINI_MODEL: str = Field(default="gemini-3.7-flash")
     EMBEDDING_MODEL: str = Field(default="models/gemini-embedding-001")
 
-    AGENT_PROVIDER_MAP: dict = {
-        "embeddings": {"provider": "gemini", "model": "text-embedding-004"},
-        "chat_service": {"provider": "gemini", "model": "gemini-1.5-flash"},
-        "summarizer_agent": {"provider": "gemini", "model": "gemini-1.5-flash"},
-        "classifier_agent": {"provider": "groq", "model": "llama-3.3-70b-versatile"},
-        "entity_extractor": {"provider": "cerebras", "model": "llama-4-scout"},
-        "safety_analyzer": {"provider": "mistral", "model": "magistral-small-latest"},
-        "fallback": {"provider": "openrouter", "model": "deepseek/deepseek-r1:free"},
-    }
+    # AGENT_PROVIDER_MAP was removed here: nothing ever read it, and it had
+    # drifted into naming retired models (gemini-1.5-flash), a model the entity
+    # extractor does not use (llama-4-scout), and a provider this project has no
+    # client for (openrouter). Each agent declares its own model in
+    # app/agents/*.py — that is the single source of truth.
 
     # Authentication - Clerk
     CLERK_JWKS_URL: str = Field(..., description="Clerk JWKS URL for JWT verification")

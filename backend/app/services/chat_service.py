@@ -42,6 +42,15 @@ logger = logging.getLogger(__name__)
 # Configure Gemini once
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
+# Groq decommissioned llama-3.3-70b-versatile on 2026-08-16. gpt-oss-120b is the
+# recommended replacement: 131k context (up from 128k) and the same family the
+# entity extractor and summarizer already run on Cerebras.
+#
+# Exported because every caller that records `model_used` must name the model
+# that actually generated the text. Three call sites previously hardcoded Gemini
+# names here while generation ran on Groq, so the stored provenance was false.
+CHAT_MODEL = "openai/gpt-oss-120b"
+
 # ── System Prompt ──────────────────────────────────────────────────────────────
 _SYSTEM_PROMPT = """You are MiningNiti AI, an expert assistant specialized in the coal mining industry.
 
@@ -86,7 +95,8 @@ class ChatService:
     """
 
     def __init__(self):
-        self.model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        # No Gemini GenerativeModel here: generation runs on Groq (CHAT_MODEL).
+        # A `self.model` was constructed on every init and never read.
         self.embedding_model = settings.EMBEDDING_MODEL
 
     # ── Public API ─────────────────────────────────────────────────────────────
@@ -116,7 +126,7 @@ class ChatService:
             client = get_groq_client()
 
             response = await client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=CHAT_MODEL,
                 messages=[
                     {"role": "system", "content": _SYSTEM_PROMPT},
                     {
@@ -175,7 +185,7 @@ class ChatService:
             client = get_groq_client()
 
             response_stream = await client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model=CHAT_MODEL,
                 messages=[
                     {"role": "system", "content": _SYSTEM_PROMPT},
                     {
