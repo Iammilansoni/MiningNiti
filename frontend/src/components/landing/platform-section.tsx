@@ -268,8 +268,8 @@ export function PlatformSection() {
             Transform How Your Team Works<br className="hidden sm:block" /> With Mining Documents.
           </h3>
           <p className="text-white/50 text-[16px] max-w-lg mx-auto mb-10 leading-relaxed">
-            Join mining operations already using MiningNiti to stay compliant,
-            safe, and audit-ready.
+            Upload your safety and regulatory documents, and get answers that
+            cite the page they came from.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
@@ -290,9 +290,12 @@ export function PlatformSection() {
           {/* Trust badges */}
           <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
             {[
-              { icon: Clock, text: '48-hour deployment' },
-              { icon: ShieldCheck, text: '99.2% accuracy' },
-              { icon: CheckCircle2, text: 'On-premise available' },
+              // Measured, not marketing: the hit rate comes from the retrieval
+              // eval that gates CI, the citation guarantee from the system
+              // prompt, and the cost from running on free tiers.
+              { icon: ShieldCheck, text: 'Page-level citations' },
+              { icon: CheckCircle2, text: '100% Hit Rate@5 in CI' },
+              { icon: Clock, text: 'Open source, MIT' },
             ].map((item) => (
               <div key={item.text} className="flex items-center gap-2 text-white/40 text-[13px]">
                 <item.icon className="size-4 text-purple-400" />
