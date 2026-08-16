@@ -11,6 +11,7 @@ import { Lightbulb, MessageSquarePlus, Copy, Star, ArrowRight } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { CreatePromptModal } from '@/components/prompts/CreatePromptModal';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/product/page-header';
 
 export default function PromptsPage() {
   const { getToken } = useAuth();
@@ -37,26 +38,23 @@ export default function PromptsPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Prompt Library</h1>
-          <p className="text-muted-foreground mt-2 font-medium">
-            Pre-built intelligence queries for standard compliance tasks.
-          </p>
-        </div>
-        <div className="flex gap-3">
+      <PageHeader
+        className="relative z-10"
+        title="Prompt Library"
+        description="Pre-built intelligence queries for standard compliance tasks."
+        actions={
           <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
             <MessageSquarePlus className="w-4 h-4" /> Create Prompt
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <CreatePromptModal open={isCreateOpen} onOpenChange={setIsCreateOpen} />
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="animate-pulse bg-muted h-48 rounded-xl border border-border" />
+            <div key={i} className="panel h-48 animate-pulse" />
           ))}
         </div>
       ) : isError ? (
@@ -77,7 +75,7 @@ export default function PromptsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
           {prompts?.map((prompt) => (
-            <SectionCard key={prompt.id} className="p-6 flex flex-col h-full bg-card border border-border hover:shadow-md hover:border-primary/20 transition-all group">
+            <SectionCard key={prompt.id} className="panel-interactive p-6 flex flex-col h-full group">
               <div className="flex items-start justify-between mb-4">
                 <div className="p-2.5 bg-primary/10 text-primary rounded-lg">
                   <Lightbulb className="w-5 h-5" />
