@@ -171,6 +171,62 @@ async def get_document(
     return DocumentResponse(**document.to_dict())
 
 
+@router.get("/{document_id}/file")
+async def get_document_file(
+    document_id: uuid.UUID,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Stream the stored file itself, so the browser can render it.
+
+    Documents are stored with an internal `storage://<key>` URL, which exists to
+    confine path resolution to UPLOAD_DIR and to keep the row portable across
+    containers. It is not a scheme any browser can fetch, and until this
+    endpoint existed nothing served the bytes at all — the PDF viewer was handed
+    `storage://...` directly and could only fail with "Failed to load PDF".
+
+    Ownership is enforced the same way as every other document route: the row
+    is looked up by id *and* user_id, so a valid token for another account gets
+    a 404 rather than someone else's file.
+    """
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == user_id)
+        .first()
+    )
+
+    if not document:
+        raise NotFoundError("Document", document_id)
+
+    from fastapi.responses import Response
+
+    from app.core.url_guard import UnsafeURLError
+    from app.services.extractors import load_document_bytes
+
+    try:
+        data = await load_document_bytes(document.file_url)
+    except UnsafeURLError as e:
+        # The bytes are gone: the container was restarted without durable
+        # storage configured. Say so plainly instead of a generic 500 — the
+        # cause is operational, and the message names the fix.
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail=str(e),
+        )
+
+    # inline so the viewer renders it rather than triggering a download; the
+    # filename is still offered for an explicit save.
+    return Response(
+        content=data,
+        media_type=document.file_type or "application/octet-stream",
+        headers={
+            "Content-Disposition": f'inline; filename="{document.file_name}"',
+            "Cache-Control": "private, max-age=300",
+        },
+    )
+
+
 @router.delete("/{document_id}")
 async def delete_document(
     document_id: uuid.UUID,

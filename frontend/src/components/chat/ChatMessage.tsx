@@ -8,7 +8,7 @@ import type { ChatMessage as ChatMessageType, ChatSource } from '@/hooks/use-cha
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
-  onCitationClick?: (fileUrl: string, page: number, exactTextChunk: string) => void;
+  onCitationClick?: (documentId: string, page: number, exactTextChunk: string) => void;
 }
 
 export function ChatMessage({ message, isStreaming, onCitationClick }: ChatMessageProps) {
@@ -140,20 +140,22 @@ export function ChatMessage({ message, isStreaming, onCitationClick }: ChatMessa
                         <button
                           type="button"
                           onClick={() => {
-                            if (source?.file_url && onCitationClick) {
-                              onCitationClick(source.file_url, page, source.exact_text_chunk || '');
+                            // document_id, not file_url: the stored URL uses an
+                            // internal storage:// scheme the browser cannot fetch.
+                            if (source?.document_id && onCitationClick) {
+                              onCitationClick(source.document_id, page, source.exact_text_chunk || '');
                             }
                           }}
                           className={cn(
                             "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-medium transition-all duration-150 mx-0.5 border cursor-pointer align-baseline",
-                            source?.file_url
+                            source?.document_id
                               ? "bg-primary/15 text-primary border-primary/20 hover:bg-primary/25 hover:border-primary/40"
                               : "bg-muted text-muted-foreground border-border cursor-not-allowed opacity-60"
                           )}
-                          title={source?.file_url ? "Open in document viewer" : "Document unavailable"}
+                          title={source?.document_id ? "Open in document viewer" : "Document unavailable"}
                         >
                           {children}
-                          {source?.file_url && <ExternalLink className="w-2.5 h-2.5 opacity-60" />}
+                          {source?.document_id && <ExternalLink className="w-2.5 h-2.5 opacity-60" />}
                         </button>
                       );
                     }
@@ -210,8 +212,8 @@ export function ChatMessage({ message, isStreaming, onCitationClick }: ChatMessa
                     documentId={source.document_id}
                     pageNumbers={source.page_numbers}
                     onClick={() => {
-                      if (source.file_url && onCitationClick) {
-                        onCitationClick(source.file_url, source.page_numbers?.[0] || 1, source.exact_text_chunk || '');
+                      if (source.document_id && onCitationClick) {
+                        onCitationClick(source.document_id, source.page_numbers?.[0] || 1, source.exact_text_chunk || '');
                       }
                     }}
                   />

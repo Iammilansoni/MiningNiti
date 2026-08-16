@@ -34,13 +34,13 @@ export function AskDocumentAI({ documentId, documentTitle, fileUrl }: Props) {
   // PDF Viewer State
   const [pdfViewerProps, setPdfViewerProps] = useState<{
     isOpen: boolean;
-    fileUrl: string;
+    documentId: string;
     initialPage: number;
     exactTextChunk: string;
-  }>({ isOpen: false, fileUrl: '', initialPage: 1, exactTextChunk: '' });
+  }>({ isOpen: false, documentId: '', initialPage: 1, exactTextChunk: '' });
 
-  const handleCitationClick = useCallback((fUrl: string, page: number, exactTextChunk: string) => {
-    setPdfViewerProps({ isOpen: true, fileUrl: fUrl, initialPage: page, exactTextChunk });
+  const handleCitationClick = useCallback((docId: string, page: number, exactTextChunk: string) => {
+    setPdfViewerProps({ isOpen: true, documentId: docId, initialPage: page, exactTextChunk });
   }, []);
 
   useEffect(() => {
@@ -103,7 +103,7 @@ export function AskDocumentAI({ documentId, documentTitle, fileUrl }: Props) {
         <PDFViewerModal
           isOpen={pdfViewerProps.isOpen}
           onClose={() => setPdfViewerProps(prev => ({ ...prev, isOpen: false }))}
-          fileUrl={pdfViewerProps.fileUrl}
+          documentId={pdfViewerProps.documentId}
           initialPage={pdfViewerProps.initialPage}
           exactTextChunk={pdfViewerProps.exactTextChunk}
         />
@@ -165,7 +165,7 @@ export function AskDocumentAI({ documentId, documentTitle, fileUrl }: Props) {
                             pageNumbers={src.page_numbers}
                             onClick={() => {
                               handleCitationClick(
-                                src.file_url || fileUrl || '',
+                                src.document_id || documentId,
                                 src.page_numbers?.[0] || 1,
                                 src.exact_text_chunk || ''
                               );
@@ -208,7 +208,7 @@ export function AskDocumentAI({ documentId, documentTitle, fileUrl }: Props) {
       <PDFViewerModal
         isOpen={pdfViewerProps.isOpen}
         onClose={() => setPdfViewerProps(prev => ({ ...prev, isOpen: false }))}
-        fileUrl={pdfViewerProps.fileUrl}
+        documentId={pdfViewerProps.documentId}
         initialPage={pdfViewerProps.initialPage}
         exactTextChunk={pdfViewerProps.exactTextChunk}
       />
@@ -274,8 +274,8 @@ function AskMessageContent({
                 <button
                   type="button"
                   onClick={() => {
-                    const url = source?.file_url || docFileUrl || '';
-                    if (url) onCitationClick(url, page, source?.exact_text_chunk || '');
+                    const docId = source?.document_id || '';
+                    if (docId) onCitationClick(docId, page, source?.exact_text_chunk || '');
                   }}
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium transition-all duration-200 mx-1 border cursor-pointer align-baseline bg-primary/20 text-blue-300 border-primary/30 hover:bg-primary/30 hover:shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:-translate-y-[1px]"
                   title="View in document"
