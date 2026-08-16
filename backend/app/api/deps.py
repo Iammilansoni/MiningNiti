@@ -9,6 +9,7 @@ from typing import Optional
 
 from fastapi import Depends, Header, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AuthenticationError
@@ -29,16 +30,47 @@ def _anonymize_user_id(user_id: str) -> str:
 security = HTTPBearer()
 
 
+def _ensure_user_row(db: Session, user_id: str) -> None:
+    """
+    Make sure a `users` row exists for this Clerk user.
+
+    documents, chat_sessions, compliance_audits and prompts all carry a foreign
+    key to users.clerk_user_id, but a valid JWT does not imply the row exists —
+    Clerk owns identity, this table only mirrors it. Without this, a user who
+    has never hit an endpoint that provisions them can read fine (SELECT on an
+    unknown user_id simply returns nothing) while every write dies on a foreign
+    key violation, surfacing as a bare 500.
+
+    That is not hypothetical: it took down uploads for every user after the
+    Clerk application was recreated and all user ids changed at once.
+    """
+    exists = db.query(User.id).filter(User.clerk_user_id == user_id).first() is not None
+    if exists:
+        return
+
+    db.add(User(clerk_user_id=user_id, is_active=True))
+    try:
+        db.commit()
+        logger.info(f"Provisioned user row for {_anonymize_user_id(user_id)}")
+    except IntegrityError:
+        # Another concurrent request for the same new user won the race. The
+        # row we need now exists, which is all this function promises.
+        db.rollback()
+
+
 async def get_current_user_id(
     credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
 ) -> str:
     """
     Dependency to extract and verify user ID from JWT.
-    Returns Clerk user ID string.
+    Returns Clerk user ID string, guaranteeing the backing `users` row exists.
     """
     token = credentials.credentials
     payload = await verify_jwt_token(token)
-    return extract_user_id(payload)
+    user_id = extract_user_id(payload)
+    _ensure_user_row(db, user_id)
+    return user_id
 
 
 async def get_current_user(
