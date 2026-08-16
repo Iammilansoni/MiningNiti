@@ -23,17 +23,21 @@ export function IntegrationGrid() {
         <div className="flex flex-col md:flex-row gap-12 lg:gap-20 items-center">
           
           <div className="md:w-1/3 flex flex-col items-start text-left">
+            <span className="inline-flex items-center rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1 text-[12px] font-medium text-purple-300 mb-4">
+              Roadmap — not yet built
+            </span>
             <h2 className="text-[clamp(2rem,3vw,2.5rem)] font-bold tracking-tight mb-4 text-white leading-[1.1]">
-              Integrates with your existing infrastructure
+              Designed to integrate with existing infrastructure
             </h2>
             <p className="text-lg text-white/60 mb-8">
-              Mining operations run on fragmented legacy systems. We connect them seamlessly.
+              Mining operations run on fragmented legacy systems. These are the connectors
+              planned next — today MiningNiti ingests documents by direct upload.
             </p>
-            <a 
-              href="#" 
+            <a
+              href="https://github.com/Iammilansoni/MiningNiti"
               className="inline-flex items-center gap-2 text-[15px] font-medium text-purple-400 hover:text-white transition-colors"
             >
-              View all 40+ integrations
+              See what is built today
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none" className="shrink-0">
                 <path d="M1 5.5H10M10 5.5L5.5 1M10 5.5L5.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>

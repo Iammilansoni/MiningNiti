@@ -58,8 +58,10 @@ docker-compose -f docker-compose.prod.yml up -d
 - **Auth**: Clerk JWT verified server-side via JWKS endpoint. User ID comes from JWT `sub` claim.
 - **Database**: PostgreSQL 16 with `pgvector` + `pg_trgm`. Schema is owned by Alembic (`alembic upgrade head`, run automatically by `scripts/migrate.py` at container start). `init_db()` still runs `create_all()` as a safety net and calls `ensure_indexes()`, which idempotently creates the HNSW and GIN trigram indexes that `create_all()` cannot express.
   - `scripts/migrate.py` handles three cases: fresh DB, a legacy DB built by `create_all()` with no `alembic_version` (stamped at `001`, then indexes ensured), and a DB already under Alembic.
-- **Agent pipeline**: Document upload → Orchestrator runs 4 agents in parallel (classifier, safety, entity extraction, summarizer) → chunks + embeddings saved to pgvector
-- **Background work**: Uses FastAPI `BackgroundTasks` in dev; Celery worker available for production scaling (`celery -A app.workers.celery_app worker`)
+- **Agent pipeline**: Document upload → Orchestrator runs the classifier first (its category feeds the others), then safety, entity extraction and summarizer concurrently via `asyncio.gather` → chunks + embeddings saved to pgvector. A fifth agent, the compliance auditor, is **not** in this pipeline — it runs on demand from `compliance_service.py` when an audit is created.
+- **Analysis cache**: `services/analysis_cache.py` keys completed analyses by SHA-256 of the extracted text plus `PIPELINE_VERSION`, so identical content skips all four LLM calls. Failed or partial analyses are never cached, which is what keeps re-analysis working after a quota error. No-ops when Redis is absent.
+- **Agent retries**: Retry and provider-fallback live in `BaseAgent._generate_json` **only**. Do not add a second backoff layer in the orchestrator — one existed and multiplied with the inner one (up to 9 attempts and minutes of sleep per agent).
+- **Background work**: An in-process `asyncio.Queue` (`services/queue.py`) with a worker started at app startup. There is no Celery and no `app/workers/` package. Queued work does not survive a restart or scale across replicas.
 - **Crash recovery**: On startup, documents stuck in `processing`/`analyzing` state are auto-reset to `PENDING`
 - **LLM providers**: Groq, Mistral, and Cerebras all use the OpenAI-compatible client (`AsyncOpenAI` with custom `base_url`). Gemini uses the native `google-generativeai` SDK.
 
@@ -68,7 +70,9 @@ docker-compose -f docker-compose.prod.yml up -d
 - **Unit tests** (`tests/unit/`): Use SQLite in-memory, no external services needed. Fixtures in `tests/conftest.py` mock auth and inject test DB sessions.
 - **Integration tests** (`tests/integration/`): Require running PostgreSQL (with pgvector) and Redis. Marked with `@pytest.mark.integration`.
 - **pytest config**: `asyncio_mode = auto` — async tests run without explicit `@pytest.mark.asyncio`.
-- **Test markers**: `unit`, `integration`, `slow`. Use `-m unit` to skip integration tests.
+- **Test markers**: `unit`, `integration`, `slow`, `synthetic`, `live`, `retrieval`, `uses_cache`. Use `-m unit` to skip integration tests.
+- **Analysis cache in tests**: an autouse fixture in `conftest.py` disables it for every test, because `REDIS_URL` points at localhost and a live cache would let one test serve another's mocked result. Opt back in with `@pytest.mark.uses_cache`.
+- **Mocking agents**: mock `agent.client` for Groq/Mistral/Cerebras agents and `agent.model` only for Gemini ones. Mocking the wrong attribute leaves the real client in place and the test silently hits the network.
 - **CI** runs unit tests with coverage, integration tests as non-blocking.
 
 ## Linting & Formatting
@@ -89,6 +93,6 @@ docker-compose -f docker-compose.prod.yml up -d
 
 - Root `package.json` is `{}` — don't run `npm install` from root
 - `DATABASE_URL` in docker-compose uses `psycopg2` driver format; the backend also needs `psycopg` (binary) for async
-- Celery is commented out in `requirements.txt` — uncomment for production background workers
+- There is no Celery integration despite the commented-out dependency in `requirements.txt`; background work is the in-process `asyncio.Queue` described above
 - The `frontend/.env.local` file is gitignored with no example file — check `frontend/src/lib/api.ts:5` for the `NEXT_PUBLIC_API_BASE_URL` fallback
 - `pytest.ini` sets `asyncio_mode = auto` globally — don't add explicit async markers
