@@ -29,6 +29,27 @@ from app.core.url_guard import (
 logger = logging.getLogger(__name__)
 
 
+async def load_document_bytes(file_url: str) -> bytes:
+    """
+    Return the raw bytes for a stored document.
+
+    Same resolution order the extraction pipeline uses: the local cache under
+    UPLOAD_DIR first, then the durable copy if the container has been restarted
+    since upload. Shared so that serving a file to the browser and parsing it
+    can never disagree about where the bytes live.
+    """
+    max_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
+
+    if not is_internal_storage_url(file_url):
+        return await fetch_remote_file(file_url, max_bytes=max_bytes)
+
+    try:
+        local_path = await asyncio.to_thread(resolve_storage_path, file_url)
+        return await asyncio.to_thread(_read_capped, local_path, max_bytes)
+    except UnsafeURLError:
+        return await _restore_from_durable_storage(file_url, max_bytes)
+
+
 async def _restore_from_durable_storage(file_url: str, max_bytes: int) -> bytes:
     """
     Recover a document whose local copy has been lost, and re-cache it.
