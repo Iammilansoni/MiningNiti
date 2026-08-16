@@ -55,13 +55,13 @@ export default function ChatPage() {
 
   const [pdfViewerProps, setPdfViewerProps] = useState<{
     isOpen: boolean;
-    fileUrl: string;
+    documentId: string;
     initialPage: number;
     exactTextChunk?: string;
-  }>({ isOpen: false, fileUrl: '', initialPage: 1, exactTextChunk: '' });
+  }>({ isOpen: false, documentId: '', initialPage: 1, exactTextChunk: '' });
 
-  const handleCitationClick = (fileUrl: string, page: number, exactTextChunk: string) => {
-    setPdfViewerProps({ isOpen: true, fileUrl, initialPage: page, exactTextChunk });
+  const handleCitationClick = (documentId: string, page: number, exactTextChunk: string) => {
+    setPdfViewerProps({ isOpen: true, documentId, initialPage: page, exactTextChunk });
   };
 
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function ChatPage() {
       <PDFViewerModal
         isOpen={pdfViewerProps.isOpen}
         onClose={() => setPdfViewerProps(prev => ({ ...prev, isOpen: false }))}
-        fileUrl={pdfViewerProps.fileUrl}
+        documentId={pdfViewerProps.documentId}
         initialPage={pdfViewerProps.initialPage}
         exactTextChunk={pdfViewerProps.exactTextChunk}
       />

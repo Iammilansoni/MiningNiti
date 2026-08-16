@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { Document, Page, pdfjs } from 'react-pdf';
+import { fetchDocumentBlobUrl } from '@/lib/document-file';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -11,7 +13,13 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 interface PDFViewerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  fileUrl: string;
+  /**
+   * Document id, not a URL. Documents are stored behind an internal
+   * `storage://` scheme that no browser can fetch, and the endpoint serving the
+   * real bytes requires a Clerk token in a header — so the file has to be
+   * fetched as a blob rather than pointed at.
+   */
+  documentId: string;
   initialPage?: number;
   exactTextChunk?: string;
 }
@@ -19,13 +27,16 @@ interface PDFViewerModalProps {
 export function PDFViewerModal({
   isOpen,
   onClose,
-  fileUrl,
+  documentId,
   initialPage = 1,
   exactTextChunk
 }: PDFViewerModalProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(initialPage);
   const [scale, setScale] = useState<number>(1.0);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const { getToken } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
@@ -33,6 +44,36 @@ export function PDFViewerModal({
       setScale(1.0);
     }
   }, [isOpen, initialPage]);
+
+  // Fetch the bytes whenever the modal opens on a document, and release the
+  // object URL on close so blobs do not accumulate across openings.
+  useEffect(() => {
+    if (!isOpen || !documentId) return;
+
+    let cancelled = false;
+    let created: string | null = null;
+
+    setLoadError(null);
+    setBlobUrl(null);
+
+    fetchDocumentBlobUrl(documentId, getToken)
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        created = url;
+        setBlobUrl(url);
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setLoadError(err.message);
+      });
+
+    return () => {
+      cancelled = true;
+      if (created) URL.revokeObjectURL(created);
+    };
+  }, [isOpen, documentId, getToken]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -130,8 +171,18 @@ export function PDFViewerModal({
         {/* Viewer Body */}
         <div className="flex-1 overflow-auto bg-muted/30 p-4 md:p-8 flex justify-center items-start">
           <div className="shadow-lg border border-border/50 bg-white rounded-sm overflow-hidden transition-all duration-300">
+            {loadError ? (
+              <div className="flex flex-col items-center justify-center p-20 text-destructive text-center max-w-md">
+                <p className="font-semibold mb-2">Failed to load PDF.</p>
+                <p className="text-sm opacity-80">{loadError}</p>
+              </div>
+            ) : !blobUrl ? (
+              <div className="flex items-center justify-center p-20 text-muted-foreground animate-pulse">
+                Loading PDF...
+              </div>
+            ) : (
             <Document
-              file={fileUrl}
+              file={blobUrl}
               onLoadSuccess={onDocumentLoadSuccess}
               loading={
                 <div className="flex items-center justify-center p-20 text-muted-foreground animate-pulse">
@@ -155,6 +206,7 @@ export function PDFViewerModal({
                 loading={<div className="p-20 text-center text-muted-foreground min-h-[500px]">Loading page {pageNumber}...</div>}
               />
             </Document>
+            )}
           </div>
         </div>
 
