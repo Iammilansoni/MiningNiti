@@ -8,7 +8,9 @@ on:
 
 env:
   PYTHON_VERSION: "3.11"
-  NODE_VERSION: "20"
+  # Keep in step with frontend/package.json engines and frontend/.nvmrc.
+  # Vercel deprecated Node 20: builds created on or after 2026-10-01 fail.
+  NODE_VERSION: "24"
 
 jobs:
   # ── Job 1: Backend Linting ────────────────────────────────────────────────────
