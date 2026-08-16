@@ -57,14 +57,32 @@ async def health_check(db: Session = Depends(get_db)):
         if r is not None:
             r.close()
 
-    # Check AI service (Gemini)
-    try:
-        import google.generativeai as genai
-
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        services["ai"] = "healthy"
-    except Exception:
-        services["ai"] = "not_configured"
+    # AI providers.
+    #
+    # This is deliberately a configuration check, not a liveness check. The
+    # previous version called genai.configure() and reported "healthy", which
+    # proved nothing: configure() makes no network call and validates no key,
+    # so it reported healthy with a garbage key and never touched Groq,
+    # Cerebras or Mistral at all. A model this backend could no longer call
+    # would still have shown green.
+    #
+    # It stays shallow because the keepalive workflow pings this endpoint on a
+    # schedule and Groq's free tier allows only 8K tokens/minute — burning that
+    # on health checks would starve real traffic. Use /health/providers to
+    # actually call the providers.
+    missing = [
+        name
+        for name, key in (
+            ("gemini", settings.GEMINI_API_KEY),
+            ("groq", settings.GROQ_API_KEY),
+            ("cerebras", settings.CEREBRAS_API_KEY),
+            ("mistral", settings.MISTRAL_API_KEY),
+        )
+        if not key
+    ]
+    services["ai"] = (
+        "configured" if not missing else f"missing keys: {','.join(missing)}"
+    )
 
     # Overall status
     overall = "healthy"
@@ -78,3 +96,55 @@ async def health_check(db: Session = Depends(get_db)):
         timestamp=datetime.utcnow(),
         services=services,
     )
+
+
+@router.get("/health/providers")
+async def provider_check():
+    """
+    Actually call each LLM provider with a minimal request.
+
+    /health only reports whether keys are present. This endpoint answers the
+    question that matters after a model migration: does the model id this
+    backend is configured with still exist and still serve us?
+
+    That gap is not theoretical. Groq decommissioned llama-3.3-70b-versatile
+    while it was hardcoded on both chat paths, and nothing — not the health
+    check, not the test suite, which mocks every provider — could tell the
+    difference between a working model and a retired one.
+
+    Not wired into /health on purpose: this spends real tokens, and the
+    keepalive workflow polls /health on a schedule. Call it by hand after a
+    deploy or a model change.
+    """
+    from app.services.chat_service import CHAT_MODEL
+
+    results: dict = {}
+
+    async def _probe(name: str, client, model: str) -> None:
+        try:
+            resp = await client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": "ping"}],
+                max_tokens=1,
+            )
+            results[name] = {
+                "model": model,
+                "ok": True,
+                "finish_reason": resp.choices[0].finish_reason,
+            }
+        except Exception as e:
+            # The message carries the useful part — an unknown model id reads
+            # very differently from an auth failure or a rate limit.
+            results[name] = {"model": model, "ok": False, "error": str(e)[:300]}
+
+    from app.services.llm_provider import get_cerebras_client, get_groq_client
+
+    await _probe("groq", get_groq_client(), CHAT_MODEL)
+    await _probe("cerebras", get_cerebras_client(), "gpt-oss-120b")
+
+    all_ok = all(r["ok"] for r in results.values())
+    return {
+        "status": "ok" if all_ok else "degraded",
+        "checked_at": datetime.utcnow().isoformat(),
+        "providers": results,
+    }
