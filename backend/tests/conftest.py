@@ -34,6 +34,36 @@ from app.models import (  # noqa: F401 — register tables
 )
 from app.models.base import Base
 
+# ── Analysis cache isolation ──────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def _disable_analysis_cache(request):
+    """
+    Keep the agent analysis cache out of every test by default.
+
+    REDIS_URL above points at localhost, so on a machine with Redis running the
+    orchestrator would otherwise read and write a real cache. Two tests sharing
+    a text fixture would then have the second one hit the cache and skip its
+    mocked agents entirely — passing without exercising anything.
+
+    Tests that target the cache itself opt back in with @pytest.mark.uses_cache
+    and inject their own fake client.
+    """
+    if request.node.get_closest_marker("uses_cache"):
+        yield
+        return
+
+    from app.services import analysis_cache
+
+    original = analysis_cache._client
+    analysis_cache._client = None
+    try:
+        yield
+    finally:
+        analysis_cache._client = original
+
+
 # ── Database fixtures ─────────────────────────────────────────────────────────
 
 
