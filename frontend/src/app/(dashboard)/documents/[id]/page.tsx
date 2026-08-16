@@ -9,6 +9,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { StatusBadge } from '@/components/product/status';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { openDocumentInNewTab } from '@/lib/document-file';
 import {
   ArrowLeft, Download, Trash, RefreshCw, MessageSquare,
   FileText, Shield, Tag, AlertTriangle, CheckCircle2,
@@ -536,7 +537,7 @@ export default function DocumentDetailPage() {
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => window.open(doc.file_url, '_blank')}>
+          <Button variant="outline" size="sm" onClick={() => openDocumentInNewTab(doc.id, getToken).catch((e: Error) => toast.error(e.message))}>
             <Download className="w-4 h-4 mr-2" /> Download
           </Button>
           <Button
@@ -614,7 +615,7 @@ export default function DocumentDetailPage() {
               variant="outline"
               size="sm"
               className="w-full justify-start gap-2"
-              onClick={() => window.open(doc.file_url, '_blank')}
+              onClick={() => openDocumentInNewTab(doc.id, getToken).catch((e: Error) => toast.error(e.message))}
             >
               <Download className="w-4 h-4" /> Download Original
             </Button>

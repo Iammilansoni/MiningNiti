@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UploadModal } from '@/components/documents/UploadModal';
 import { toast } from 'sonner';
+import { openDocumentInNewTab } from '@/lib/document-file';
 import { PageHeader } from '@/components/product/page-header';
 
 export default function DocumentsPage() {
@@ -54,6 +55,22 @@ export default function DocumentsPage() {
       page_size: pageSize,
       search: debouncedSearch || undefined,
     }),
+    // Uploading only creates the row; extraction, embedding and the agent
+    // pipeline all run in the background afterwards. Without polling, a
+    // freshly uploaded document sits at PENDING until the user reloads by
+    // hand, which reads as the upload having silently failed.
+    //
+    // Polls only while something is actually in flight, and stops once every
+    // document has reached a terminal state, so an idle list costs nothing.
+    refetchInterval: (query) => {
+      const docs = query.state.data?.documents ?? [];
+      const inFlight = docs.some((d) =>
+        ['pending', 'processing', 'analyzing'].includes(
+          String(d.status).toLowerCase(),
+        ),
+      );
+      return inFlight ? 4000 : false;
+    },
   });
 
   const deleteMutation = useMutation({
@@ -255,7 +272,7 @@ export default function DocumentsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-foreground focus:bg-accent cursor-pointer"
-                            onClick={() => window.open(doc.file_url, '_blank')}
+                            onClick={() => openDocumentInNewTab(doc.id, getToken).catch((e: Error) => toast.error(e.message))}
                           >
                             <Download className="w-4 h-4 mr-2 text-muted-foreground" /> Download File
                           </DropdownMenuItem>
