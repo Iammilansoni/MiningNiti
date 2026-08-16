@@ -239,3 +239,30 @@ def resolve_storage_path(file_url: str) -> str:
 def is_internal_storage_url(file_url: str) -> bool:
     """True if this URL refers to a file this backend stored itself."""
     return urlparse(file_url).scheme in (STORAGE_SCHEME, "file")
+
+
+def storage_key_from_url(file_url: str) -> str:
+    """
+    Extract the bare object key from an internal storage URL.
+
+    This is the name used both for the file inside UPLOAD_DIR and for the
+    object in durable storage, so the two stay addressable by the same value.
+    Legacy file:// rows hold an absolute path; only its basename is meaningful
+    as a key.
+    """
+    parsed = urlparse(file_url)
+
+    if parsed.scheme == STORAGE_SCHEME:
+        raw = f"{parsed.netloc}{parsed.path}"
+    elif parsed.scheme == "file":
+        raw = parsed.path
+        if os.name == "nt" and raw.startswith("/"):
+            raw = raw[1:]
+    else:
+        raise UnsafeURLError(f"Not an internal storage URL: {parsed.scheme}")
+
+    key = os.path.basename(raw)
+    if not key:
+        raise UnsafeURLError("Storage URL is missing a key")
+
+    return key

@@ -19,12 +19,59 @@ import httpx
 
 from app.config import settings
 from app.core.url_guard import (
+    UnsafeURLError,
     fetch_remote_file,
     is_internal_storage_url,
     resolve_storage_path,
+    storage_key_from_url,
 )
 
 logger = logging.getLogger(__name__)
+
+
+async def _restore_from_durable_storage(file_url: str, max_bytes: int) -> bytes:
+    """
+    Recover a document whose local copy has been lost, and re-cache it.
+
+    Raises UnsafeURLError with the original message when no durable copy
+    exists, so callers upstream see the same failure they always did.
+    """
+    from app.services import object_storage
+
+    key = storage_key_from_url(file_url)
+
+    if not object_storage.is_configured():
+        raise UnsafeURLError(
+            "Stored file no longer exists, and durable storage is not "
+            "configured. Set SUPABASE_URL and SUPABASE_SERVICE_KEY so uploads "
+            "survive a container restart."
+        )
+
+    data = await object_storage.get_object(key)
+    if data is None:
+        raise UnsafeURLError("Stored file no longer exists")
+
+    if len(data) > max_bytes:
+        raise UnsafeURLError("Stored file exceeds the maximum allowed size")
+
+    logger.info("Restored %s from durable storage after local copy was lost", key)
+
+    # Repopulate the local cache; failure here is not fatal because the bytes
+    # needed for this request are already in hand.
+    try:
+        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+        await asyncio.to_thread(
+            _write_bytes, os.path.join(settings.UPLOAD_DIR, key), data
+        )
+    except OSError as exc:
+        logger.warning("Could not re-cache %s locally: %s", key, exc)
+
+    return data
+
+
+def _write_bytes(path: str, data: bytes) -> None:
+    with open(path, "wb") as f:
+        f.write(data)
 
 
 def _read_capped(path: str, max_bytes: int) -> bytes:
@@ -311,8 +358,14 @@ async def download_and_extract(file_url: str, file_type: str) -> ExtractedDocume
 
     if is_internal_storage_url(file_url):
         # Path is confined to UPLOAD_DIR by the guard; traversal is rejected.
-        local_path = await asyncio.to_thread(resolve_storage_path, file_url)
-        file_bytes = await asyncio.to_thread(_read_capped, local_path, max_bytes)
+        try:
+            local_path = await asyncio.to_thread(resolve_storage_path, file_url)
+            file_bytes = await asyncio.to_thread(_read_capped, local_path, max_bytes)
+        except UnsafeURLError:
+            # The local copy is gone — the usual cause is a container restart
+            # wiping UPLOAD_DIR. Fall back to the durable copy and repopulate
+            # the local cache so subsequent reads are local again.
+            file_bytes = await _restore_from_durable_storage(file_url, max_bytes)
     else:
         # User-supplied URL: https only, public addresses only, size-capped.
         file_bytes = await fetch_remote_file(file_url, max_bytes=max_bytes)
