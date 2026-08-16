@@ -319,7 +319,10 @@ class TestAgentOrchestrator:
         orchestrator.classifier.client = make_mock_client(MOCK_CLASSIFICATION_JSON)
         orchestrator.safety_analyzer.client = make_mock_client(MOCK_SAFETY_JSON)
         orchestrator.entity_extractor.client = make_mock_client(MOCK_ENTITIES_JSON)
-        orchestrator.summarizer.model = make_mock_model(MOCK_SUMMARY_JSON)
+        # SummarizerAgent runs on Cerebras, so _generate_json goes through
+        # self.client (OpenAI-compatible), not self.model. Mocking .model left
+        # the real client in place and the test hit the network.
+        orchestrator.summarizer.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await orchestrator.analyze_document(sample_mining_text)
 
@@ -336,13 +339,86 @@ class TestAgentOrchestrator:
         orchestrator.classifier.client = make_mock_client(MOCK_CLASSIFICATION_JSON)
         orchestrator.safety_analyzer.client = make_mock_client(MOCK_SAFETY_JSON)
         orchestrator.entity_extractor.client = make_mock_client(MOCK_ENTITIES_JSON)
-        orchestrator.summarizer.model = make_mock_model(MOCK_SUMMARY_JSON)
+        # SummarizerAgent runs on Cerebras, so _generate_json goes through
+        # self.client (OpenAI-compatible), not self.model. Mocking .model left
+        # the real client in place and the test hit the network.
+        orchestrator.summarizer.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await orchestrator.analyze_document(sample_mining_text)
 
         assert "processing_time_ms" in result["metadata"]
         assert isinstance(result["metadata"]["processing_time_ms"], int)
         assert result["metadata"]["processing_time_ms"] >= 0
+
+    @pytest.mark.unit
+    @pytest.mark.uses_cache
+    @pytest.mark.asyncio
+    async def test_orchestrator_serves_cache_hit_without_calling_agents(
+        self, sample_mining_text, monkeypatch
+    ):
+        """A cache hit must skip every agent — that is the entire point."""
+        from app.agents.orchestrator import AgentOrchestrator
+        from app.services import analysis_cache
+
+        cached = {
+            "classification": {"category": "safety_protocol"},
+            "safety": {"score": 42},
+            "entities": {"equipment": []},
+            "summary": {"summary": "cached"},
+            "metadata": {"processing_time_ms": 5},
+        }
+        monkeypatch.setattr(
+            analysis_cache, "get_cached_analysis", lambda text: dict(cached)
+        )
+
+        orchestrator = AgentOrchestrator()
+
+        def _explode(*args, **kwargs):
+            raise AssertionError("agent was called despite a cache hit")
+
+        orchestrator.classifier.analyze = _explode
+        orchestrator.safety_analyzer.analyze = _explode
+        orchestrator.entity_extractor.analyze = _explode
+        orchestrator.summarizer.analyze = _explode
+
+        result = await orchestrator.analyze_document(sample_mining_text)
+
+        assert result["safety"]["score"] == 42
+        assert result["metadata"]["cache_hit"] is True
+
+    @pytest.mark.unit
+    @pytest.mark.uses_cache
+    @pytest.mark.asyncio
+    async def test_orchestrator_bypasses_cache_when_disabled(
+        self, sample_mining_text, monkeypatch
+    ):
+        """use_cache=False must reach the agents even with an entry present."""
+        from app.agents.orchestrator import AgentOrchestrator
+        from app.services import analysis_cache
+
+        monkeypatch.setattr(
+            analysis_cache,
+            "get_cached_analysis",
+            lambda text: (_ for _ in ()).throw(
+                AssertionError("cache was read despite use_cache=False")
+            ),
+        )
+        monkeypatch.setattr(analysis_cache, "set_cached_analysis", lambda t, r: False)
+
+        orchestrator = AgentOrchestrator()
+        orchestrator.classifier.client = make_mock_client(MOCK_CLASSIFICATION_JSON)
+        orchestrator.safety_analyzer.client = make_mock_client(MOCK_SAFETY_JSON)
+        orchestrator.entity_extractor.client = make_mock_client(MOCK_ENTITIES_JSON)
+        # SummarizerAgent runs on Cerebras, so _generate_json goes through
+        # self.client (OpenAI-compatible), not self.model. Mocking .model left
+        # the real client in place and the test hit the network.
+        orchestrator.summarizer.client = make_mock_client(MOCK_SUMMARY_JSON)
+
+        result = await orchestrator.analyze_document(
+            sample_mining_text, use_cache=False
+        )
+
+        assert result["metadata"]["cache_hit"] is False
 
     @pytest.mark.unit
     @pytest.mark.asyncio
