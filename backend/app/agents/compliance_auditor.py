@@ -25,7 +25,15 @@ class ComplianceAuditorAgent(BaseAgent):
     """
 
     def __init__(self):
-        super().__init__(model_name="llama-3.3-70b-versatile", provider="groq")
+        # Groq decommissioned llama-3.3-70b-versatile on 2026-08-16. Cerebras
+        # serves the same model with a far larger free token budget, so it backs
+        # Groq up on rate-limit errors rather than failing the audit.
+        super().__init__(
+            model_name="openai/gpt-oss-120b",
+            provider="groq",
+            fallback_model="gpt-oss-120b",
+            fallback_provider="cerebras",
+        )
 
     @property
     def system_prompt(self) -> str:

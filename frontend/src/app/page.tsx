@@ -8,12 +8,10 @@ import { FeatureGrid } from '@/components/landing/feature-grid';
 import { IntegrationGrid } from '@/components/landing/integration-grid';
 import { PlatformSection } from '@/components/landing/platform-section';
 import { StatsBand } from '@/components/landing/stats-band';
-import { TestimonialsSection } from '@/components/landing/testimonials-section';
 import { FaqSection } from '@/components/landing/faq-section';
 import { TrustSection } from '@/components/landing/trust-section';
 import { MagicInputDemo } from '@/components/landing/magic-input-demo';
 import { RoiCalculator } from '@/components/landing/roi-calculator';
-import { IndiaMapDeployments } from '@/components/landing/india-map-deployments';
 import { Footer } from '@/components/landing/Footer';
 import CurvedLoop from '@/components/ui/CurvedLoop';
 
@@ -23,29 +21,26 @@ export default function LandingPage() {
       {/* 1. THE HOOK: Hero & Social Proof */}
       <HeroSection />
       
+      {/*
+        This band used to read "Trusted by compliance teams across the mining
+        sector" over a marquee of CMPDI, Ministry of Coal, Coal India, NTPC,
+        Rio Tinto, BHP and Anglo American — implying seven customers, none of
+        which exist. Only the SIH 2023 recognition is real, so that is all this
+        states now. Do not add an organisation here without a public source.
+      */}
       <section className="relative z-20 bg-[#0A0A0B] pb-20 border-b border-white/2 overflow-hidden -mt-16">
         <div className="mx-auto max-w-[1200px] px-6 text-center relative z-10">
           <p className="text-[11px] font-mono font-medium tracking-[0.2em] uppercase text-white/40 mb-10">
-            Trusted by compliance teams across the mining sector
+            Recognition
           </p>
-          <div 
-            className="relative flex overflow-hidden glass-panel-premium rounded-3xl py-8 border-white/5"
-            style={{
-              maskImage: 'linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%)',
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0, #000 15%, #000 85%, transparent 100%)'
-            }}
-          >
-            <div className="flex w-max animate-[scrollLogos_40s_linear_infinite]">
-              {[1, 2, 3].map((set) => (
-                <div key={set} className="flex items-center gap-24 px-12">
-                  {['CMPDI', 'Ministry of Coal', 'Coal India', 'NTPC', 'Rio Tinto', 'BHP', 'Anglo American'].map(name => (
-                    <span key={`${set}-${name}`} className="text-2xl font-bold tracking-tight text-white/40 hover:text-white/80 transition-colors whitespace-nowrap">
-                      {name}
-                    </span>
-                  ))}
-                </div>
-              ))}
-            </div>
+          <div className="glass-panel-premium rounded-3xl py-10 px-8 border-white/5">
+            <p className="text-2xl sm:text-3xl font-bold tracking-tight text-white/80 leading-snug">
+              Winner, Smart India Hackathon 2023
+            </p>
+            <p className="mt-3 text-[15px] text-white/45 max-w-2xl mx-auto">
+              Ministry of Coal problem statement — evaluated and recognised by
+              Coal India Limited and CMPDI, from a field of 44,000+ teams.
+            </p>
           </div>
         </div>
       </section>
@@ -93,17 +88,22 @@ export default function LandingPage() {
       {/* 9. THE ECOSYSTEM: Integrations */}
       <IntegrationGrid />
 
-      {/* 10. THE SCALE: National deployments map */}
-      <IndiaMapDeployments />
-
-      {/* 11. THE ROI: Stats and personalized calculator */}
+      {/* 10. THE PROOF: Measured project metrics + savings estimator */}
       <StatsBand />
       <RoiCalculator />
 
-      {/* 12. THE VALIDATION: Social proof from peers */}
-      <TestimonialsSection />
+      {/*
+        Removed: IndiaMapDeployments and TestimonialsSection.
+        The map advertised an "edge-sync architecture" and live deployments at
+        named Indian mining sites, neither of which exists. The testimonials
+        were invented quotes attributed to named people at real companies
+        (Coal India, CMPDI, Tata Steel, Vedanta and others). This project has
+        real recognition — SIH 2023, Coal India and CMPDI — and fabricated
+        endorsements sitting next to it only put that in doubt.
+        Do not reinstate either without genuine sources.
+      */}
 
-      {/* 13. THE OBJECTION HANDLING: Security & FAQs */}
+      {/* 11. THE OBJECTION HANDLING: Security & FAQs */}
       <TrustSection />
       <FaqSection />
 
