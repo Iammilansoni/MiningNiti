@@ -27,8 +27,6 @@ const fadeUp = (delay = 0) => ({
   },
 });
 
-const TRUST_LOGOS = ['CMPDI', 'Ministry of Coal', 'Coal India', 'NTPC', 'Rio Tinto', 'BHP', 'Anglo American'];
-
 export function HeroSection() {
   return (
     <section className="relative min-h-screen w-full flex flex-col bg-[#0A0A0B] overflow-hidden">

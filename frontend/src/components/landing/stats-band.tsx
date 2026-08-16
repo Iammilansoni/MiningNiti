@@ -3,11 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 
+// Every figure here is measured and reproducible from the repository:
+// hit rate comes from the retrieval eval that runs as a blocking CI gate
+// (tests/eval/), the test count from `pytest tests/`, and the cost from
+// running entirely on free tiers. Do not add a number that cannot be checked.
 const stats = [
-  { value: 4291, suffix: '+', label: 'Documents Indexed', description: 'Across mining companies in production' },
-  { value: 99.2, suffix: '%', label: 'Extraction Accuracy', description: 'On complex scanned mining PDFs' },
-  { value: 48, suffix: 'hrs', label: 'Audit Prep Time', description: 'Reduced from 3–4 weeks' },
-  { value: 14, suffix: 'M+', label: 'Pages Processed', description: 'Of regulatory and operational data' },
+  { value: 100, suffix: '%', label: 'Hit Rate@5', description: 'Retrieval eval, blocking gate in CI' },
+  { value: 257, suffix: '', label: 'Automated Tests', description: 'Unit, integration and retrieval eval' },
+  { value: 4, suffix: '', label: 'AI Providers', description: 'Groq, Cerebras, Mistral and Gemini' },
+  { value: 0, suffix: '/mo', label: 'Infrastructure Cost', description: 'Runs entirely on free tiers' },
 ];
 
 function Counter({ value, suffix, duration = 2 }: { value: number; suffix: string; duration?: number }) {
