@@ -226,9 +226,23 @@ class Settings(BaseSettings):
         "an uncapped 500-page scan would occupy a worker for 20 minutes.",
     )
 
-    # Mining AI Settings
-    SAFETY_SCORE_THRESHOLD: float = Field(default=70.0)
-    MAX_EMBEDDINGS_PER_QUERY: int = Field(default=5)
+    # Conversation Memory
+    # Prior turns are replayed to the model so follow-ups ("what about
+    # surface mines?") resolve against what was already discussed. Bounded on
+    # two axes because either one alone fails: a turn cap alone lets a few
+    # long answers blow the context window, and a char budget alone can slice
+    # the history mid-conversation in a way that strands a user turn without
+    # its answer.
+    CHAT_HISTORY_MAX_TURNS: int = Field(
+        default=6,
+        description="Max prior messages (user+assistant) replayed to the LLM. "
+        "Counted in whole user/assistant pairs, most recent first.",
+    )
+    CHAT_HISTORY_MAX_CHARS: int = Field(
+        default=6000,
+        description="Approximate char budget for replayed history. Roughly "
+        "1.5K tokens, leaving room for retrieved context and the answer.",
+    )
 
     # RAG Pipeline — Production Retrieval
     RERANK_MODEL: str = Field(

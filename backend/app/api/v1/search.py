@@ -31,13 +31,22 @@ genai.configure(api_key=settings.GEMINI_API_KEY)
 
 
 async def _get_query_embedding(text_input: str) -> List[float]:
-    """Generate query embedding using Gemini text-embedding-004."""
+    """Generate a query embedding using the configured Gemini embedding model.
+
+    output_dimensionality=768 is REQUIRED, not optional. The chunk_embedding
+    column is Vector(768); gemini-embedding-001 returns 3072 dimensions by
+    default. Omitting it produces a vector the pgvector cast rejects, and
+    hybrid_search swallows that failure — so the semantic arm silently
+    disappears and this endpoint degrades to lexical-only results with no
+    error anywhere. Keep this in sync with chat_service and document_service.
+    """
     try:
         result = await asyncio.to_thread(
             genai.embed_content,
             model=settings.EMBEDDING_MODEL,
             content=text_input,
             task_type="retrieval_query",
+            output_dimensionality=768,
         )
         return result["embedding"]
     except Exception as e:

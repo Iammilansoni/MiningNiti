@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { MobileNav } from '@/components/layout/MobileNav';
 
 export default function DashboardLayout({
   children,
@@ -9,13 +10,16 @@ export default function DashboardLayout({
   return (
     <div className="grain flex h-screen w-full bg-background relative overflow-hidden text-foreground">
       
+      {/* Below md the sidebar is hidden, so this drawer is the only navigation. */}
+      <MobileNav />
+
       {/* Edge-to-edge Sidebar */}
       <div className="hidden md:flex relative z-20 h-screen border-r border-white/[0.05] bg-sidebar/95 backdrop-blur-xl">
         <Sidebar />
       </div>
       
       {/* Main Content */}
-      <main className="flex-1 flex flex-col relative overflow-hidden bg-background">
+      <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col relative overflow-hidden bg-background">
         
         {/* Subtle Ambient Background Gradients */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">

@@ -12,6 +12,7 @@ import {
   ShieldCheck, Plus, Trash2, Eye, FileCheck, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ConfirmDeleteDialog } from '@/components/product/confirm-delete-dialog';
 import {
   Dialog,
   DialogContent,
@@ -92,10 +93,11 @@ export default function CompliancePage() {
     });
   };
 
+  // Native confirm() replaced with the styled, focus-trapped AlertDialog.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
+
   const handleDelete = (auditId: string, title: string) => {
-    if (confirm(`Delete audit "${title}"? This cannot be undone.`)) {
-      deleteMutation.mutate(auditId);
-    }
+    setPendingDelete({ id: auditId, title });
   };
 
   const toggleOpDoc = (docId: string) => {
@@ -300,6 +302,16 @@ export default function CompliancePage() {
           </div>
         )}
       </SectionCard>
+
+      <ConfirmDeleteDialog
+        target={pendingDelete?.title ?? null}
+        onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
+        onConfirm={() => {
+          if (pendingDelete) deleteMutation.mutate(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        title={pendingDelete ? `Delete audit "${pendingDelete.title}"?` : undefined}
+      />
     </div>
   );
 }

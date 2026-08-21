@@ -39,7 +39,43 @@ _MAX_RETRY_DELAY = 120.0  # seconds — cap for retry_delay parsed from API resp
 
 
 class QuotaExceededError(RuntimeError):
-    """Raised when the Gemini API quota / rate-limit is exhausted."""
+    """
+    Raised when a provider refuses the request for quota reasons.
+
+    Covers rate limits (429), exhausted free-tier grants (RESOURCE_EXHAUSTED)
+    and billing exhaustion (402 payment_required) alike: from the caller's
+    point of view all three mean "this provider will not serve us right now,
+    and retrying the same call immediately will not help".
+    """
+
+    def __init__(self, message: str, provider: str = "", agent: str = ""):
+        super().__init__(message)
+        self.provider = provider
+        self.agent = agent
+
+
+# Substrings that identify a quota/billing refusal in a provider error message.
+# 402 matters as much as 429 here: Cerebras answers an exhausted account with
+# `Error code: 402 ... payment_required_error`, which the old 429-only check
+# classified as a transient error and then slept through three pointless
+# retries before returning an empty dict.
+_QUOTA_MARKERS = (
+    "429",
+    "rate_limit",
+    "rate limit",
+    "quota",
+    "resource_exhausted",
+    "error code: 402",
+    "payment_required",
+    "insufficient_quota",
+    "billing",
+)
+
+
+def _is_quota_error(err_str: str) -> bool:
+    """True when a provider error message describes a quota/billing refusal."""
+    lowered = err_str.lower()
+    return any(marker in lowered for marker in _QUOTA_MARKERS)
 
 
 def _parse_retry_delay(err_str: str) -> Optional[float]:
@@ -210,12 +246,7 @@ class BaseAgent(ABC):
                 last_error = e
                 err_str = str(e)
 
-                is_quota = (
-                    "429" in err_str
-                    or "rate_limit" in err_str.lower()
-                    or "quota" in err_str.lower()
-                    or "RESOURCE_EXHAUSTED" in err_str
-                )
+                is_quota = _is_quota_error(err_str)
 
                 if is_quota:
                     # Try fallback provider if available and not already using it
@@ -252,8 +283,10 @@ class BaseAgent(ABC):
 
                     logger.error(f"{self.name}: All providers exhausted — {e}")
                     raise QuotaExceededError(
-                        f"Rate limit exceeded for {self.name}. "
-                        "Please try again later."
+                        f"{self.provider} quota exhausted for {self.name} "
+                        f"({err_str[:200]})",
+                        provider=self.provider,
+                        agent=self.name,
                     ) from e
 
                 # Transient non-quota error — exponential backoff

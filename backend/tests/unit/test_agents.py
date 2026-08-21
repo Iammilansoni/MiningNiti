@@ -71,16 +71,6 @@ MOCK_SUMMARY_JSON = json.dumps(
 )
 
 
-def make_mock_model(json_response: str):
-    """Create a mock Gemini model that returns json_response."""
-    mock_response = MagicMock()
-    mock_response.text = json_response
-
-    mock_model = MagicMock()
-    mock_model.generate_content = MagicMock(return_value=mock_response)
-    return mock_model
-
-
 def make_mock_client(json_response: str):
     """Create a mock OpenAI client that returns json_response."""
     mock_choice = MagicMock()
@@ -284,7 +274,11 @@ class TestSummarizerAgent:
         from app.agents.summarizer import SummarizerAgent
 
         agent = SummarizerAgent()
-        agent.model = make_mock_model(MOCK_SUMMARY_JSON)
+        # SummarizerAgent is provider="cerebras" and goes through
+        # BaseAgent._call_openai_compat(self.client, ...). Patching `.model`
+        # here was a no-op that let this "unit" test make a live HTTPS call to
+        # api.cerebras.ai — patch the attribute the code path actually reads.
+        agent.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await agent.analyze(sample_mining_text)
 
@@ -300,7 +294,11 @@ class TestSummarizerAgent:
         from app.agents.summarizer import SummarizerAgent
 
         agent = SummarizerAgent()
-        agent.model = make_mock_model(MOCK_SUMMARY_JSON)
+        # SummarizerAgent is provider="cerebras" and goes through
+        # BaseAgent._call_openai_compat(self.client, ...). Patching `.model`
+        # here was a no-op that let this "unit" test make a live HTTPS call to
+        # api.cerebras.ai — patch the attribute the code path actually reads.
+        agent.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await agent.analyze(sample_mining_text)
         assert isinstance(result["key_points"], list)

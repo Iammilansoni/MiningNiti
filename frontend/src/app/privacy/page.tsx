@@ -5,7 +5,7 @@ export default function PrivacyPage() {
   return (
     <div className="flex flex-col min-h-screen bg-[#0A0A0B]">
       <Navbar />
-      <main className="flex-1 pt-32 pb-24">
+      <main id="main-content" tabIndex={-1} className="flex-1 pt-32 pb-24">
         <div className="max-w-[800px] mx-auto px-6">
           <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-purple-400 mb-4">Legal</p>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">Privacy Policy</h1>
