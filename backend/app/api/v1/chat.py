@@ -257,16 +257,20 @@ async def send_message(
         db.commit()
         db.refresh(session)
 
+    # Generate AI response with RAG
+    from app.services.chat_service import CHAT_MODEL, ChatService
+
+    chat_service = ChatService()
+
+    # Load prior turns BEFORE staging this one. The add() below is uncommitted,
+    # but autoflush would still surface it to the history query.
+    history = chat_service.load_session_history(db, session.id)
+
     # Save user message (but don't commit yet - wait for successful response)
     user_message = ChatMessage(
         session_id=session.id, role="user", content=request.content
     )
     db.add(user_message)
-
-    # Generate AI response with RAG
-    from app.services.chat_service import CHAT_MODEL, ChatService
-
-    chat_service = ChatService()
 
     try:
         ai_response, sources, tokens_used = await chat_service.generate_response(
@@ -274,6 +278,7 @@ async def send_message(
             user_id=user_id,
             document_ids=request.document_ids,
             db=db,
+            history=history,
         )
 
         # Calculate response time

@@ -4,16 +4,21 @@ import { Shield, Target, Cpu, Users } from 'lucide-react';
 
 export default function AboutPage() {
   const values = [
-    { icon: Shield, title: 'Absolute Data Sovereignty', desc: 'We build for environments where data leaks are catastrophic. Our models deploy entirely within your VPC or on-premise iron.' },
-    { icon: Target, title: 'Domain Precision', desc: 'Generalist AI hallucinate. MiningNiti is pre-trained exclusively on geological, regulatory, and operational mining context.' },
-    { icon: Cpu, title: 'Engineered for Scale', desc: 'Built to ingest terabytes of legacy paper scans, complex tables, and unstructured logs without buckling.' },
+    // Claims here must be checkable against the repo. This list previously
+    // promised VPC/on-premise model deployment, a mining-pre-trained model and
+    // terabyte-scale ingestion — none of which exist. The stack calls hosted
+    // model APIs, uses off-the-shelf models steered by retrieval, and runs on
+    // free-tier infrastructure. Do not reinstate a capability without the code.
+    { icon: Shield, title: 'Answers You Can Check', desc: 'Every claim carries the document and page it came from, and the model is instructed to refuse rather than answer past its retrieved context. A near-miss is reported as a near-miss.' },
+    { icon: Target, title: 'Domain Precision', desc: 'No model is fine-tuned on mining data. Precision comes from retrieval: hybrid vector and keyword search over your own documents, narrowed by a cross-encoder reranker before the model ever sees a passage.' },
+    { icon: Cpu, title: 'Built for Awkward Documents', desc: 'Mining documentation is mostly tables and scans. Extraction is layout-aware, tables survive as tables, and pages that return no text fall back to OCR.' },
     { icon: Users, title: 'Augment, Not Replace', desc: 'We capture the institutional knowledge of retiring senior engineers and make it instantly accessible to the next generation.' },
   ];
 
   return (
     <div className="flex flex-col min-h-screen bg-[#0A0A0B]">
       <Navbar />
-      <main className="flex-1 pt-32 pb-24">
+      <main id="main-content" tabIndex={-1} className="flex-1 pt-32 pb-24">
         
         {/* Header */}
         <section className="relative px-6 py-20 text-center">
@@ -31,38 +36,67 @@ export default function AboutPage() {
         <section className="py-20 border-t border-white/8 bg-white/2">
           <div className="max-w-[1000px] mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-white mb-6">The infrastructure gap in heavy industry.</h2>
+              {/*
+                This section previously opened with a specific incident — "$1.2M
+                in fines and a 4-day site shutdown" — that was invented, and
+                closed by claiming "military-grade data residency" and a parsing
+                engine "specifically trained" on industrial documents. None of
+                that was true. The real history is more interesting than the
+                fiction was, so it is what this section says now.
+              */}
+              <h2 className="text-3xl font-bold text-white mb-6">Two builds, four years apart.</h2>
               <div className="space-y-4 text-[15px] text-white/60 leading-relaxed">
                 <p>
-                  In 2023, a single missed signature on a ventilation audit cost a major operator $1.2M in fines and a 4-day site shutdown. The data existed, but it was buried in a scanned PDF in a SharePoint folder nobody checked.
+                  Mining documentation is mostly tables and scans. Standard text
+                  extraction flattens a ventilation table into a run of numbers
+                  that reads like prose — not merely lossy, but confidently
+                  wrong once it has been embedded, retrieved and cited. General
+                  assistants make it worse by inventing regulatory citations
+                  that look exactly like real ones.
                 </p>
                 <p>
-                  While tech companies rushed to build AI for writing emails and generating images, industrial operators were left behind. Standard OCR failed on dusty carbon copies. Generalist LLMs hallucinated regulatory citations. Cloud-only SaaS was rejected by strict security teams.
+                  The first version was built for Smart India Hackathon 2023
+                  against the Ministry of Coal problem statement, by a team, and
+                  won at the national level. CMPDI officials who judged the
+                  finals opened discussions about deploying it at scale. Those
+                  talks did not proceed.
                 </p>
                 <p>
-                  MiningNiti was built to solve exactly this. We combine military-grade data residency with a parsing engine specifically trained for the formatting nightmares of legacy industrial documentation.
+                  This platform is a separate, ground-up rebuild started in June
+                  2025 and developed solo since — hybrid retrieval over your own
+                  documents, five specialized agents, and a rule the system is
+                  held to: every claim carries the document and page it came
+                  from, and an answer that is not in the retrieved context is
+                  refused rather than guessed.
                 </p>
               </div>
             </div>
             <div className="relative">
               <div className="absolute inset-0 bg-linear-to-tr from-purple-400/20 to-transparent rounded-3xl blur-2xl" />
               <div className="relative bg-[#0A0A0B] border border-white/8 rounded-3xl p-8 h-full flex flex-col justify-center shadow-2xl">
+                {/*
+                  Every number here must be reproducible from the repository.
+                  This grid previously read 10M+ documents indexed, 99.8% parse
+                  accuracy, 0 data leaks and 14 regulatory zones — none of which
+                  were measured or measurable. Do not add a figure without a
+                  source in the code.
+                */}
                 <div className="grid grid-cols-2 gap-8">
                   <div>
-                    <div className="text-4xl font-bold text-white mb-2">10M+</div>
-                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Documents Indexed</div>
+                    <div className="text-4xl font-bold text-white mb-2">5</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Specialized AI Agents</div>
                   </div>
                   <div>
-                    <div className="text-4xl font-bold text-white mb-2">99.8%</div>
-                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Parse Accuracy</div>
+                    <div className="text-4xl font-bold text-white mb-2">1.00</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Hit Rate@5, Golden Set</div>
                   </div>
                   <div>
-                    <div className="text-4xl font-bold text-white mb-2">0</div>
-                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Data Leaks</div>
+                    <div className="text-4xl font-bold text-white mb-2">215</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Backend Unit Tests</div>
                   </div>
                   <div>
-                    <div className="text-4xl font-bold text-white mb-2">14</div>
-                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">Regulatory Zones</div>
+                    <div className="text-4xl font-bold text-white mb-2">36</div>
+                    <div className="text-[11px] font-semibold tracking-wider uppercase text-purple-400">REST API Endpoints</div>
                   </div>
                 </div>
               </div>
@@ -86,6 +120,26 @@ export default function AboutPage() {
                 <p className="text-[15px] text-white/50 leading-relaxed">{v.desc}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* Source */}
+        <section className="pb-24 px-6 max-w-[1000px] mx-auto">
+          <div className="glass-panel-premium rounded-3xl py-10 px-8 border-white/5 text-center">
+            <h2 className="text-2xl font-bold text-white mb-3">Read the source</h2>
+            <p className="text-[15px] text-white/50 max-w-2xl mx-auto leading-relaxed mb-6">
+              MiningNiti is open source and MIT licensed. The repository documents
+              the architecture, the retrieval evaluation results, and a candid list
+              of what is not finished yet.
+            </p>
+            <a
+              href="https://github.com/Iammilansoni/MiningNiti"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              github.com/Iammilansoni/MiningNiti
+            </a>
           </div>
         </section>
 

@@ -108,11 +108,13 @@ class ChatService:
         user_id: str,
         document_ids: Optional[List[str]] = None,
         db: Session = None,
-    ) -> Tuple[str, List[Dict[str, Any]]]:
+        history: Optional[List[Dict[str, str]]] = None,
+    ) -> Tuple[str, List[Dict[str, Any]], Optional[Dict[str, int]]]:
         try:
-            query_embedding = await self._get_embedding(query)
+            retrieval_query = self._build_retrieval_query(query, history or [])
+            query_embedding = await self._get_embedding(retrieval_query)
             relevant_chunks = await self._retrieve_chunks(
-                query=query,
+                query=retrieval_query,
                 query_embedding=query_embedding,
                 user_id=user_id,
                 document_ids=document_ids,
@@ -127,13 +129,7 @@ class ChatService:
 
             response = await client.chat.completions.create(
                 model=CHAT_MODEL,
-                messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": self._build_user_message(query, context),
-                    },
-                ],
+                messages=self._build_messages(query, context, history),
             )
             answer = response.choices[0].message.content
 
@@ -164,11 +160,13 @@ class ChatService:
         user_id: str,
         document_ids: Optional[List[str]] = None,
         db: Session = None,
+        history: Optional[List[Dict[str, str]]] = None,
     ) -> AsyncGenerator[str, None]:
         try:
-            query_embedding = await self._get_embedding(query)
+            retrieval_query = self._build_retrieval_query(query, history or [])
+            query_embedding = await self._get_embedding(retrieval_query)
             relevant_chunks = await self._retrieve_chunks(
-                query=query,
+                query=retrieval_query,
                 query_embedding=query_embedding,
                 user_id=user_id,
                 document_ids=document_ids,
@@ -186,13 +184,7 @@ class ChatService:
 
             response_stream = await client.chat.completions.create(
                 model=CHAT_MODEL,
-                messages=[
-                    {"role": "system", "content": _SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": self._build_user_message(query, context),
-                    },
-                ],
+                messages=self._build_messages(query, context, history),
                 stream=True,
             )
 
@@ -206,6 +198,142 @@ class ChatService:
         except Exception as e:
             logger.error(f"Stream generation error: {e}", exc_info=True)
             yield f"event: error\ndata: {json.dumps({'message': str(e)})}\n\n"
+
+    # ── Conversation Memory ───────────────────────────────────────────────────
+
+    @staticmethod
+    def load_session_history(
+        db: Session,
+        session_id: Any,
+        max_turns: Optional[int] = None,
+        max_chars: Optional[int] = None,
+    ) -> List[Dict[str, str]]:
+        """Load recent prior turns for a session, oldest-first, ready to replay.
+
+        Call this BEFORE persisting the incoming user message. Both chat
+        endpoints add the new user row to the session early (one commits it
+        immediately), and SQLAlchemy autoflush would otherwise pull that row
+        into this query — the model would see the current question twice, once
+        as history and once as the live turn.
+
+        Bounded by turn count and an approximate char budget. Trimming walks
+        backwards from the newest message and stops on the first message that
+        would breach the budget, so the retained window is always a contiguous
+        recent slice rather than a sampling of the conversation.
+        """
+        from app.models.chat import ChatMessage
+
+        max_turns = max_turns or settings.CHAT_HISTORY_MAX_TURNS
+        max_chars = max_chars or settings.CHAT_HISTORY_MAX_CHARS
+
+        try:
+            rows = (
+                db.query(ChatMessage)
+                .filter(ChatMessage.session_id == session_id)
+                .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
+                .limit(max_turns)
+                .all()
+            )
+        except Exception as e:
+            # History is an enhancement, never a precondition. A failure here
+            # must degrade to a stateless answer, not break the chat.
+            logger.warning(f"Could not load session history: {e}")
+            return []
+
+        history: List[Dict[str, str]] = []
+        budget = max_chars
+        for row in rows:  # newest → oldest
+            content = (row.content or "").strip()
+            if not content or row.role not in ("user", "assistant"):
+                continue
+            if len(content) > budget:
+                break
+            budget -= len(content)
+            history.append({"role": row.role, "content": content})
+
+        history.reverse()  # back to chronological order
+
+        # Never open the replay on an assistant turn: a dangling answer with no
+        # question reads as the model talking to itself and measurably degrades
+        # follow-up quality.
+        while history and history[0]["role"] == "assistant":
+            history.pop(0)
+
+        return history
+
+    @staticmethod
+    def _build_retrieval_query(query: str, history: List[Dict[str, str]]) -> str:
+        """Expand a follow-up into something retrievable on its own.
+
+        Retrieval sees only the raw question, so "what about surface mines?"
+        embeds to almost nothing useful and the reranker has no good candidates
+        to choose from — the generation half would have full history while the
+        retrieval half stayed blind.
+
+        This is deliberately a cheap string heuristic rather than an LLM
+        condensation call: it costs nothing, adds no latency to every turn, and
+        cannot fail. A dependent-looking follow-up is prefixed with the previous
+        user turn purely for embedding and lexical matching; the prompt the
+        model actually answers is untouched.
+        """
+        if not history:
+            return query
+
+        stripped = query.strip().lower()
+        looks_dependent = len(stripped) < 60 or stripped.startswith(
+            (
+                "what about",
+                "and ",
+                "but ",
+                "how about",
+                "why",
+                "what if",
+                "does it",
+                "do they",
+                "is it",
+                "are they",
+                "which one",
+                "that ",
+                "those ",
+                "it ",
+                "they ",
+                "then ",
+                "also",
+                "same",
+            )
+        )
+        if not looks_dependent:
+            return query
+
+        prior_user = next(
+            (m["content"] for m in reversed(history) if m["role"] == "user"), None
+        )
+        if not prior_user:
+            return query
+
+        return f"{prior_user}\n{query}"
+
+    def _build_messages(
+        self,
+        query: str,
+        context: str,
+        history: Optional[List[Dict[str, str]]] = None,
+    ) -> List[Dict[str, str]]:
+        """Assemble the LLM message list: system, prior turns, then this turn.
+
+        Retrieved context rides on the final user message only. Restating it on
+        every historical turn would multiply the prompt by the history depth and
+        let stale context compete with the chunks retrieved for the live
+        question — the citation rules in the system prompt must bind against
+        the current context, not an older one.
+        """
+        messages: List[Dict[str, str]] = [{"role": "system", "content": _SYSTEM_PROMPT}]
+        if history:
+            messages.extend(history)
+        messages.append(
+            {"role": "user", "content": self._build_user_message(query, context)}
+        )
+        return messages
 
     def get_mining_suggestions(self) -> List[str]:
         """Get suggested mining-related questions."""

@@ -3,7 +3,7 @@ Compliance Auditor Agent
 Cross-references a regulation clause against operational document evidence
 to determine compliance status (compliant / gap / missing).
 
-Uses Gemini for the nuanced cross-referencing task that requires reasoning
+Runs on Groq for the nuanced cross-referencing task that requires reasoning
 across multiple evidence chunks.
 """
 
@@ -107,7 +107,7 @@ Always cite specific evidence in your assessment. If no evidence is provided, ma
         prompt = (
             "Assess compliance for the following regulation clause against "
             "the provided operational document evidence.\n\n"
-            f"REGULATION CLAUSE{text}:\n{text}\n\n"
+            f"REGULATION CLAUSE:\n{text}\n\n"
             f"{section_hint}\n\n"
             f"EVIDENCE FROM OPERATIONAL DOCUMENTS:\n{evidence_text}\n\n"
             "Respond with a JSON object:\n"

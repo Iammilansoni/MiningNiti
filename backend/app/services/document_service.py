@@ -197,10 +197,40 @@ class DocumentService:
 
                 # Entities & Summary
                 document.entities = entities if isinstance(entities, dict) else {}
-                document.summary = summary.get("summary", "Summary not available.")
+                document.summary = summary.get("summary") or (
+                    "Summary unavailable — the summarizer produced no result "
+                    "for this document. Click Re-analyze to try again."
+                )
                 document.key_points = summary.get("key_points", [])
 
                 # ── Step 7: Mark completed ───────────────────────────────────
+                #
+                # One agent losing its provider (Cerebras answers an exhausted
+                # account with 402) must not throw away the work of the other
+                # three, so the document is COMPLETED with whatever succeeded.
+                # But it must not look like a clean run either: the analysis
+                # endpoint coerces entities to plain lists and drops the error
+                # markers, so the reason is recorded on processing_error, which
+                # DocumentResponse does expose.
+                degraded = (results.get("metadata") or {}).get(
+                    "degraded_sections"
+                ) or {}
+                if degraded:
+                    details = "; ".join(
+                        f"{name}: {reason}" for name, reason in degraded.items()
+                    )
+                    document.processing_error = (
+                        f"Partial AI analysis — {len(degraded)} of 4 sections "
+                        f"unavailable ({details}). Click Re-analyze to run the "
+                        "missing sections."
+                    )
+                    logger.warning(
+                        f"Document {document_id} completed with degraded "
+                        f"sections: {details}"
+                    )
+                else:
+                    document.processing_error = None
+
                 document.status = DocumentStatus.COMPLETED
                 document.processed_at = datetime.now(timezone.utc)
                 db.commit()
@@ -209,17 +239,30 @@ class DocumentService:
                 return True
 
             except QuotaExceededError as qe:
-                # Quota hit: text extraction + embeddings already succeeded.
-                # Mark COMPLETED with partial data so re-analyze is available.
+                # Only the classifier can reach here: it runs before the
+                # gather() that absorbs the other three agents' failures. Text
+                # extraction and embeddings already succeeded, so the document
+                # is searchable — mark it COMPLETED with partial data rather
+                # than FAILED, so Re-analyze is offered.
+                #
+                # The provider is named rather than assumed. This used to say
+                # "Gemini" unconditionally, which was wrong for every agent:
+                # the classifier runs on Groq and the extractor and summarizer
+                # on Cerebras.
+                provider = getattr(qe, "provider", "") or "AI"
                 logger.error(
-                    f"Gemini quota exceeded during agent analysis for {document_id}: {qe}"
+                    f"{provider} quota exceeded during agent analysis for "
+                    f"{document_id}: {qe}"
                 )
                 document.status = DocumentStatus.COMPLETED
                 document.processing_error = (
-                    "AI analysis incomplete: Gemini API quota exceeded. "
+                    f"AI analysis incomplete: {provider} quota exceeded. "
                     "Click Re-analyze to run the full analysis when quota resets."
                 )
-                document.summary = "Summary not available — Gemini quota exceeded. Re-analyze to generate."
+                document.summary = (
+                    f"Summary unavailable — {provider} quota exceeded before "
+                    "analysis could run. Click Re-analyze to generate it."
+                )
                 document.key_points = []
                 document.processed_at = datetime.now(timezone.utc)
                 db.commit()
