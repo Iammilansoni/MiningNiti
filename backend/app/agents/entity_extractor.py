@@ -26,7 +26,18 @@ class EntityExtractorAgent(BaseAgent):
 
     def __init__(self):
         # Cerebras: 1M tokens/day free, 2600+ TPS, 60K TPM — better for high-volume extraction than Groq
-        super().__init__(model_name="gpt-oss-120b", provider="cerebras")
+        super().__init__(
+            model_name="gpt-oss-120b",
+            provider="cerebras",
+            # Cerebras answers an exhausted account with 402
+            # payment_required, which took this agent out entirely while
+            # Groq was still serving. Groq hosts the same gpt-oss-120b
+            # weights, so the fallback is the same model on another host
+            # rather than a downgrade. It is only ever used after a quota
+            # refusal, so it costs nothing on the happy path.
+            fallback_provider="groq",
+            fallback_model="openai/gpt-oss-120b",
+        )
 
     @property
     def system_prompt(self) -> str:
@@ -107,6 +118,22 @@ Notes:
 - Include regulation citations in standard format
 """
         result = await self._generate_json(prompt)
+
+        # An exhausted _generate_json returns {}, which used to be laundered
+        # into six empty lists — a document with no entities and a document the
+        # extractor never managed to read looked identical. Mark the failure.
+        if not result:
+            return {
+                "equipment": [],
+                "chemicals": [],
+                "locations": [],
+                "personnel": [],
+                "dates": [],
+                "regulations": [],
+                "entity_count": 0,
+                "status": "error",
+                "error": "entity extractor provider returned no usable response",
+            }
 
         entities = {
             "equipment": self._deduplicate(result.get("equipment", [])),

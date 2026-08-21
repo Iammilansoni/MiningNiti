@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDocuments, deleteDocument } from '@/lib/api';
@@ -13,6 +13,7 @@ import {
   Download, Trash, Eye, RefreshCw, AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ConfirmDeleteDialog } from '@/components/product/confirm-delete-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,15 +38,25 @@ export default function DocumentsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const pageSize = 15;
 
-  // Debounce search input
+  // Debounce search input. The timer used to be stashed on `window` under a
+  // global key, which leaks across pages and breaks under SSR; a ref is scoped
+  // to this component and cleans up on unmount.
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearchValue(val);
-    clearTimeout((window as any).__searchTimer);
-    (window as any).__searchTimer = setTimeout(() => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
       setDebouncedSearch(val);
       setPage(1);
     }, 400);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
   }, []);
 
   const { data, isLoading, isError, refetch } = useQuery({
@@ -85,10 +96,11 @@ export default function DocumentsPage() {
     },
   });
 
+  // Native confirm() replaced with the styled, focus-trapped AlertDialog.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+
   const handleDelete = (documentId: string, fileName: string) => {
-    if (confirm(`Delete "${fileName}"? This action cannot be undone.`)) {
-      deleteMutation.mutate(documentId);
-    }
+    setPendingDelete({ id: documentId, name: fileName });
   };
 
   const handleViewDetails = (documentId: string) => {
@@ -321,6 +333,15 @@ export default function DocumentsPage() {
           </div>
         </div>
       </SectionCard>
+
+      <ConfirmDeleteDialog
+        target={pendingDelete?.name ?? null}
+        onOpenChange={(open) => { if (!open) setPendingDelete(null); }}
+        onConfirm={() => {
+          if (pendingDelete) deleteMutation.mutate(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+      />
     </div>
   );
 }
