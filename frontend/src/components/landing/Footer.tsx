@@ -15,10 +15,24 @@ export function Footer() {
               <span className="font-semibold text-white">MiningNiti</span>
             </Link>
             <p className="text-sm text-white/40 max-w-xs mb-6">
-              The AI-native intelligence layer for modern mining operations. Automate compliance, parse complex documents, and operate with absolute certainty.
+              Retrieval-backed document intelligence for mining operations. Ask
+              your safety and regulatory documents a question and get an answer
+              that cites the page it came from.
             </p>
+            {/*
+              The award belongs here — one line, not a banner over the product.
+              Scoped deliberately: the 2023 winner was a separate team
+              prototype, and CMPDI recognized it at the finals. It was never
+              deployed there. See /about for the full history.
+            */}
+            <div className="text-sm text-white/30 mb-3">
+              <Link href="/about" className="hover:text-white/50 transition-colors">
+                Smart India Hackathon 2023 National Winner · Ministry of Coal
+              </Link>
+            </div>
+            {/* Not incorporated — "MiningNiti Inc." implied a company that does not exist. */}
             <div className="text-sm text-white/25">
-              © {new Date().getFullYear()} MiningNiti Inc. All rights reserved.
+              © {new Date().getFullYear()} MiningNiti · MIT licensed
             </div>
           </div>
 

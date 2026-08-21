@@ -18,15 +18,18 @@
 [![PostgreSQL](https://img.shields.io/badge/Supabase-pgvector-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 
-[Architecture](#architecture) · [Quick Start](#quick-start) · [API Reference](#api-endpoints) · [Deploy](#deployment) · [Contributing](#contributing)
+[Project History](#project-history) · [Architecture](#architecture) · [Quick Start](#quick-start) · [API Reference](#api-endpoints) · [Deploy](#deployment) · [Contributing](#contributing)
 
 ---
 
 <table>
   <tr>
     <td align="center" width="520">
-      <img src="https://img.shields.io/badge/Smart_India_Hackathon_2023-Winning_Project-FFD700?style=for-the-badge&labelColor=1a1a2e" /><br/>
-      <strong>Recognized by Coal India Limited & CMPDI</strong>
+      <img src="https://img.shields.io/badge/Smart_India_Hackathon_2023-National_Winner-FFD700?style=for-the-badge&labelColor=1a1a2e" /><br/>
+      <strong>Ministry of Coal problem statement</strong><br/>
+      <sub>Recognized by Coal India Limited &amp; CMPDI<br/>
+      See <a href="#project-history">Project history</a> — the 2023 winning entry was a<br/>
+      separate team prototype; this repository is an independent rebuild.</sub>
     </td>
   </tr>
 </table>
@@ -35,7 +38,48 @@
 
 ---
 
-MiningNiti is a full-stack AI platform that transforms how coal mining organizations manage safety documentation, regulatory compliance, and institutional knowledge. It combines a **multi-agent AI pipeline** (4 agents on upload plus an on-demand compliance auditor, across 4 AI providers) with **production-grade RAG** (hybrid search + cross-encoder reranking) and **real-time compliance auditing** — turning thousands of fragmented PDFs into an instantly queryable, citation-backed source of truth.
+MiningNiti is a full-stack AI platform that transforms how coal mining organizations manage safety documentation, regulatory compliance, and institutional knowledge. It combines a **multi-agent AI pipeline** (4 agents on upload plus an on-demand compliance auditor, across 3 LLM providers) with **production-grade RAG** (hybrid search + cross-encoder reranking) and **real-time compliance auditing** — turning thousands of fragmented PDFs into an instantly queryable, citation-backed source of truth.
+
+---
+
+## Project history
+
+**Two separate builds, four years apart.**
+
+The original entry was built for **Smart India Hackathon 2023** (Nov–Dec 2023) against the
+Ministry of Coal problem statement, by a team, and **won at the national level**. CMPDI
+officials who judged the finals initiated follow-up discussions about deploying it at scale;
+those talks did not proceed. It was never deployed at CMPDI, and there is no ongoing
+institutional relationship.
+
+**This repository is not that codebase.** It is an independent, ground-up rebuild started in
+**June 2025** and developed solo since — a production system rather than a hackathon
+prototype. None of the 2023 code carried over, and that prototype was never under version
+control in a repository I can point to.
+
+|  | Origin | This repository |
+|---|---|---|
+| **When** | Nov–Dec 2023 | June 2025 – present |
+| **Who** | Team (SIH 2023) | Sole developer |
+| **Status** | Hackathon prototype | Live, deployed, continuously integrated |
+
+### What changed
+
+> **Note:** the *Origin* column is from recollection — that prototype predates this repository
+> and its code is not available to verify against. Every claim in the *This repository* column
+> is checkable in the code, and linked where it is not obvious.
+
+|  | SIH 2023 prototype | This repository |
+|---|---|---|
+| **Architecture** | Single-pass RAG chatbot, built on LangChain | 5 specialized agents — 4 running concurrently on upload, plus an on-demand compliance auditor |
+| **Orchestration** | LangChain chains | No agent framework — orchestration is hand-written on `asyncio.gather` with per-agent error isolation, quota-aware provider failover and a content-addressed result cache |
+| **Retrieval** | FAISS vector search | Hybrid: pgvector cosine + PostgreSQL full-text, fused with Reciprocal Rank Fusion, then cross-encoder reranked (top-20 → top-5) |
+| **Models** | Open-source model with DPO, Gemini-backed | 3 LLM providers (Groq, Cerebras, Mistral) with quota-aware automatic failover; Gemini for embeddings |
+| **Evaluation** | — | Hit Rate@k / MRR / Recall@k / nDCG@k harness over a labelled golden set, running as a **blocking CI gate**; LangSmith tracing on the orchestrator, retrieval and chat |
+| **Security** | — | Clerk JWT (RS256-pinned, JWKS caching, `azp` validation), prompt-injection guardrails, DNS-resolving SSRF guard, 120 req/min rate limiting |
+| **Tests** | — | 215 unit tests (274 collected, including integration and eval suites) |
+| **Stack** | Python backend, TypeScript frontend | FastAPI + PostgreSQL/pgvector · Next.js 16 / React 19 |
+| **Deployment** | Local | Live on free-tier infrastructure, auto-deployed from `main` |
 
 ---
 
@@ -105,6 +149,7 @@ the answer streams back token by token, and every claim carries its document and
 
 ## Table of Contents
 
+- [Project History](#project-history)
 - [Demo](#demo)
 - [The Problem](#the-problem)
 - [The Solution](#the-solution)
@@ -116,8 +161,10 @@ the answer streams back token by token, and every claim carries its document and
 - [Project Structure](#project-structure)
 - [Deployment](#deployment)
 - [Testing](#testing)
+- [MLOps](#mlops)
 - [Security](#security)
 - [Performance](#performance)
+- [Known Limitations](#known-limitations)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -129,7 +176,7 @@ Coal mining operations generate **thousands of critical documents** — MSHA reg
 
 ## The Solution
 
-MiningNiti deploys **5 specialized AI agents** across 4 providers that understand mining domain context. Four run automatically on every upload; the compliance auditor runs on demand when you create an audit:
+MiningNiti deploys **5 specialized AI agents** across 3 LLM providers that understand mining domain context. Four run automatically on every upload; the compliance auditor runs on demand when you create an audit:
 
 | Capability | Agent |
 |---|---|
@@ -138,7 +185,7 @@ MiningNiti deploys **5 specialized AI agents** across 4 providers that understan
 | **Extract entities** — equipment names, chemicals, regulations, personnel, locations | Entity Extractor (Cerebras / GPT-OSS-120B) |
 | **Summarize** long documents with actionable key points | Summarizer (Cerebras / GPT-OSS-120B) |
 | **Audit compliance** by cross-referencing operational docs against regulations | Compliance Auditor (Groq / GPT-OSS-120B) |
-| **Answer questions** with page-level citations from your document corpus | RAG Chat (hybrid search + reranking) |
+| **Answer questions** with page-level citations from your document corpus | RAG Chat (Groq / GPT-OSS-120B, over hybrid search + reranking) |
 
 ---
 
@@ -177,6 +224,13 @@ Analyzer     Extractor       Agent
 Repeat analysis of identical content is served from a Redis cache keyed by
 content hash, so re-uploads cost zero LLM calls. Failed analyses are never
 cached, so re-analysing after a rate limit genuinely retries.
+
+The pipeline degrades loudly rather than silently. Groq and Cerebras fall
+back to one another when a provider returns a quota error, and when a section
+still cannot be produced the document completes with the other three intact:
+the failure is recorded on `Document.processing_error` and in
+`metadata.degraded_sections`, and surfaced in the UI, instead of being
+laundered into a plausible-looking empty result.
 
 ### Production RAG Pipeline
 
@@ -290,9 +344,10 @@ Query → Embed → Hybrid Search (Vector + Full-Text) → RRF → Cross-Encoder
 | Layer | Technology | Version |
 |---|---|---|
 | **Frontend** | Next.js (App Router, Turbopack) · React · TypeScript · Tailwind CSS v4 · shadcn/ui · Clerk Auth · Zustand · TanStack React Query · Recharts | 16.x / 19.x / 5.x |
-| **Backend** | FastAPI · Python · SQLAlchemy (async) · Pydantic v2 · slowapi Rate Limiting · sentence-transformers CrossEncoder | 0.128 / 3.11+ / 2.0 |
+| **Backend** | FastAPI · Python · SQLAlchemy (synchronous sessions) · Pydantic v2 · slowapi Rate Limiting · sentence-transformers CrossEncoder | 0.128 / 3.11+ / 2.0 |
 | **Database** | Supabase PostgreSQL + pgvector + pg_trgm (HNSW index) | 16+ |
-| **AI Agents** | Groq (GPT-OSS-120B) · Mistral (Magistral) · Cerebras (GPT-OSS-120B) · Gemini (2.5 Flash) | All free tiers |
+| **AI Agents** | Groq (GPT-OSS-120B — document agents *and* RAG chat generation) · Mistral (Magistral) · Cerebras (GPT-OSS-120B) | All free tiers |
+| **Embeddings & Eval** | Gemini `gemini-embedding-001` for chunk and query embeddings; `gemini-3.7-flash` as the judge in the on-demand generation eval — it generates no user-facing answers | All free tiers |
 | **Infrastructure** | Vercel (frontend) · HuggingFace Spaces (backend, Docker) · Supabase (DB) · Upstash (Redis) · Clerk (Auth) | All free tiers |
 
 > **Total infrastructure cost: $0/month**
@@ -303,7 +358,7 @@ Query → Embed → Hybrid Search (Vector + Full-Text) → RRF → Cross-Encoder
 
 ### Prerequisites
 
-- **Python 3.11+** and **Node.js 18+**
+- **Python 3.11+** and **Node.js 24+** (pinned in `frontend/.nvmrc` and `frontend/package.json`)
 - **Docker & Docker Compose** (recommended for local development)
 - **Free accounts**: Supabase, Upstash, Clerk, Google AI Studio, Groq, Cerebras, Mistral
 
@@ -314,7 +369,11 @@ git clone https://github.com/Iammilansoni/MiningNiti.git
 cd MiningNiti
 
 cp backend/.env.example backend/.env
-# Edit backend/.env with your API keys (see Environment Variables below)
+cp frontend/.env.example frontend/.env.local
+# Edit both with your keys (see Environment Variables below).
+# backend/.env.example carries every backend variable, including the
+# SUPABASE_URL / SUPABASE_SERVICE_KEY / SUPABASE_STORAGE_BUCKET block —
+# copy those across too, or uploaded files are lost on every restart.
 ```
 
 ### 2. Docker (Recommended)
@@ -373,7 +432,9 @@ All endpoints are prefixed with `/api/v1`.
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/` | Application info |
-| GET | `/api/v1/health` | Health check with service status |
+| GET | `/health` | Cheap static liveness probe (no `/api/v1` prefix) — what the Docker `HEALTHCHECK` uses |
+| GET | `/api/v1/health` | Real health check: database, Redis, and a 1-token ping to each LLM provider. `healthy` and `degraded` both return 200; an unreachable database returns 503 |
+| GET | `/api/v1/health/providers` | Per-provider liveness detail. Add `?fresh=true` to bypass the 60s cache |
 
 ### Documents
 
@@ -384,6 +445,7 @@ All endpoints are prefixed with `/api/v1`.
 | POST | `/api/v1/upload` | Upload file directly (multipart) |
 | GET | `/api/v1/documents/{id}` | Get document detail |
 | DELETE | `/api/v1/documents/{id}` | Delete document |
+| GET | `/api/v1/documents/{id}/file` | Stream the stored file (local disk or Supabase Storage) |
 | GET | `/api/v1/documents/{id}/analysis` | Get AI analysis results |
 | POST | `/api/v1/documents/{id}/reanalyze` | Trigger re-analysis |
 
@@ -406,7 +468,8 @@ All endpoints are prefixed with `/api/v1`.
 | GET | `/api/v1/compliance/audits` | List audits |
 | POST | `/api/v1/compliance/audits` | Create compliance audit |
 | GET | `/api/v1/compliance/audits/{id}` | Get audit detail + matrix |
-| PATCH | `/api/v1/compliance/audits/{id}` | Update audit status |
+| GET | `/api/v1/compliance/audits/{id}/export` | Export the audit report |
+| DELETE | `/api/v1/compliance/audits/{id}` | Delete an audit |
 
 ### Search, Analytics & More
 
@@ -416,11 +479,16 @@ All endpoints are prefixed with `/api/v1`.
 | GET | `/api/v1/analytics/dashboard` | Dashboard statistics |
 | GET | `/api/v1/analytics/documents` | Document analytics |
 | GET | `/api/v1/analytics/safety` | Safety compliance analytics |
+| GET | `/api/v1/analytics/violations` | Detected compliance violations |
 | GET | `/api/v1/prompts` | List saved prompt templates |
 | POST | `/api/v1/prompts` | Save prompt template |
+| GET | `/api/v1/prompts/{id}` | Get a prompt template |
+| PUT | `/api/v1/prompts/{id}` | Update a prompt template |
+| DELETE | `/api/v1/prompts/{id}` | Delete a prompt template |
 | GET | `/api/v1/jobs` | List active background jobs |
 | GET | `/api/v1/jobs/{id}` | Get job status |
 | GET | `/api/v1/user/profile` | Get user profile |
+| PUT | `/api/v1/user/profile` | Update user profile |
 
 ---
 
@@ -437,13 +505,14 @@ MiningNiti/
 │   │   ├── services/        # Business logic (RAG, hybrid search, reranker, compliance)
 │   │   ├── core/            # Security, exceptions, config
 │   │   └── db/              # SQLAlchemy engine + pgvector init
-│   ├── tests/unit/          # 198 unit tests (SQLite in-memory)
-│   ├── tests/integration/   # Integration tests (PostgreSQL + Redis)
+│   ├── tests/unit/          # 203 unit tests (SQLite, every provider mocked)
+│   ├── tests/integration/   # 27 API tests against a real PostgreSQL
+│   ├── tests/eval/          # 32 retrieval + generation evaluation tests
 │   └── Dockerfile           # Docker build for HuggingFace Spaces
 ├── frontend/
 │   ├── src/
 │   │   ├── app/             # Next.js App Router (auth, dashboard, chat, documents, compliance, analytics)
-│   │   ├── components/      # Landing (22 components), chat, documents, dashboard, analytics, settings, ui
+│   │   ├── components/      # Landing (15 components), chat, documents, dashboard, analytics, prompts, product, layout, settings, ui
 │   │   ├── hooks/           # SSE streaming, typed API client
 │   │   └── lib/             # API client with auth headers
 │   └── package.json
@@ -506,14 +575,23 @@ The entire application runs on **free-tier services** with zero infrastructure c
 
 ```bash
 cd backend
-pytest tests/unit/ -v -m unit                           # 198 unit tests (SQLite in-memory)
-pytest tests/integration/ -v -m integration              # Needs PostgreSQL + Redis
-pytest tests/eval/test_rag_eval.py -v -m synthetic       # RAG eval (no DB, instant)
-pytest tests/eval/test_rag_eval.py -v -m live            # RAG eval (full pipeline)
+docker compose up -d postgres                            # integration + retrieval tests need it
+
+pytest tests/unit/ -v -m unit                           # 203 unit tests (SQLite, providers mocked)
+pytest tests/integration/ -v -m integration              # 27 tests against real PostgreSQL
+pytest tests/eval/test_rag_eval.py -v -m synthetic       # Generation eval (no DB, instant)
+pytest tests/eval/test_rag_eval.py -v -m live            # Generation eval (needs Gemini quota)
 pytest tests/unit/ --cov=app --cov-report=html           # With coverage
 ```
 
-**257 tests in total.** The 198 unit tests cover all 5 AI agents (mocked), RAG chat service, hybrid search + reranking, text chunking, document extractors, and settings validation; the rest are integration and retrieval-evaluation tests.
+**274 tests collected** — 215 unit, 27 integration, 32 eval. The unit tests cover all 5 AI agents (every provider mocked, so no test marked `unit` makes a live call), RAG chat service, hybrid search + reranking, text chunking, document extractors, and settings validation.
+
+Not all 262 run in every environment, and that is deliberate:
+
+- The **integration** suite runs against a real PostgreSQL — the `pgvector/pgvector:pg16` service container CI starts, or `docker compose up -d postgres` locally. SQLite could not bind the PostgreSQL `UUID` columns, enforce the foreign keys, or run `to_tsvector` at all. With no server reachable, the package skips with an explanatory message rather than failing.
+- The **6 live tests** in `tests/eval/test_rag_eval.py` are Gemini-judged and need real API quota, so they are not run in CI. The other 2 tests in that file are synthetic and run anywhere.
+
+**CI gates.** Unit tests, integration tests, the retrieval-quality gate, the frontend `npm run lint` and the Docker build are all **blocking**. `mypy`, `bandit` and `npm audit` stay non-blocking, each with the concrete reason written beside it in `.github/workflows/ci.yml`.
 
 **Linting:** `isort` + `black` (backend), `npm run lint` (frontend).
 
@@ -580,7 +658,30 @@ Clerk JWT auth (JWKS) with user-scoped resource access. Rate limiting (120 req/m
 
 Hybrid search (pgvector + PostgreSQL full-text) with Reciprocal Rank Fusion, cross-encoder reranking (`ms-marco-MiniLM-L-6-v2`), HNSW approximate nearest-neighbour search, 3 agents running concurrently via `asyncio.gather()` after classification, an analysis cache that skips repeat work entirely, batched embedding (100 chunks per API call), SSE streaming, and crash recovery that resets *and requeues* interrupted documents.
 
-**Known limits, stated honestly:** database access is synchronous SQLAlchemy inside async endpoints, so throughput per worker is bounded; the background queue is an in-process `asyncio.Queue`, so queued work does not survive a restart or scale across replicas. Both are tracked as the next work.
+---
+
+## Known limitations
+
+Stated plainly, because a system's real shape is in what it does *not* do yet.
+
+**Architecture**
+- Database access is **synchronous SQLAlchemy inside `async` endpoints**, so every query blocks the event loop and per-worker throughput is bounded. An async layer exists in `app/db/session.py` but no endpoint uses it yet — cutting over is the next significant piece of work.
+- The background queue is an in-process **`asyncio.Queue`**: no persistence, no retries, no backpressure. Queued work does not survive a restart, and it does not fan out across replicas — with two Gunicorn workers, work enqueued in one is invisible to the other. Redis is already a dependency and is the obvious promotion path.
+- Agents see the document **head and tail (~15K characters)**, not the full text. Long documents are summarized from their edges.
+
+**Retrieval**
+- The lexical arm is PostgreSQL full-text ranking (`ts_rank_cd` over a GIN-indexed `tsvector`) — **not BM25**. True BM25 needs an extension such as `pg_search`. The naming here is deliberate.
+- The retrieval evaluation runs against a **130-chunk golden corpus**. Metrics at that scale are directional, not a claim about production-scale behaviour.
+
+**Operations**
+- Deployed entirely on **free tiers**. The API sleeps when idle; the first request after a quiet period can take up to a minute. Provider quota exhaustion degrades individual agents (surfaced via `/api/v1/health` and the document's `processing_error`) rather than failing the pipeline.
+- **No frontend test suite.** The 215 unit tests are all backend.
+- `mypy` and `bandit` run in CI but are **non-blocking** — `mypy` currently crashes on a Torch internal, and `bandit`'s 3 medium findings are reviewed false positives. Unit tests, integration tests, formatting, the retrieval gate, and the frontend build/lint *are* blocking.
+
+**Product**
+- No packaged connectors — no SharePoint, S3, SAP, Oracle, or Microsoft 365 integration, and no webhooks. Upload is direct; everything else goes through the REST API.
+- No air-gapped or on-premise model deployment. The stack self-hosts, but model calls still leave your network.
+- Supported uploads are **PDF, DOCX and TXT** up to 50MB. Spreadsheets, images and email archives are not handled.
 
 ---
 
@@ -610,6 +711,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 [![Twitter](https://img.shields.io/badge/Twitter-@Iammilansoni-1DA1F2?style=flat-square&logo=twitter&logoColor=white)](https://twitter.com/Iammilansoni)
 [![GitHub](https://img.shields.io/badge/GitHub-Iammilansoni-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Iammilansoni)
 
-Smart India Hackathon 2023 — Winning Project · Recognized by Coal India Limited & CMPDI
+Smart India Hackathon 2023 — National Winner · Ministry of Coal · Recognized by Coal India Limited & CMPDI
+
+<sub>The 2023 winning entry was a separate team prototype. See <a href="#project-history">Project history</a>.</sub>
 
 </div>

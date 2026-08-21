@@ -43,7 +43,13 @@ jobs:
         run: |
           pip install -r requirements.txt
           mypy app/ --ignore-missing-imports --no-error-summary
-        continue-on-error: true  # Don't fail CI on type errors yet (gradual adoption)
+        # Still non-blocking, but not for the reason stated before: mypy 1.11.0
+        # reports no type errors on this project at all - it exits 2 with
+        # "INTERNAL ERROR" while following an import into
+        # torch/ao/quantization/utils.py. Until that crash is dealt with
+        # (--follow-imports=skip for torch, or an exclude) this step proves
+        # nothing, so making it blocking would only break the build.
+        continue-on-error: true
 
   # ── Job 2: Backend Security Scan ─────────────────────────────────────────────
   backend-security:
@@ -66,7 +72,12 @@ jobs:
 
       - name: Run bandit security scan
         run: bandit -r app/ -ll -x app/tests
-        continue-on-error: true  # Report but don't block yet
+        # Non-blocking: currently exits 1 on 3 medium findings in app/ - B104
+        # (uvicorn binding 0.0.0.0) and two B608 hardcoded-SQL hits in the
+        # hybrid-search query builder. All three are in application code, so
+        # triaging them (fix, or annotate #nosec with a reason) has to happen
+        # before this can gate.
+        continue-on-error: true
 
   # ── Job 3: Backend Tests ──────────────────────────────────────────────────────
   backend-test:
@@ -106,7 +117,11 @@ jobs:
       DATABASE_URL: postgresql+psycopg2://test_user:test_password@localhost:5432/miningniti_test
       # All of GEMINI/GROQ/MISTRAL/CLERK_JWKS_URL are required Settings fields:
       # anything that imports app.config raises without them. Placeholders are
-      # fine because no test makes a real provider call.
+      # fine because no test this workflow runs makes a real provider call:
+      # every agent test injects a mock on the attribute its provider actually
+      # reads (`.client` for the OpenAI-compatible ones). tests/eval/
+      # test_rag_eval.py does make live LLM-judge calls and is deliberately
+      # not run here.
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY_TEST || 'test-api-key-placeholder' }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY_TEST || 'test-api-key-placeholder' }}
       MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY_TEST || 'test-api-key-placeholder' }}
@@ -141,11 +156,16 @@ jobs:
             --cov-report=term-missing \
             -m "unit"
 
+      # Blocking. These run against the pgvector service container above via
+      # DATABASE_URL (see tests/integration/conftest.py) rather than SQLite,
+      # which is what the "need real services" excuse used to be about - the
+      # services have been here all along. They were non-blocking while five
+      # of them failed binding PostgreSQL UUID columns under SQLite; that is
+      # fixed, so a failure here is now a real failure.
       - name: Run integration tests
         run: |
           pytest tests/integration/ -v --tb=short \
             -m "integration"
-        continue-on-error: true  # Integration tests need real services
 
       # ── Retrieval quality gate ────────────────────────────────────────────
       # Blocking. Embeddings come from a local sentence-transformers model, so
@@ -189,10 +209,11 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      # Blocking: eslint currently reports zero problems, so this gate costs
+      # nothing until someone regresses it.
       - name: Lint
         working-directory: frontend
         run: npm run lint
-        continue-on-error: true
 
       - name: Build
         working-directory: frontend
@@ -203,6 +224,10 @@ jobs:
       - name: Security audit
         working-directory: frontend
         run: npm audit --audit-level=high
+        # Non-blocking: 12 high-severity advisories are outstanding, all
+        # transitive (sharp/libvips, postcss). Blocking here would also fail
+        # the build on any newly published advisory against a pinned
+        # transitive dep, with no code change - needs a triage policy first.
         continue-on-error: true
 
   # ── Job 5: Docker Build Validation ───────────────────────────────────────────

@@ -8,6 +8,7 @@ import { useAuth } from '@clerk/nextjs';
 import { formatDistanceToNow, format } from 'date-fns';
 import { StatusBadge } from '@/components/product/status';
 import { Button } from '@/components/ui/button';
+import { ConfirmDeleteDialog } from '@/components/product/confirm-delete-dialog';
 import { toast } from 'sonner';
 import { openDocumentInNewTab } from '@/lib/document-file';
 import {
@@ -345,6 +346,8 @@ export default function DocumentDetailPage() {
   const queryClient = useQueryClient();
   const documentId = params.id as string;
   const [activeTab, setActiveTab] = useState<TabId>('summary');
+  // Native confirm() replaced with the styled, focus-trapped AlertDialog.
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: doc, isLoading, isError } = useQuery({
     queryKey: ['document', documentId],
@@ -553,7 +556,7 @@ export default function DocumentDetailPage() {
             variant="outline"
             size="sm"
             className="text-destructive hover:text-destructive border-destructive/30 hover:border-destructive"
-            onClick={() => { if (confirm(`Delete "${doc.title}"?`)) deleteMutation.mutate(); }}
+            onClick={() => setConfirmDelete(true)}
             disabled={deleteMutation.isPending}
           >
             <Trash className="w-4 h-4" />
@@ -658,6 +661,15 @@ export default function DocumentDetailPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteDialog
+        target={confirmDelete ? doc.title : null}
+        onOpenChange={setConfirmDelete}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          deleteMutation.mutate();
+        }}
+      />
     </div>
   );
 }

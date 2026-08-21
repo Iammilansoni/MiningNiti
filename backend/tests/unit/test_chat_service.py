@@ -195,3 +195,209 @@ class TestGetMiningeSuggestions:
         assert len(suggestions) > 0
         for s in suggestions:
             assert isinstance(s, str)
+
+
+class TestConversationHistory:
+    """Tests for multi-turn conversation memory.
+
+    Prior turns are replayed to the model so follow-ups resolve against what
+    was already discussed. These guard the two failure modes that make history
+    worse than no history: replaying the live question as its own context, and
+    opening the replay on a dangling assistant turn.
+    """
+
+    @staticmethod
+    def _rows(*pairs):
+        """Build fake ChatMessage rows, newest first (query order)."""
+        rows = []
+        for role, content in pairs:
+            row = MagicMock()
+            row.role = role
+            row.content = content
+            rows.append(row)
+        return rows
+
+    @staticmethod
+    def _db_returning(rows):
+        db = MagicMock()
+        chain = db.query.return_value.filter.return_value.order_by.return_value
+        chain.limit.return_value.all.return_value = rows
+        return db
+
+    @pytest.mark.unit
+    def test_history_is_chronological(self):
+        """Rows arrive newest-first from the DB and must be replayed oldest-first."""
+        from app.services.chat_service import ChatService
+
+        db = self._db_returning(
+            self._rows(
+                ("assistant", "Methane must stay below 1%."),
+                ("user", "What are the methane limits?"),
+            )
+        )
+        history = ChatService.load_session_history(db, "session-1")
+
+        assert [m["role"] for m in history] == ["user", "assistant"]
+        assert history[0]["content"] == "What are the methane limits?"
+
+    @pytest.mark.unit
+    def test_history_never_starts_on_assistant_turn(self):
+        """A dangling answer with no question is dropped from the front."""
+        from app.services.chat_service import ChatService
+
+        db = self._db_returning(
+            self._rows(
+                ("assistant", "Newest answer."),
+                ("user", "Newest question."),
+                (
+                    "assistant",
+                    "Orphaned answer whose question fell outside the window.",
+                ),
+            )
+        )
+        history = ChatService.load_session_history(db, "session-1")
+
+        assert history[0]["role"] == "user"
+        assert all("Orphaned" not in m["content"] for m in history)
+
+    @pytest.mark.unit
+    def test_char_budget_trims_oldest_first(self):
+        """The budget retains the most recent turns, not the oldest."""
+        from app.services.chat_service import ChatService
+
+        db = self._db_returning(
+            self._rows(
+                ("user", "recent"),
+                ("assistant", "x" * 500),
+                ("user", "ancient"),
+            )
+        )
+        history = ChatService.load_session_history(db, "session-1", max_chars=50)
+
+        contents = [m["content"] for m in history]
+        assert "recent" in contents
+        assert "ancient" not in contents
+
+    @pytest.mark.unit
+    def test_turn_cap_is_passed_to_query(self):
+        """max_turns bounds the DB query rather than being applied after."""
+        from app.services.chat_service import ChatService
+
+        db = self._db_returning([])
+        ChatService.load_session_history(db, "session-1", max_turns=4)
+
+        limit = db.query.return_value.filter.return_value.order_by.return_value.limit
+        limit.assert_called_once_with(4)
+
+    @pytest.mark.unit
+    def test_db_failure_degrades_to_stateless(self):
+        """History is an enhancement; a DB error must not break the chat."""
+        from app.services.chat_service import ChatService
+
+        db = MagicMock()
+        db.query.side_effect = RuntimeError("connection lost")
+
+        assert ChatService.load_session_history(db, "session-1") == []
+
+    @pytest.mark.unit
+    def test_blank_and_system_rows_are_skipped(self):
+        """Empty content and non user/assistant roles never reach the model."""
+        from app.services.chat_service import ChatService
+
+        db = self._db_returning(
+            self._rows(
+                ("user", "Real question."),
+                ("system", "internal note"),
+                ("assistant", "   "),
+            )
+        )
+        history = ChatService.load_session_history(db, "session-1")
+
+        assert history == [{"role": "user", "content": "Real question."}]
+
+    @pytest.mark.unit
+    def test_messages_place_history_between_system_and_query(self):
+        """System prompt first, prior turns next, live question last."""
+        from app.services.chat_service import ChatService
+
+        history = [
+            {"role": "user", "content": "What are the methane limits?"},
+            {"role": "assistant", "content": "Below 1%."},
+        ]
+        messages = ChatService()._build_messages(
+            "What about surface mines?", "CTX", history
+        )
+
+        assert messages[0]["role"] == "system"
+        assert messages[1:3] == history
+        assert messages[-1]["role"] == "user"
+        assert "What about surface mines?" in messages[-1]["content"]
+
+    @pytest.mark.unit
+    def test_context_rides_only_on_the_live_turn(self):
+        """Retrieved context must not be restated on historical turns."""
+        from app.services.chat_service import ChatService
+
+        history = [{"role": "user", "content": "Earlier question."}]
+        messages = ChatService()._build_messages(
+            "Now what?", "UNIQUE_CTX_MARKER", history
+        )
+
+        carrying = [m for m in messages if "UNIQUE_CTX_MARKER" in m["content"]]
+        assert len(carrying) == 1
+        assert carrying[0] is messages[-1]
+
+    @pytest.mark.unit
+    def test_no_history_yields_system_plus_query_only(self):
+        """Behaviour with an empty history is unchanged from the stateless path."""
+        from app.services.chat_service import ChatService
+
+        messages = ChatService()._build_messages("A question.", "CTX", None)
+
+        assert len(messages) == 2
+        assert [m["role"] for m in messages] == ["system", "user"]
+
+
+class TestRetrievalQueryExpansion:
+    """Tests for _build_retrieval_query.
+
+    Generation gets full history, so retrieval must too — otherwise a
+    follow-up embeds to almost nothing and the reranker has no good
+    candidates to pick from.
+    """
+
+    @pytest.mark.unit
+    def test_dependent_followup_is_expanded(self):
+        """A short follow-up inherits the previous user turn for retrieval."""
+        from app.services.chat_service import ChatService
+
+        history = [
+            {"role": "user", "content": "What are the methane limits underground?"},
+            {"role": "assistant", "content": "Below 1%."},
+        ]
+        expanded = ChatService._build_retrieval_query(
+            "What about surface mines?", history
+        )
+
+        assert "methane limits underground" in expanded
+        assert "What about surface mines?" in expanded
+
+    @pytest.mark.unit
+    def test_self_contained_question_is_untouched(self):
+        """A long, standalone question must not be polluted with prior context."""
+        from app.services.chat_service import ChatService
+
+        history = [{"role": "user", "content": "What are the methane limits?"}]
+        query = (
+            "Describe in full the statutory ventilation survey obligations that "
+            "apply to an underground coal mine operator under 30 CFR 75.323."
+        )
+
+        assert ChatService._build_retrieval_query(query, history) == query
+
+    @pytest.mark.unit
+    def test_first_turn_has_nothing_to_expand_from(self):
+        """With no history the query passes through unchanged."""
+        from app.services.chat_service import ChatService
+
+        assert ChatService._build_retrieval_query("Short one?", []) == "Short one?"

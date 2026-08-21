@@ -6,56 +6,9 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/stores/uiStore';
 import { MiningNitiMark } from '@/components/product/brand';
-import {
-  LayoutDashboard,
-  MessageSquare,
-  FileText,
-  BarChart2,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Search,
-  ShieldCheck,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { navItems } from '@/components/layout/nav-items';
 
-const navItems = [
-  {
-    name: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    name: 'AI Intelligence',
-    href: '/chat',
-    icon: MessageSquare,
-  },
-  {
-    name: 'Documents',
-    href: '/documents',
-    icon: FileText,
-  },
-  {
-    name: 'Compliance',
-    href: '/compliance',
-    icon: ShieldCheck,
-  },
-  {
-    name: 'Prompts',
-    href: '/prompts',
-    icon: Sparkles,
-  },
-  {
-    name: 'Analytics',
-    href: '/analytics',
-    icon: BarChart2,
-  },
-  {
-    name: 'Settings',
-    href: '/settings',
-    icon: Settings,
-  },
-];
 
 export function Sidebar() {
   const pathname = usePathname();
