@@ -10,6 +10,7 @@ import { getSafetyAnalytics, getDocumentAnalytics } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
 import { formatDistanceToNow } from 'date-fns';
 import { AlertTriangle, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/product/page-header';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
@@ -18,25 +19,49 @@ export default function AnalyticsPage() {
   const { getToken } = useAuth();
   const router = useRouter();
 
-  const { data: safetyData, isLoading: isLoadingSafety, isError: isErrorSafety } = useQuery({
+  const {
+    data: safetyData,
+    isLoading: isLoadingSafety,
+    isError: isErrorSafety,
+    refetch: refetchSafety,
+  } = useQuery({
     queryKey: ['safety-analytics'],
     queryFn: () => getSafetyAnalytics(getToken),
   });
 
-  const { data: docData, isLoading: isLoadingDoc, isError: isErrorDoc } = useQuery({
+  const {
+    data: docData,
+    isLoading: isLoadingDoc,
+    isError: isErrorDoc,
+    refetch: refetchDoc,
+  } = useQuery({
     queryKey: ['document-analytics'],
     queryFn: () => getDocumentAnalytics(getToken),
   });
 
-  // Fetch real violations from the new endpoint
-  const { data: violationsData } = useQuery({
+  // Fetch real violations from the new endpoint.
+  //
+  // This used to swallow a non-ok response and return `{ violations: [] }`,
+  // which the table below renders as "No violations detected. All analyzed
+  // documents are compliant." A 401, a 500 or a backend that is simply down
+  // therefore produced a green all-clear on a mining-safety product. Throw
+  // instead, so react-query enters its error state and the UI says it does not
+  // know rather than saying everything is fine.
+  const {
+    data: violationsData,
+    isError: isErrorViolations,
+    refetch: refetchViolations,
+    isFetching: isFetchingViolations,
+  } = useQuery({
     queryKey: ['recent-violations'],
     queryFn: async () => {
       const token = await getToken();
       const res = await fetch(`${API_BASE}/api/v1/analytics/violations?limit=20`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (!res.ok) return { violations: [] };
+      if (!res.ok) {
+        throw new Error(`Failed to load violations (${res.status})`);
+      }
       return res.json();
     },
     staleTime: 30_000,
@@ -99,8 +124,21 @@ export default function AnalyticsPage() {
   if (isError) {
     return (
       <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
-        <div className="w-full p-6 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive font-medium mb-8">
-          Failed to load analytics data. Please try refreshing the page.
+        <div className="w-full p-6 bg-destructive/10 border border-destructive/20 rounded-xl mb-8 flex flex-col items-start gap-3">
+          <p className="text-destructive font-medium">Failed to load analytics data.</p>
+          <p className="text-sm text-muted-foreground">
+            These figures are unavailable right now — do not read this as an all-clear.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchSafety();
+              refetchDoc();
+            }}
+          >
+            Try Again
+          </Button>
         </div>
       </div>
     );
@@ -165,7 +203,28 @@ export default function AnalyticsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {recentViolations.length === 0 ? (
+              {isErrorViolations ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <AlertTriangle className="w-8 h-8 text-destructive/60" />
+                      <p className="text-destructive font-medium">Could not load violations.</p>
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        This is not an all-clear — the compliance status of your documents is
+                        unknown until this loads.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={isFetchingViolations}
+                        onClick={() => refetchViolations()}
+                      >
+                        {isFetchingViolations ? 'Retrying…' : 'Try Again'}
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ) : recentViolations.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-10 text-center text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import ColorBends from '@/components/ui/ColorBends';
 import { HeroSection } from '@/components/landing/hero-section';
 import { ScrollTextSection } from '@/components/landing/scroll-text-section';
@@ -17,7 +18,7 @@ import CurvedLoop from '@/components/ui/CurvedLoop';
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#05030A]">
+    <div id="main-content" tabIndex={-1} className="flex flex-col min-h-screen bg-[#05030A]">
       {/* 1. THE HOOK: Hero & Social Proof */}
       <HeroSection />
       
@@ -27,6 +28,11 @@ export default function LandingPage() {
         Rio Tinto, BHP and Anglo American — implying seven customers, none of
         which exist. Only the SIH 2023 recognition is real, so that is all this
         states now. Do not add an organisation here without a public source.
+
+        The award is also scoped deliberately: it belongs to an earlier entry,
+        not to this codebase (first commit June 2025). Claiming it for this
+        platform invites "walk me through the code you wrote for it" and does
+        not survive the question. Keep the successor framing.
       */}
       <section className="relative z-20 bg-[#0A0A0B] pb-20 border-b border-white/2 overflow-hidden -mt-16">
         <div className="mx-auto max-w-[1200px] px-6 text-center relative z-10">
@@ -35,11 +41,20 @@ export default function LandingPage() {
           </p>
           <div className="glass-panel-premium rounded-3xl py-10 px-8 border-white/5">
             <p className="text-2xl sm:text-3xl font-bold tracking-tight text-white/80 leading-snug">
-              Winner, Smart India Hackathon 2023
+              Smart India Hackathon 2023 — National Winner
             </p>
             <p className="mt-3 text-[15px] text-white/45 max-w-2xl mx-auto">
-              Ministry of Coal problem statement — evaluated and recognised by
-              Coal India Limited and CMPDI, from a field of 44,000+ teams.
+              Ministry of Coal problem statement, from a field of 44,000+ teams.
+              Recognised at the national finals by Coal India Limited and CMPDI.
+            </p>
+            <p className="mt-4 text-[13px] text-white/30 max-w-2xl mx-auto">
+              That winning entry was a team prototype. This platform is a
+              separate, ground-up rebuild started in June 2025 and developed
+              solo since —{' '}
+              <Link href="/about" className="underline underline-offset-4 hover:text-white/50 transition-colors">
+                the full history is here
+              </Link>
+              .
             </p>
           </div>
         </div>

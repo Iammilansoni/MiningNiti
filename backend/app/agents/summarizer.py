@@ -23,7 +23,18 @@ class SummarizerAgent(BaseAgent):
 
     def __init__(self):
         # Shift to Cerebras (gpt-oss-120b) to bypass Gemini API rate limits and avoid Groq parallel execution rate limits
-        super().__init__(model_name="gpt-oss-120b", provider="cerebras")
+        super().__init__(
+            model_name="gpt-oss-120b",
+            provider="cerebras",
+            # Cerebras answers an exhausted account with 402
+            # payment_required, which took this agent out entirely while
+            # Groq was still serving. Groq hosts the same gpt-oss-120b
+            # weights, so the fallback is the same model on another host
+            # rather than a downgrade. It is only ever used after a quota
+            # refusal, so it costs nothing on the happy path.
+            fallback_provider="groq",
+            fallback_model="openai/gpt-oss-120b",
+        )
 
     @property
     def system_prompt(self) -> str:
@@ -88,6 +99,28 @@ Respond with a JSON object:
 }}
 """
         result = await self._generate_json(prompt)
+
+        # _generate_json returns {} once it has exhausted its retries on a
+        # non-quota failure. Falling through to "Summary not available." made
+        # that indistinguishable from a successful run over an empty document,
+        # and it was stored with confidence 0.7. Say plainly that nothing was
+        # produced, and carry an error marker so the orchestrator, the analysis
+        # cache and document_service can all see it.
+        if not result:
+            message = (
+                "Summary unavailable — the summarization provider returned no "
+                "usable response after retries. Re-analyze to try again."
+            )
+            return {
+                "summary": message,
+                "key_points": [],
+                "action_items": [],
+                "document_purpose": "",
+                "confidence": 0.0,
+                "word_count": 0,
+                "status": "error",
+                "error": "summarizer provider returned no usable response",
+            }
 
         summary = result.get("summary") or "Summary not available."
         return {
