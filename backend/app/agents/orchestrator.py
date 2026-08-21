@@ -162,22 +162,47 @@ class AgentOrchestrator:
                 (datetime.now(timezone.utc) - t1).total_seconds() * 1000
             )
 
-            # Handle per-agent exceptions gracefully
+            # Handle per-agent exceptions gracefully.
+            #
+            # gather(return_exceptions=True) means one agent's provider dying
+            # never costs the other two: whatever classification, safety and
+            # entity work succeeded is still returned and still persisted. The
+            # failed section is replaced by a placeholder that says so.
             def _quota_error_result(agent_name: str, exc: Exception) -> dict:
                 is_quota = isinstance(exc, QuotaExceededError)
+                provider = getattr(exc, "provider", "") or "the provider"
                 logger.error(f"{agent_name} failed: {exc}")
                 return {
                     "error": str(exc),
+                    "provider": getattr(exc, "provider", ""),
                     "quota_exceeded": is_quota,
                     "status": "quota_exceeded" if is_quota else "error",
+                    "unavailable_reason": (
+                        f"{provider} quota exhausted"
+                        if is_quota
+                        else f"{provider} error"
+                    ),
                 }
+
+            def _unavailable_text(agent_label: str, exc: Exception) -> str:
+                if isinstance(exc, QuotaExceededError):
+                    provider = getattr(exc, "provider", "") or "the AI provider"
+                    return (
+                        f"{agent_label} unavailable — the {provider} account has "
+                        "no quota left for this request. Click Re-analyze once "
+                        "quota is restored."
+                    )
+                return (
+                    f"{agent_label} unavailable — the AI provider failed for this "
+                    f"request ({str(exc)[:150]}). Click Re-analyze to try again."
+                )
 
             if isinstance(safety, Exception):
                 safety = {
                     **_quota_error_result("SafetyAnalyzerAgent", safety),
                     "score": None,
                     "hazards": [],
-                    "recommendations": [],
+                    "recommendations": [_unavailable_text("Safety analysis", safety)],
                 }
 
             if isinstance(entities, Exception):
@@ -194,9 +219,30 @@ class AgentOrchestrator:
             if isinstance(summary, Exception):
                 summary = {
                     **_quota_error_result("SummarizerAgent", summary),
-                    "summary": "Analysis failed — the summarizer's provider rate-limited this request. Please try again later.",
+                    "summary": _unavailable_text("Summary", summary),
                     "key_points": [],
                 }
+
+            # Sections that produced a placeholder rather than real analysis.
+            # document_service surfaces this to the user through
+            # Document.processing_error, because the API response coerces
+            # entities to plain lists and would otherwise drop every marker.
+            degraded_sections = {
+                name: section.get("unavailable_reason")
+                or section.get("error")
+                or "unavailable"
+                for name, section in (
+                    ("safety", safety),
+                    ("entities", entities),
+                    ("summary", summary),
+                )
+                if isinstance(section, dict)
+                and (
+                    section.get("error")
+                    or section.get("quota_exceeded")
+                    or section.get("status") in ("error", "quota_exceeded")
+                )
+            }
 
             total_ms = int(
                 (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
@@ -219,6 +265,7 @@ class AgentOrchestrator:
                     ],
                     "analyzed_at": datetime.now(timezone.utc).isoformat(),
                     "cache_hit": False,
+                    "degraded_sections": degraded_sections,
                 },
             }
 

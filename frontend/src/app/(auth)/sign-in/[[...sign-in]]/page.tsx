@@ -11,7 +11,7 @@ export default function Page() {
   ];
 
   return (
-    <main className="grid min-h-screen bg-[#05030A] lg:grid-cols-[1fr_480px]">
+    <main id="main-content" tabIndex={-1} className="grid min-h-screen bg-[#05030A] lg:grid-cols-[1fr_480px]">
 
       {/* ── LEFT: Brand panel ── */}
       <section className="relative hidden lg:flex lg:flex-col overflow-hidden">

@@ -78,6 +78,12 @@ async def stream_chat(
         db.commit()
         db.refresh(session)
 
+    chat_service = ChatService()
+
+    # Load prior turns BEFORE persisting this one, or the current question is
+    # replayed to the model as its own history.
+    history = chat_service.load_session_history(db, session.id)
+
     # Save user message immediately
     user_message = ChatMessage(
         session_id=session.id,
@@ -86,8 +92,6 @@ async def stream_chat(
     )
     db.add(user_message)
     db.commit()
-
-    chat_service = ChatService()
 
     async def event_generator():
         full_response = []
@@ -100,6 +104,7 @@ async def stream_chat(
                 user_id=user_id,
                 document_ids=request.document_ids,
                 db=db,
+                history=history,
             ):
                 # Forward each SSE event to client
                 yield event

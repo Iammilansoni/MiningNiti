@@ -108,9 +108,15 @@ class TestSendMessage:
             "app.services.chat_service.ChatService.generate_response",
             new_callable=AsyncMock,
         ) as mock_gen:
+            # ChatService.generate_response returns (answer, sources,
+            # tokens_used). The two-element mock here used to fail as
+            # "not enough values to unpack" the moment the endpoint was
+            # actually reached — it never was, because the request died on
+            # SQLite UUID binding first.
             mock_gen.return_value = (
                 "According to [Mining_site.pdf, Page 12], methane limits are below 1%.",
                 [],
+                {"input": 128, "output": 42},
             )
             response = client.post(
                 "/api/v1/chat/send",
@@ -134,7 +140,11 @@ class TestSendMessage:
             "app.services.chat_service.ChatService.generate_response",
             new_callable=AsyncMock,
         ) as mock_gen:
-            mock_gen.return_value = ("Test answer with [doc.pdf, Page 5] citation.", [])
+            mock_gen.return_value = (
+                "Test answer with [doc.pdf, Page 5] citation.",
+                [],
+                {"input": 128, "output": 42},
+            )
             response = client.post(
                 "/api/v1/chat/send",
                 json={
@@ -156,7 +166,11 @@ class TestSendMessage:
             "app.services.chat_service.ChatService.generate_response",
             new_callable=AsyncMock,
         ) as mock_gen:
-            mock_gen.return_value = ("Response text.", [])
+            mock_gen.return_value = (
+                "Response text.",
+                [],
+                {"input": 128, "output": 42},
+            )
             response = client.post(
                 "/api/v1/chat/send",
                 json={

@@ -73,6 +73,12 @@ def _is_cacheable(results: Dict[str, Any]) -> bool:
     if results.get("metadata", {}).get("failed"):
         return False
 
+    # The orchestrator lists every section it had to replace with a
+    # placeholder. One entry here means the analysis is partial, whatever the
+    # individual sections look like.
+    if results.get("metadata", {}).get("degraded_sections"):
+        return False
+
     for section in _REQUIRED_SECTIONS:
         value = results.get(section)
         if not isinstance(value, dict):
