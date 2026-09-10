@@ -76,7 +76,9 @@ def _coerce_str_list(raw) -> list:
     _coerce_hazards)."""
     if not isinstance(raw, list):
         return []
-    return [item if isinstance(item, str) else str(item) for item in raw if item is not None]
+    return [
+        item if isinstance(item, str) else str(item) for item in raw if item is not None
+    ]
 
 
 def _coerce_entities(raw) -> dict:
