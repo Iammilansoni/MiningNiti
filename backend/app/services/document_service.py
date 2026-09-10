@@ -44,6 +44,52 @@ _orchestrator = AgentOrchestrator()
 EMBED_BATCH_SIZE = 100
 
 
+def _coerce_hazards(raw) -> list:
+    """
+    Shape the safety agent's raw ``hazards`` output to match what
+    DocumentResponse / DocumentAnalysisResult promise: List[Dict[str, Any]].
+
+    LLM JSON output is not guaranteed to match the schema we asked for — a
+    hazard can come back as a plain string instead of the requested object.
+    Writing that straight to the JSON column succeeds silently (it's an
+    untyped column), the document is marked COMPLETED, and only the next
+    *read* of it fails: Pydantic rejects the row and every endpoint that
+    touches it (list, detail, analysis, search) 500s from then on, with no
+    way to fix it short of editing the row directly. Normalize at write time
+    so a malformed item degrades to a wrapped string instead of corrupting
+    the row.
+    """
+    if not isinstance(raw, list):
+        return []
+    coerced = []
+    for item in raw:
+        if isinstance(item, dict):
+            coerced.append(item)
+        elif item is not None:
+            coerced.append({"description": str(item)})
+    return coerced
+
+
+def _coerce_str_list(raw) -> list:
+    """Shape agent output to List[str], stringifying any non-string items
+    rather than letting a malformed one corrupt the whole row (see
+    _coerce_hazards)."""
+    if not isinstance(raw, list):
+        return []
+    return [item if isinstance(item, str) else str(item) for item in raw if item is not None]
+
+
+def _coerce_entities(raw) -> dict:
+    """Shape agent output to Dict[str, List[str]], defensively — see
+    _coerce_hazards for why this can't just trust the LLM's JSON."""
+    if not isinstance(raw, dict):
+        return {}
+    return {
+        str(k): _coerce_str_list(v if isinstance(v, list) else [])
+        for k, v in raw.items()
+    }
+
+
 class DocumentService:
     """
     Document processing service.
@@ -192,16 +238,18 @@ class DocumentService:
                 document.compliance_status = status_map.get(
                     safety.get("status"), ComplianceStatus.PENDING
                 )
-                document.hazards_detected = safety.get("hazards", [])
-                document.safety_recommendations = safety.get("recommendations", [])
+                document.hazards_detected = _coerce_hazards(safety.get("hazards", []))
+                document.safety_recommendations = _coerce_str_list(
+                    safety.get("recommendations", [])
+                )
 
                 # Entities & Summary
-                document.entities = entities if isinstance(entities, dict) else {}
+                document.entities = _coerce_entities(entities)
                 document.summary = summary.get("summary") or (
                     "Summary unavailable — the summarizer produced no result "
                     "for this document. Click Re-analyze to try again."
                 )
-                document.key_points = summary.get("key_points", [])
+                document.key_points = _coerce_str_list(summary.get("key_points", []))
 
                 # ── Step 7: Mark completed ───────────────────────────────────
                 #
