@@ -3,10 +3,11 @@ Prompt Schemas
 Pydantic models for custom prompt API requests and responses
 """
 
-from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
+
+from app.schemas.common import UtcDatetime
 
 
 class PromptCreate(BaseModel):
@@ -38,8 +39,8 @@ class PromptResponse(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     is_default: bool = False
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    created_at: UtcDatetime
+    updated_at: Optional[UtcDatetime] = None
 
     model_config = {"from_attributes": True}
 

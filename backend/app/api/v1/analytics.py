@@ -4,7 +4,7 @@ Dashboard statistics and mining intelligence metrics
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import case, func
@@ -394,9 +394,13 @@ async def get_recent_violations(
                             "description": h.get("description", ""),
                             "regulation": h.get("regulation", ""),
                             "detected_at": (
-                                doc.processed_at.isoformat()
+                                doc.processed_at.replace(
+                                    tzinfo=timezone.utc
+                                ).isoformat()
                                 if doc.processed_at
-                                else doc.created_at.isoformat()
+                                else doc.created_at.replace(
+                                    tzinfo=timezone.utc
+                                ).isoformat()
                             ),
                             "compliance_status": (
                                 doc.compliance_status.value
