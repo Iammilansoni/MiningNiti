@@ -96,7 +96,48 @@ If it has been idle, the first request may take up to a minute while the contain
 
 <br/>
 
-### Retrieval-augmented chat, end to end
+## 🎥 Project Demo
+
+Every GIF below is a real, unedited interaction against the live deployment —
+same free-tier infrastructure, same documents, same AI providers a visitor
+gets. Nothing here is mocked.
+
+### 🤖 Multi-Agent Document Pipeline
+
+<div align="center">
+
+![Uploading a document and watching the multi-agent pipeline classify, extract entities and summarize it](docs/assets/multi-agent-demo.gif)
+
+</div>
+
+<div align="center">
+<sub><i>Upload → the orchestrator classifies the document first, then runs safety analysis,
+entity extraction and summarization in parallel → the result: a categorized document with<br/>
+a real executive summary, key insights, and entities extracted and grouped by type
+(equipment, chemicals, locations, personnel, dates).</i></sub>
+</div>
+
+<br/>
+
+### 🛡️ Compliance Auto-Auditor
+
+<div align="center">
+
+![Creating a compliance audit and reviewing a clause-by-clause result with cited evidence](docs/assets/compliance-demo.gif)
+
+</div>
+
+<div align="center">
+<sub><i>Trigger: pick a regulation and the operational documents to check it against, and run the audit.<br/>
+Result: a real audit already in progress — every clause assessed compliant, a gap, or missing,
+with pure definitions/boilerplate clauses correctly excluded rather than
+counted against the score, and every finding backed by cited evidence and
+specific, actionable recommendations.</i></sub>
+</div>
+
+<br/>
+
+### 💬 Chat — Dedicated Page
 
 <div align="center">
 
@@ -120,19 +161,25 @@ the answer streams back token by token, and every claim carries its document and
 
 <br/>
 
+### 📄💬 Chat — Inside a Document
+
+<div align="center">
+
+![Asking a question inside an incident report and getting an answer scoped to that one document, with page citations](docs/assets/document-chat-demo.gif)
+
+</div>
+
+<div align="center">
+<sub><i>The same retrieval pipeline, scoped to a single open document — "what actions are
+recommended?" pulls its answer only from that incident report, not the whole<br/>
+corpus, and still cites the page it came from.</i></sub>
+</div>
+
+<br/>
+
 ### The interface
 
 <table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/assets/chat.jpg" alt="Chat entry point with suggested starter questions" />
-      <p align="center"><b>Ask anything</b><br/><sub>Starter questions show exactly what they will ask.</sub></p>
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/assets/chat-answer.jpg" alt="Streamed answer with inline page-level citations" />
-      <p align="center"><b>Cited answers</b><br/><sub>Every claim links to a document and page, opening in the PDF viewer.</sub></p>
-    </td>
-  </tr>
   <tr>
     <td width="50%" valign="top">
       <img src="docs/assets/dashboard.jpg" alt="Dashboard with KPI grid, recent documents and activity feed" />
@@ -151,6 +198,7 @@ the answer streams back token by token, and every claim carries its document and
 
 - [Project History](#project-history)
 - [Demo](#demo)
+- [Project Demo (GIFs)](#-project-demo)
 - [The Problem](#the-problem)
 - [The Solution](#the-solution)
 - [Key Features](#key-features)
