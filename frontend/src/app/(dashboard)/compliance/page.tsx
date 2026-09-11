@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/product/page-header';
+import { hasInFlightAudits } from '@/lib/query-utils';
 
 export default function CompliancePage() {
   const router = useRouter();
@@ -47,6 +48,15 @@ export default function CompliancePage() {
   const { data: auditData, isLoading } = useQuery({
     queryKey: ['complianceAudits', page],
     queryFn: () => getComplianceAudits(getToken, { page, page_size: pageSize }),
+    // An audit's clause-by-clause assessment runs in the background after
+    // creation. Without polling, a newly created (or still-running) audit
+    // sits at "pending"/"running" in this list until the user reloads by
+    // hand — mirrors the same pattern used for the audit detail page and the
+    // documents registry.
+    refetchInterval: (query) => {
+      const audits = query.state.data?.audits ?? [];
+      return hasInFlightAudits(audits) ? 4000 : false;
+    },
   });
 
   const { data: docData } = useQuery({

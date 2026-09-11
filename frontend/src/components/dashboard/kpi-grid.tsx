@@ -14,6 +14,13 @@ export function KPIGrid() {
   const { data: stats, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: () => getDashboardStats(getToken),
+    // Documents keep processing in the background after upload; poll while
+    // any are still pending so the KPI cards (document count, compliance
+    // score) update on their own instead of requiring a manual refresh.
+    refetchInterval: (query) => {
+      const pending = query.state.data?.pending_documents ?? 0;
+      return pending > 0 ? 5000 : false;
+    },
   });
 
   if (isLoading) {
