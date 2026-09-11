@@ -26,6 +26,7 @@ import { UploadModal } from '@/components/documents/UploadModal';
 import { toast } from 'sonner';
 import { openDocumentInNewTab } from '@/lib/document-file';
 import { PageHeader } from '@/components/product/page-header';
+import { hasInFlightDocuments, invalidateDocumentQueries } from '@/lib/query-utils';
 
 export default function DocumentsPage() {
   const router = useRouter();
@@ -75,12 +76,7 @@ export default function DocumentsPage() {
     // document has reached a terminal state, so an idle list costs nothing.
     refetchInterval: (query) => {
       const docs = query.state.data?.documents ?? [];
-      const inFlight = docs.some((d) =>
-        ['pending', 'processing', 'analyzing'].includes(
-          String(d.status).toLowerCase(),
-        ),
-      );
-      return inFlight ? 4000 : false;
+      return hasInFlightDocuments(docs) ? 4000 : false;
     },
   });
 
@@ -88,8 +84,7 @@ export default function DocumentsPage() {
     mutationFn: (documentId: string) => deleteDocument(documentId, getToken),
     onSuccess: () => {
       toast.success('Document deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      invalidateDocumentQueries(queryClient);
     },
     onError: (err: any) => {
       toast.error(err.message || 'Failed to delete document');

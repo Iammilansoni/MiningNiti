@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getDocuments, getChatSessions } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
 import { formatDistanceToNow } from 'date-fns';
+import { hasInFlightDocuments } from '@/lib/query-utils';
 
 export function ActivityTimeline() {
   const { getToken } = useAuth();
@@ -14,6 +15,12 @@ export function ActivityTimeline() {
   const { data: docsData, isLoading: isLoadingDocs } = useQuery({
     queryKey: ['activity-documents'],
     queryFn: () => getDocuments(getToken, { page_size: 5 }),
+    // Poll while a recent upload is still processing so this feed doesn't
+    // need a manual refresh to reflect the completed/failed state.
+    refetchInterval: (query) => {
+      const docs = query.state.data?.documents ?? [];
+      return hasInFlightDocuments(docs) ? 4000 : false;
+    },
   });
 
   const { data: chatData, isLoading: isLoadingChats } = useQuery({

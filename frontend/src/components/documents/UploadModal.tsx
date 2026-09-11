@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { invalidateDocumentQueries } from '@/lib/query-utils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -54,9 +55,7 @@ export function UploadModal({ open, onOpenChange }: UploadModalProps) {
       }
     }
 
-    queryClient.invalidateQueries({ queryKey: ['documents'] });
-    queryClient.invalidateQueries({ queryKey: ['recent-documents'] });
-    queryClient.invalidateQueries({ queryKey: ['document-analytics'] });
+    invalidateDocumentQueries(queryClient);
     onOpenChange(false);
   };
 

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface ChatSource {
   document_id: string;
@@ -31,6 +32,7 @@ export function useChatStream() {
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
 
   const sendMessage = useCallback(async (content: string, documentIds?: string[]) => {
     if (!content.trim()) return;
@@ -143,7 +145,14 @@ export function useChatStream() {
             } else if (eventType === 'done') {
               // Persist session ID for multi-turn conversation
               if (data.session_id) {
+                const isNewSession = data.session_id !== sessionId;
                 setSessionId(data.session_id);
+                // A new/updated session won't show up in the dashboard's
+                // activity feed (or anywhere else session lists are read)
+                // until this query is invalidated.
+                if (isNewSession) {
+                  queryClient.invalidateQueries({ queryKey: ['activity-chats'] });
+                }
               }
             } else if (eventType === 'error') {
               setError(data.message || 'AI response error');

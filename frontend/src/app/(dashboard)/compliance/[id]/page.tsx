@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getComplianceAuditDetail } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
 import { SectionCard } from '@/components/product/section-card';
@@ -19,6 +19,7 @@ export default function ComplianceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   const auditId = params.id as string;
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -33,6 +34,19 @@ export default function ComplianceDetailPage() {
       return data.status === 'pending' || data.status === 'running' ? 3000 : false;
     },
   });
+
+  // Once this audit finishes processing, the list page's cached copy of it
+  // (still showing "pending"/"running") is stale. Invalidate it so navigating
+  // back to /compliance shows the finished status without a manual refresh.
+  const prevStatusRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const current = audit?.status;
+    if (prev && current && prev !== current && (current === 'completed' || current === 'failed')) {
+      queryClient.invalidateQueries({ queryKey: ['complianceAudits'] });
+    }
+    prevStatusRef.current = current;
+  }, [audit?.status, queryClient]);
 
   const toggleRow = (index: number) => {
     setExpandedRows((prev) => {
