@@ -9,7 +9,7 @@ import { SectionCard } from '@/components/product/section-card';
 import { StatusBadge } from '@/components/product/status';
 import {
   ArrowLeft, ShieldCheck, CheckCircle2, AlertTriangle,
-  XCircle, ChevronDown, ChevronRight, FileText,
+  XCircle, ChevronDown, ChevronRight, FileText, MinusCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -91,6 +91,7 @@ export default function ComplianceDetailPage() {
       case 'compliant': return <CheckCircle2 className="size-4 text-green-500" />;
       case 'gap': return <AlertTriangle className="size-4 text-yellow-500" />;
       case 'missing': return <XCircle className="size-4 text-red-500" />;
+      case 'not_applicable': return <MinusCircle className="size-4 text-muted-foreground" />;
       default: return null;
     }
   };
@@ -100,6 +101,7 @@ export default function ComplianceDetailPage() {
       case 'compliant': return 'bg-green-500/10 text-green-700 border-green-500/20';
       case 'gap': return 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20';
       case 'missing': return 'bg-red-500/10 text-red-700 border-red-500/20';
+      case 'not_applicable': return 'bg-muted text-muted-foreground border-border';
       default: return '';
     }
   };
@@ -147,7 +149,7 @@ export default function ComplianceDetailPage() {
 
       {/* Summary Cards */}
       {audit.status === 'completed' && audit.total_clauses && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-2 gap-4 ${audit.not_applicable_count ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
           <SectionCard className="text-center py-6">
             <div className="text-3xl font-bold text-primary">
               {audit.overall_score ?? 0}%
@@ -172,7 +174,23 @@ export default function ComplianceDetailPage() {
             </div>
             <p className="text-sm text-muted-foreground mt-1">Missing</p>
           </SectionCard>
+          {!!audit.not_applicable_count && (
+            <SectionCard className="text-center py-6">
+              <div className="text-3xl font-bold text-muted-foreground">
+                {audit.not_applicable_count}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">Not Applicable</p>
+            </SectionCard>
+          )}
         </div>
+      )}
+      {audit.status === 'completed' && !!audit.not_applicable_count && (
+        <p className="text-xs text-muted-foreground -mt-4">
+          Overall Score is calculated from Compliant, Gaps and Missing clauses only —
+          {' '}{audit.not_applicable_count} clause{audit.not_applicable_count === 1 ? '' : 's'}{' '}
+          identified as pure definitions or document boilerplate (not an operational
+          requirement) {audit.not_applicable_count === 1 ? 'is' : 'are'} excluded.
+        </p>
       )}
 
       {/* Error banner */}
@@ -190,8 +208,10 @@ export default function ComplianceDetailPage() {
 
       {/* Filter tabs */}
       {rows.length > 0 && (
-        <div className="flex items-center gap-2">
-          {['all', 'compliant', 'gap', 'missing'].map((f) => (
+        <div className="flex items-center gap-2 flex-wrap">
+          {(['all', 'compliant', 'gap', 'missing', 'not_applicable'] as const)
+            .filter((f) => f !== 'not_applicable' || !!audit.not_applicable_count)
+            .map((f) => (
             <Button
               key={f}
               variant={statusFilter === f ? 'default' : 'outline'}
@@ -202,6 +222,7 @@ export default function ComplianceDetailPage() {
               {f === 'compliant' && `Compliant (${audit.compliant_count ?? 0})`}
               {f === 'gap' && `Gaps (${audit.gap_count ?? 0})`}
               {f === 'missing' && `Missing (${audit.missing_count ?? 0})`}
+              {f === 'not_applicable' && `Not Applicable (${audit.not_applicable_count ?? 0})`}
             </Button>
           ))}
         </div>

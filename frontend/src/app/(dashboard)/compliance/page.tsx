@@ -268,11 +268,21 @@ export default function CompliancePage() {
                           Score: {audit.overall_score}%
                         </span>
                       )}
-                      {audit.total_clauses != null && (
-                        <span>
-                          {audit.compliant_count ?? 0}/{audit.total_clauses} compliant
-                        </span>
-                      )}
+                      {audit.total_clauses != null && (() => {
+                        // Applicable = clauses actually scored compliant/gap/missing,
+                        // excluding pure definitions/boilerplate clauses that were
+                        // never something an operational document could address.
+                        // Falls back to total_clauses for audits run before that
+                        // distinction existed (not_applicable_count is null).
+                        const applicable = audit.not_applicable_count != null
+                          ? audit.total_clauses! - audit.not_applicable_count
+                          : audit.total_clauses;
+                        return (
+                          <span>
+                            {audit.compliant_count ?? 0}/{applicable} compliant
+                          </span>
+                        );
+                      })()}
                       {audit.created_at && (
                         <span>
                           {formatDistanceToNow(new Date(audit.created_at), { addSuffix: true })}

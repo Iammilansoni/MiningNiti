@@ -464,7 +464,7 @@ export interface ComplianceMatrixRow {
     clause_index: number;
     clause_text: string;
     section_title?: string | null;
-    status: 'compliant' | 'gap' | 'missing';
+    status: 'compliant' | 'gap' | 'missing' | 'not_applicable';
     assessment: string;
     confidence: number;
     evidence_chunks?: {
@@ -488,6 +488,7 @@ export interface ComplianceAudit {
     compliant_count?: number | null;
     gap_count?: number | null;
     missing_count?: number | null;
+    not_applicable_count?: number | null;
     overall_score?: number | null;
     processing_error?: string | null;
     completed_at?: string | null;
