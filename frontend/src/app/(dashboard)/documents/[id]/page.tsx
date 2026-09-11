@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { AskDocumentAI } from '@/components/documents/AskDocumentAI';
+import { invalidateDocumentQueries } from '@/lib/query-utils';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -376,6 +377,13 @@ export default function DocumentDetailPage() {
     mutationFn: () => deleteDocument(documentId, getToken),
     onSuccess: () => {
       toast.success('Document deleted');
+      // Evict this document's own caches and every list/widget that reads
+      // from the documents table, so navigating back to the registry (or any
+      // other page) doesn't show the just-deleted document until a manual
+      // refresh.
+      queryClient.removeQueries({ queryKey: ['document', documentId] });
+      queryClient.removeQueries({ queryKey: ['documentAnalysis', documentId] });
+      invalidateDocumentQueries(queryClient);
       router.push('/documents');
     },
     onError: (err: any) => toast.error(err.message || 'Delete failed'),
@@ -387,6 +395,9 @@ export default function DocumentDetailPage() {
       toast.success('Re-analysis started — processing will begin shortly');
       queryClient.invalidateQueries({ queryKey: ['document', documentId] });
       queryClient.invalidateQueries({ queryKey: ['documentAnalysis', documentId] });
+      // Status flips back to pending/processing — every other view of this
+      // document (registry list, dashboard widgets) needs to know too.
+      invalidateDocumentQueries(queryClient);
     },
     onError: (err: any) => toast.error(err.message || 'Re-analysis failed'),
   });
@@ -401,6 +412,12 @@ export default function DocumentDetailPage() {
         queryClient.invalidateQueries({ queryKey: ['documentAnalysis', documentId] });
       } else if (current === 'failed') {
         toast.error('❌ Analysis failed. Try re-analyzing the document.');
+      }
+      // Other views of this document (registry list, dashboard widgets) are
+      // now stale — refresh them so they reflect the finished/failed state
+      // without the user needing to navigate away and back or hit refresh.
+      if (current === 'completed' || current === 'failed') {
+        invalidateDocumentQueries(queryClient);
       }
     }
     prevStatusRef.current = current;
