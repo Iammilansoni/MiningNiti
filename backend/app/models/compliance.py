@@ -72,7 +72,12 @@ class ComplianceAudit(Base, UUIDMixin, TimestampMixin):
     compliant_count = Column(Integer, nullable=True)
     gap_count = Column(Integer, nullable=True)
     missing_count = Column(Integer, nullable=True)
-    overall_score = Column(Float, nullable=True)  # 0-100
+    # Clauses excluded from scoring as pure definitions/gazette-masthead/
+    # table-of-contents content — see clause_filter.py. Counted separately
+    # from missing_count because they were never a real compliance gap, and
+    # excluded from overall_score's denominator for the same reason.
+    not_applicable_count = Column(Integer, nullable=True)
+    overall_score = Column(Float, nullable=True)  # 0-100, excludes not_applicable
 
     processing_error = Column(Text, nullable=True)
     completed_at = Column(DateTime, nullable=True)
@@ -103,6 +108,7 @@ class ComplianceAudit(Base, UUIDMixin, TimestampMixin):
             "compliant_count": self.compliant_count,
             "gap_count": self.gap_count,
             "missing_count": self.missing_count,
+            "not_applicable_count": self.not_applicable_count,
             "overall_score": self.overall_score,
             "processing_error": self.processing_error,
             "completed_at": (
@@ -137,7 +143,7 @@ class ComplianceMatrixRow(Base, UUIDMixin):
     clause_text = Column(Text, nullable=False)
     section_title = Column(String(500), nullable=True)
 
-    # compliant | gap | missing
+    # compliant | gap | missing | not_applicable
     status = Column(String(50), nullable=False)
     assessment = Column(Text, nullable=False)  # LLM explanation
     confidence = Column(Float, nullable=False)  # 0.0-1.0
