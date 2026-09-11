@@ -7,6 +7,7 @@ import { ChatMessage } from '@/components/chat/ChatMessage';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { PromptPickerMenu } from '@/components/prompts/PromptPickerMenu';
 
 const PDFViewerModal = dynamic(() => import('@/components/chat/PDFViewerModal').then(mod => mod.PDFViewerModal), {
   ssr: false,
@@ -175,9 +176,18 @@ export default function ChatPage() {
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about mining regulations, safety procedures..."
-                className="min-h-[52px] max-h-32 resize-none border-0 focus-visible:ring-0 bg-transparent p-4 pr-24 text-foreground placeholder:text-muted-foreground text-[15px] rounded-2xl"
+                className="min-h-[52px] max-h-32 resize-none border-0 focus-visible:ring-0 bg-transparent p-4 pr-24 pl-14 text-foreground placeholder:text-muted-foreground text-[15px] rounded-2xl"
                 rows={1}
               />
+              <div className="absolute bottom-2 left-2">
+                <PromptPickerMenu
+                  onSelect={(text) => {
+                    setInput(text);
+                    inputRef.current?.focus();
+                  }}
+                  className="h-9 w-9 rounded-xl border-0 bg-transparent hover:bg-muted"
+                />
+              </div>
               <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
                 {isLoading ? (
                   <Button

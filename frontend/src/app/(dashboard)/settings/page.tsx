@@ -4,16 +4,15 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserProfile } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
-import { User, Shield, Bell } from 'lucide-react';
+import { User, Shield } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
-import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { PageHeader } from '@/components/product/page-header';
 
-type TabId = 'profile' | 'security' | 'notifications';
+type TabId = 'profile' | 'security';
 
 export default function SettingsPage() {
   const { getToken } = useAuth();
@@ -27,7 +26,6 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'security', label: 'Security', icon: Shield },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
   ] as const;
 
   return (
@@ -69,9 +67,6 @@ export default function SettingsPage() {
             )}
             {activeTab === 'security' && (
               <SecuritySettings key="security" />
-            )}
-            {activeTab === 'notifications' && (
-              <NotificationSettings key="notifications" />
             )}
           </AnimatePresence>
         </div>

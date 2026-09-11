@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Citation } from '@/components/ui/citation';
 import ReactMarkdown from 'react-markdown';
 import dynamic from 'next/dynamic';
+import { PromptPickerMenu } from '@/components/prompts/PromptPickerMenu';
 
 const PDFViewerModal = dynamic(() => import('@/components/chat/PDFViewerModal').then(mod => mod.PDFViewerModal), {
   ssr: false,
@@ -309,6 +310,12 @@ function InputBar({
 }) {
   return (
     <div className="flex gap-2 items-end">
+      <PromptPickerMenu
+        onSelect={(text) => {
+          onChange(text);
+          inputRef.current?.focus();
+        }}
+      />
       <textarea
         ref={inputRef}
         value={value}
