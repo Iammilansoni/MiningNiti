@@ -3,26 +3,61 @@
 import React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { getPrompts } from '@/lib/api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getPrompts, deletePrompt, CustomPrompt } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
 import { SectionCard } from '@/components/product/section-card';
-import { Lightbulb, MessageSquarePlus, Copy, Star, ArrowRight } from 'lucide-react';
+import { Lightbulb, MessageSquarePlus, Copy, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CreatePromptModal } from '@/components/prompts/CreatePromptModal';
+import { PromptFormModal } from '@/components/prompts/PromptFormModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/product/page-header';
 
 export default function PromptsPage() {
   const { getToken } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data: prompts, isLoading, isError } = useQuery({
     queryKey: ['prompts'],
     queryFn: () => getPrompts(getToken),
   });
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPrompt, setEditingPrompt] = useState<CustomPrompt | null>(null);
+  const [deletingPrompt, setDeletingPrompt] = useState<CustomPrompt | null>(null);
+
+  const deleteMutation = useMutation({
+    mutationFn: (promptId: string) => deletePrompt(promptId, getToken),
+    onSuccess: () => {
+      toast.success('Prompt deleted');
+      queryClient.invalidateQueries({ queryKey: ['prompts'] });
+      setDeletingPrompt(null);
+    },
+    onError: () => {
+      toast.error('Failed to delete prompt');
+    },
+  });
+
+  const openCreate = () => {
+    setEditingPrompt(null);
+    setIsFormOpen(true);
+  };
+
+  const openEdit = (prompt: CustomPrompt) => {
+    setEditingPrompt(prompt);
+    setIsFormOpen(true);
+  };
 
   const handleUsePrompt = (promptText: string, promptName: string) => {
     // Store the prompt in sessionStorage so the chat page can pick it up
@@ -43,13 +78,34 @@ export default function PromptsPage() {
         title="Prompt Library"
         description="Pre-built intelligence queries for standard compliance tasks."
         actions={
-          <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
+          <Button className="gap-2" onClick={openCreate}>
             <MessageSquarePlus className="w-4 h-4" /> Create Prompt
           </Button>
         }
       />
 
-      <CreatePromptModal open={isCreateOpen} onOpenChange={setIsCreateOpen} />
+      <PromptFormModal open={isFormOpen} onOpenChange={setIsFormOpen} prompt={editingPrompt} />
+
+      <AlertDialog open={!!deletingPrompt} onOpenChange={(open) => !open && setDeletingPrompt(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &quot;{deletingPrompt?.name}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove this saved prompt. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={() => deletingPrompt && deleteMutation.mutate(deletingPrompt.id)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
@@ -68,7 +124,7 @@ export default function PromptsPage() {
           <p className="text-muted-foreground max-w-md mx-auto mb-6">
             Create your first prompt to quickly execute repeated analysis tasks on your mining documents.
           </p>
-          <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+          <Button onClick={openCreate} className="gap-2">
             <MessageSquarePlus className="w-4 h-4" /> Create First Prompt
           </Button>
         </SectionCard>
@@ -80,15 +136,35 @@ export default function PromptsPage() {
                 <div className="p-2.5 bg-primary/10 text-primary rounded-lg">
                   <Lightbulb className="w-5 h-5" />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => handleCopyPrompt(prompt.prompt)}
-                  title="Copy prompt text"
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => handleCopyPrompt(prompt.prompt)}
+                    title="Copy prompt text"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => openEdit(prompt)}
+                    title="Edit prompt"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => setDeletingPrompt(prompt)}
+                    title="Delete prompt"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">{prompt.name}</h3>
               <p className="text-sm text-muted-foreground flex-1 mb-6 line-clamp-3">
