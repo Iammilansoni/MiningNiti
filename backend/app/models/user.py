@@ -4,7 +4,7 @@ User profile and organization management
 """
 
 import uuid
-from datetime import datetime
+from datetime import timezone
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import JSONB as PG_JSONB
@@ -74,5 +74,9 @@ class User(Base, UUIDMixin, TimestampMixin):
             "company_role": self.company_role,
             "industry_focus": self.industry_focus,
             "is_active": self.is_active,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": (
+                self.created_at.replace(tzinfo=timezone.utc).isoformat()
+                if self.created_at
+                else None
+            ),
         }

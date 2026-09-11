@@ -4,7 +4,7 @@ Enterprise compliance logging for all user actions
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from sqlalchemy import JSON, Column, DateTime, String, Text
@@ -96,7 +96,11 @@ class AuditLog(Base, UUIDMixin):
             "resource_id": self.resource_id,
             "description": self.description,
             "details": self.details,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "timestamp": (
+                self.timestamp.replace(tzinfo=timezone.utc).isoformat()
+                if self.timestamp
+                else None
+            ),
             "success": self.success,
         }
 
