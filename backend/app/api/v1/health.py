@@ -5,7 +5,7 @@ System health and status monitoring
 
 import asyncio
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, Response
@@ -124,7 +124,7 @@ async def check_providers(use_cache: bool = True) -> Dict[str, Any]:
 
         result = {
             "status": "ok" if all(r["ok"] for r in results.values()) else "degraded",
-            "checked_at": datetime.utcnow().isoformat(),
+            "checked_at": datetime.now(timezone.utc).isoformat(),
             "providers": results,
         }
         _provider_cache["result"] = result

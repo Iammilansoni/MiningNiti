@@ -3,11 +3,12 @@ Compliance Audit Schemas
 Pydantic v2 models for compliance audit API request/response validation.
 """
 
-from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+from app.schemas.common import UtcDatetime
 
 
 class ComplianceAuditCreate(BaseModel):
@@ -50,8 +51,8 @@ class ComplianceAuditResponse(BaseModel):
     not_applicable_count: Optional[int] = None
     overall_score: Optional[float] = None
     processing_error: Optional[str] = None
-    completed_at: Optional[datetime] = None
-    created_at: Optional[datetime] = None
+    completed_at: Optional[UtcDatetime] = None
+    created_at: Optional[UtcDatetime] = None
 
     model_config = {"from_attributes": True}
 
