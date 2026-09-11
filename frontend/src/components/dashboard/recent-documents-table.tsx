@@ -10,13 +10,20 @@ import { getDocuments } from '@/lib/api';
 import { useAuth } from '@clerk/nextjs';
 import { formatDistanceToNow } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { hasInFlightDocuments } from '@/lib/query-utils';
 
 export function RecentDocumentsTable() {
   const { getToken } = useAuth();
-  
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['recent-documents'],
     queryFn: () => getDocuments(getToken, { page_size: 5 }),
+    // Mirrors the registry list: poll while a recently uploaded document is
+    // still processing so its status updates here without a manual refresh.
+    refetchInterval: (query) => {
+      const docs = query.state.data?.documents ?? [];
+      return hasInFlightDocuments(docs) ? 4000 : false;
+    },
   });
 
   const recentDocs = data?.documents || [];
