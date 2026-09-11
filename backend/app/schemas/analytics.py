@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from app.schemas.common import UtcDatetime
+
 
 class CategoryCount(BaseModel):
     """Count by document category"""
@@ -59,8 +61,8 @@ class DashboardStats(BaseModel):
     documents_by_category: List[CategoryCount] = []
 
     # Recent activity
-    last_upload_at: Optional[datetime] = None
-    last_chat_at: Optional[datetime] = None
+    last_upload_at: Optional[UtcDatetime] = None
+    last_chat_at: Optional[UtcDatetime] = None
 
 
 class DocumentAnalytics(BaseModel):
@@ -137,4 +139,4 @@ class AnalyticsSummary(BaseModel):
     documents: DocumentAnalytics
     safety: SafetyAnalytics
     entities: EntityAnalytics
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: UtcDatetime = Field(default_factory=datetime.utcnow)
