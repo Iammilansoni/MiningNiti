@@ -3,11 +3,12 @@ Document Schemas
 Pydantic models for document API requests and responses
 """
 
-from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
+
+from app.schemas.common import UtcDatetime
 
 
 class DocumentCategory(str, Enum):
@@ -132,7 +133,7 @@ class DocumentResponse(BaseModel):
 
     # Processing info
     processing_error: Optional[str] = None
-    processed_at: Optional[datetime] = None
+    processed_at: Optional[UtcDatetime] = None
 
     # Content info
     page_count: Optional[int] = None
@@ -158,7 +159,7 @@ class DocumentResponse(BaseModel):
 
     # Metadata
     tags: List[str] = []
-    created_at: datetime
+    created_at: UtcDatetime
 
     model_config = {"from_attributes": True}
 

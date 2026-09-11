@@ -4,6 +4,7 @@ Background job status tracking
 """
 
 import logging
+from datetime import timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -115,7 +116,7 @@ async def list_active_jobs(
                 "document_title": doc.title,
                 "status": doc.status.value,
                 "progress": progress,
-                "created_at": doc.created_at.isoformat(),
+                "created_at": doc.created_at.replace(tzinfo=timezone.utc).isoformat(),
             }
         )
 

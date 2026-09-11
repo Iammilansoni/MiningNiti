@@ -4,7 +4,7 @@ User-defined AI prompts for specialized mining document analysis
 """
 
 import uuid
-from datetime import datetime
+from datetime import timezone
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -58,6 +58,14 @@ class CustomPrompt(Base, UUIDMixin, TimestampMixin):
             "description": self.description,
             "category": self.category,
             "is_default": self.is_default,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "created_at": (
+                self.created_at.replace(tzinfo=timezone.utc).isoformat()
+                if self.created_at
+                else None
+            ),
+            "updated_at": (
+                self.updated_at.replace(tzinfo=timezone.utc).isoformat()
+                if self.updated_at
+                else None
+            ),
         }

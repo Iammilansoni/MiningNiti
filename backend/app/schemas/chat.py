@@ -3,10 +3,11 @@ Chat Schemas
 Pydantic models for chat API requests and responses
 """
 
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
+
+from app.schemas.common import UtcDatetime
 
 
 class ChatSource(BaseModel):
@@ -41,7 +42,7 @@ class ChatMessageResponse(BaseModel):
     role: str  # "user" or "assistant"
     content: str
     sources: List[ChatSource] = []
-    created_at: datetime
+    created_at: UtcDatetime
 
     # AI metadata (for assistant messages)
     model_used: Optional[str] = None
@@ -75,12 +76,12 @@ class ChatSessionResponse(BaseModel):
     title: str
     message_count: int
     document_context: List[str] = []
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    created_at: UtcDatetime
+    updated_at: Optional[UtcDatetime] = None
 
     # Preview of last message
     last_message: Optional[str] = None
-    last_message_at: Optional[datetime] = None
+    last_message_at: Optional[UtcDatetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -93,8 +94,8 @@ class ChatSessionDetailResponse(BaseModel):
     document_context: List[str] = []
     system_prompt: Optional[str] = None
     messages: List[ChatMessageResponse] = []
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    created_at: UtcDatetime
+    updated_at: Optional[UtcDatetime] = None
 
 
 class ChatSessionUpdateRequest(BaseModel):
