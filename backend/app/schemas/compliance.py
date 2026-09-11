@@ -25,7 +25,7 @@ class ComplianceMatrixRowResponse(BaseModel):
     clause_index: int
     clause_text: str
     section_title: Optional[str] = None
-    status: str  # compliant | gap | missing
+    status: str  # compliant | gap | missing | not_applicable
     assessment: str
     confidence: float
     evidence_chunks: Optional[list] = None
@@ -47,6 +47,7 @@ class ComplianceAuditResponse(BaseModel):
     compliant_count: Optional[int] = None
     gap_count: Optional[int] = None
     missing_count: Optional[int] = None
+    not_applicable_count: Optional[int] = None
     overall_score: Optional[float] = None
     processing_error: Optional[str] = None
     completed_at: Optional[datetime] = None
