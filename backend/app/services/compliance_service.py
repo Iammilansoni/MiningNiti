@@ -7,9 +7,13 @@ and the ComplianceAuditorAgent.
 Pipeline:
   1. Load audit record + regulation doc + operational docs
   2. Extract regulation clauses from regulation doc embeddings
-  3. For each clause: pgvector cosine search → top-K evidence chunks
-  4. ComplianceAuditorAgent assesses each clause (parallel, capped)
-  5. Persist results, compute aggregate stats, mark audit COMPLETED
+  3. For each clause:
+     a. clause_filter.is_substantive_clause() — skip pure definitions/
+        gazette-masthead/table-of-contents content as "not_applicable"
+     b. Otherwise: pgvector cosine search → top-K evidence chunks, then
+        ComplianceAuditorAgent assesses the clause (parallel, capped)
+  4. Persist results, compute aggregate stats (overall_score excludes
+     not_applicable clauses from its denominator), mark audit COMPLETED
 """
 
 import asyncio
@@ -26,6 +30,7 @@ from app.config import settings
 from app.db.session import get_db_context
 from app.models.compliance import AuditStatus, ComplianceAudit, ComplianceMatrixRow
 from app.models.document import Document, DocumentEmbedding
+from app.services.clause_filter import is_substantive_clause
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +126,7 @@ class ComplianceService:
                 compliant_count = 0
                 gap_count = 0
                 missing_count = 0
+                not_applicable_count = 0
 
                 for i, result in enumerate(results):
                     status = result.get("status", "missing")
@@ -128,6 +134,8 @@ class ComplianceService:
                         compliant_count += 1
                     elif status == "gap":
                         gap_count += 1
+                    elif status == "not_applicable":
+                        not_applicable_count += 1
                     else:
                         missing_count += 1
 
@@ -145,13 +153,24 @@ class ComplianceService:
                     db.add(row)
 
                 # ── Step 5: Compute aggregate stats ─────────────────────
+                #
+                # not_applicable clauses (pure definitions/gazette masthead/
+                # table-of-contents content — see clause_filter.py) are
+                # excluded from the score denominator. They were never
+                # something an operational document could "comply with", so
+                # counting them as "total" clauses manufactures a
+                # near-zero score no matter how compliant the operational
+                # document actually is: two real audits scored 1.8% and 0%
+                # this way before the filter existed.
                 total = len(results)
+                applicable = compliant_count + gap_count + missing_count
                 audit.compliant_count = compliant_count
                 audit.gap_count = gap_count
                 audit.missing_count = missing_count
+                audit.not_applicable_count = not_applicable_count
                 audit.processed_clauses = total
                 audit.overall_score = round(
-                    (compliant_count / total * 100) if total > 0 else 0, 1
+                    (compliant_count / applicable * 100) if applicable > 0 else 0, 1
                 )
 
                 # ── Step 6: Mark completed ──────────────────────────────
@@ -163,7 +182,8 @@ class ComplianceService:
                     f"Compliance audit completed: {audit_id} — "
                     f"Score: {audit.overall_score}%, "
                     f"Compliant: {compliant_count}, Gaps: {gap_count}, "
-                    f"Missing: {missing_count}"
+                    f"Missing: {missing_count}, "
+                    f"Not applicable: {not_applicable_count}"
                 )
                 return True
 
@@ -205,33 +225,57 @@ class ComplianceService:
         async def assess_one(index: int, clause: DocumentEmbedding):
             async with self._semaphore:
                 try:
-                    # Hybrid search for evidence + rerank
-                    evidence = await self._find_evidence(
-                        db=db,
-                        user_id=user_id,
-                        query_embedding=clause.embedding,
-                        operational_doc_ids=operational_doc_ids,
-                        clause_text=clause.chunk_text,
-                    )
+                    if not is_substantive_clause(clause.chunk_text):
+                        # Pure definitions/gazette-masthead/table-of-contents
+                        # content — see clause_filter.py. Short-circuits
+                        # before the evidence search and LLM call: there is
+                        # nothing here an operational document could ever
+                        # "comply with", so spending a Groq call to say so
+                        # is pure quota cost for a result that skews the
+                        # score rather than informing it.
+                        results[index] = {
+                            "clause_text": clause.chunk_text,
+                            "section_title": clause.section_title,
+                            "status": "not_applicable",
+                            "assessment": (
+                                "Excluded from scoring — this text is "
+                                "definitions, gazette masthead, or "
+                                "table-of-contents content, not an "
+                                "operational requirement any document "
+                                "could address."
+                            ),
+                            "confidence": 1.0,
+                            "evidence_chunks": [],
+                            "recommendations": [],
+                        }
+                    else:
+                        # Hybrid search for evidence + rerank
+                        evidence = await self._find_evidence(
+                            db=db,
+                            user_id=user_id,
+                            query_embedding=clause.embedding,
+                            operational_doc_ids=operational_doc_ids,
+                            clause_text=clause.chunk_text,
+                        )
 
-                    # Run agent assessment
-                    result = await self.agent.analyze(
-                        text=clause.chunk_text,
-                        context={
+                        # Run agent assessment
+                        result = await self.agent.analyze(
+                            text=clause.chunk_text,
+                            context={
+                                "evidence_chunks": evidence,
+                                "clause_section": clause.section_title or "",
+                            },
+                        )
+
+                        results[index] = {
+                            "clause_text": clause.chunk_text,
+                            "section_title": clause.section_title,
+                            "status": result.get("status", "missing"),
+                            "assessment": result.get("assessment", ""),
+                            "confidence": result.get("confidence", 0.5),
                             "evidence_chunks": evidence,
-                            "clause_section": clause.section_title or "",
-                        },
-                    )
-
-                    results[index] = {
-                        "clause_text": clause.chunk_text,
-                        "section_title": clause.section_title,
-                        "status": result.get("status", "missing"),
-                        "assessment": result.get("assessment", ""),
-                        "confidence": result.get("confidence", 0.5),
-                        "evidence_chunks": evidence,
-                        "recommendations": result.get("recommendations", []),
-                    }
+                            "recommendations": result.get("recommendations", []),
+                        }
 
                     # Update progress counter
                     with get_db_context() as progress_db:
