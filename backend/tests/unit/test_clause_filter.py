@@ -50,6 +50,30 @@ class TestExcludesDefinitionsClauses:
         )
         assert is_substantive_clause(text) is False
 
+    def test_lone_definition_entry_closing_a_definitions_chapter_is_excluded(self):
+        # From the follow-up CMR 2017 audit (3 operational documents
+        # combined) — a chunk boundary landed on the very last entry of a
+        # long alphabetically-enumerated definitions list, "(zzm)", plus
+        # the standard closing catch-all sentence. Only one "X means Y"
+        # match appears in this chunk — below the density threshold in
+        # test_dense_glossary_entries_are_excluded_even_without_heading —
+        # so this needs the catch-all sentence to be caught.
+        text = (
+            "obtaining coal; (zzm) “working place” means any place in "
+            "a mine to which any person has lawful access. (2) Words and "
+            "expressions used in these regulations and not defined herein "
+            "but defined in the Act or the rules made thereunder shall "
+            "have the meanings respectively assigned to them therein."
+        )
+        assert is_substantive_clause(text) is False
+
+    def test_definitions_catchall_sentence_alone_is_excluded(self):
+        text = (
+            "Words and expressions used in this Act and not defined shall "
+            "have the meaning assigned to them in the Mines Act, 1952."
+        )
+        assert is_substantive_clause(text) is False
+
     def test_one_incidental_means_clause_is_not_excluded(self):
         # A genuinely substantive clause that happens to define one term
         # inline should still be scored — only dense glossary blocks are

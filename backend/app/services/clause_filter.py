@@ -19,6 +19,16 @@ definitions for terms like "detonating fuse" or "ANFO". The LLM's reasoning
 on those clauses was correct; the clauses themselves were the wrong thing to
 score compliance against.
 
+A follow-up audit (CMR 2017 vs. three operational documents combined) found
+a second, narrower case of the same problem: a chunk boundary can land on
+the tail of a long alphabetically-enumerated definitions list — a single
+lone entry like `(zzm) "working place" means...` — with too few "X means Y"
+matches of its own to trip the density threshold below. Indian legislative
+drafting always closes a Definitions chapter with the same catch-all
+sentence ("words and expressions used ... and not defined ... shall have
+the meaning(s) assigned to them in the Act"), which is a reliable signal on
+its own regardless of how many definition entries share the chunk.
+
 This filter runs before the (expensive) evidence search + LLM assessment
 call, so clauses that are pure definitions/administrative boilerplate
 short-circuit to "not_applicable" instead of being scored compliant/gap/
@@ -58,6 +68,20 @@ _GAZETTE_BOILERPLATE: Final = re.compile(
 # numbered section-title fragments with no substantive prescriptive text.
 _TOC_HEADING: Final = re.compile(r"ARRANGEMENT OF SECTIONS", re.IGNORECASE)
 
+# The standard catch-all sentence that closes every Definitions chapter in
+# Indian legislative drafting: "words and expressions used [here] and not
+# defined [herein/therein] shall have the meaning(s) assigned to them in
+# the Act/rules." A chunk boundary can land on the tail of a long
+# alphabetically-enumerated definitions list — e.g. a lone "(zzm) 'working
+# place' means..." entry followed by this sentence — with too few "X means
+# Y" matches of its own to trip _MIN_DEFINITION_ENTRIES_TO_EXCLUDE. This
+# sentence has no substantive-clause use, so a match excludes on its own.
+_DEFINITIONS_CATCHALL: Final = re.compile(
+    r"words and expressions used\b.{0,120}?not defined\b.{0,120}?"
+    r"(shall have|have)\s+the\s+meanings?\b",
+    re.IGNORECASE | re.DOTALL,
+)
+
 # Thresholds calibrated against the two audits above: a single incidental
 # "X means Y" or one masthead phrase inside an otherwise-substantive clause
 # should not exclude it, but a clause built almost entirely out of them
@@ -82,6 +106,9 @@ def is_substantive_clause(text: str) -> bool:
         return False
 
     if _DEFINITIONS_HEADING.match(stripped):
+        return False
+
+    if _DEFINITIONS_CATCHALL.search(stripped):
         return False
 
     if len(_DEFINITION_ENTRY.findall(stripped)) >= _MIN_DEFINITION_ENTRIES_TO_EXCLUDE:
