@@ -10,13 +10,16 @@ from typing import List, Optional
 from urllib.parse import urlparse
 
 from pydantic import Field, field_validator
+
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
 except ImportError:
     from pydantic import BaseModel
+
     SettingsConfigDict = dict
     try:
         from dotenv import load_dotenv
+
         load_dotenv()
     except ImportError:
         pass

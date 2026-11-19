@@ -4,14 +4,15 @@ Verifies that all agent schemas parse valid data and gracefully handle malformed
 """
 
 import unittest
-from app.schemas.document import DocumentCategory, ComplianceStatus
+
 from app.schemas.agents import (
     ClassifierOutput,
-    SafetyAnalyzerOutput,
     EntityExtractorOutput,
-    SummarizerOutput,
     HazardItem,
+    SafetyAnalyzerOutput,
+    SummarizerOutput,
 )
+from app.schemas.document import ComplianceStatus, DocumentCategory
 
 
 class TestClassifierSchema(unittest.TestCase):
@@ -79,7 +80,9 @@ class TestSafetyAnalyzerSchema(unittest.TestCase):
         }
         output = SafetyAnalyzerOutput.model_validate(data)
         self.assertEqual(len(output.hazards), 2)
-        self.assertEqual(output.hazards[0].description, "Unsecured conveyor belt near section B")
+        self.assertEqual(
+            output.hazards[0].description, "Unsecured conveyor belt near section B"
+        )
         self.assertEqual(output.hazards[1].type, "fire")
 
     def test_empty_or_malformed_input(self):

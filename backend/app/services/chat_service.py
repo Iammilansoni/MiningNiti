@@ -14,10 +14,10 @@ Key improvements over v1:
 """
 
 import asyncio
-from dataclasses import dataclass
-from datetime import datetime
 import json
 import logging
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 try:
@@ -36,6 +36,7 @@ except ImportError:
 
 try:
     import google.generativeai as genai
+
     _HAS_GEMINI = True
 except (ImportError, Exception):
     _HAS_GEMINI = False
@@ -72,6 +73,8 @@ class ChatTurnContext:
     user_message: Any
     validated_query: str
     history: List[Dict[str, str]]
+
+
 # names here while generation ran on Groq, so the stored provenance was false.
 CHAT_MODEL = "openai/gpt-oss-120b"
 
@@ -377,8 +380,9 @@ class ChatService:
         would breach the budget, so the retained window is always a contiguous
         recent slice rather than a sampling of the conversation.
         """
-        from app.models.chat import ChatMessage
         import uuid
+
+        from app.models.chat import ChatMessage
 
         if isinstance(session_id, str):
             try:

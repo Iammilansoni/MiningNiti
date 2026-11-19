@@ -23,8 +23,8 @@ from app.services.extractors import (
     DocxExtractor,
     ExtractedDocument,
     ImageExtractor,
-    PDFExtractor,
     PageContent,
+    PDFExtractor,
     PlainTextExtractor,
     get_extractor,
 )
@@ -139,7 +139,10 @@ class TestImageExtractor(unittest.TestCase):
 
     def test_extract_image_with_ocr(self):
         extractor = ImageExtractor()
-        with patch("app.services.pdf_layout.ocr_image", return_value="Scanned Safety Checklist Page 1"):
+        with patch(
+            "app.services.pdf_layout.ocr_image",
+            return_value="Scanned Safety Checklist Page 1",
+        ):
             doc = extractor.extract("dummy_scan.png")
 
             self.assertEqual(doc.full_text, "Scanned Safety Checklist Page 1")
@@ -178,8 +181,9 @@ class TestPDFExtractor(unittest.TestCase):
         mock_pdfplumber_module = MagicMock()
         mock_pdfplumber_module.open.return_value = mock_pdf
 
-        with patch.dict("sys.modules", {"pdfplumber": mock_pdfplumber_module}), \
-             patch("app.services.pdf_layout.extract_page", return_value=mock_extraction):
+        with patch.dict("sys.modules", {"pdfplumber": mock_pdfplumber_module}), patch(
+            "app.services.pdf_layout.extract_page", return_value=mock_extraction
+        ):
             doc = extractor.extract("dummy.pdf")
 
             self.assertEqual(doc.total_pages, 1)
@@ -198,9 +202,12 @@ class TestPDFExtractor(unittest.TestCase):
         mock_reader.metadata = {}
 
         # pdfplumber raises ImportError to trigger pypdf path
-        with patch.object(extractor, "_extract_with_layout", side_effect=ImportError), \
-             patch("pypdf.PdfReader", return_value=mock_reader), \
-             patch("app.services.pdf_layout.ocr_page", return_value="OCR Recovered Text from Scanned PDF"):
+        with patch.object(
+            extractor, "_extract_with_layout", side_effect=ImportError
+        ), patch("pypdf.PdfReader", return_value=mock_reader), patch(
+            "app.services.pdf_layout.ocr_page",
+            return_value="OCR Recovered Text from Scanned PDF",
+        ):
             doc = extractor.extract("scanned.pdf")
 
             self.assertEqual(doc.total_pages, 1)
@@ -257,8 +264,7 @@ class TestTableLayoutAndSplitting(unittest.TestCase):
         block = (
             "[Table 1 on page 5]\n"
             "| Col A | Col B |\n"
-            "| --- | --- |\n"
-            + "\n".join(rows)
+            "| --- | --- |\n" + "\n".join(rows)
         )
         # Force small max_chars to cause splitting
         parts = split_markdown_table(block, max_chars=250)
@@ -279,7 +285,9 @@ class TestExtractorRegistry(unittest.TestCase):
 
     def test_get_extractor_docx(self):
         self.assertIsInstance(
-            get_extractor("application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            get_extractor(
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ),
             DocxExtractor,
         )
         self.assertIsInstance(get_extractor("application/msword"), DocxExtractor)

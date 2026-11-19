@@ -14,6 +14,7 @@ Verifies:
 import os
 import unittest
 from unittest.mock import patch
+
 from pydantic import ValidationError
 
 from app.config import Settings, get_settings
@@ -63,9 +64,7 @@ class TestPillar5Config(unittest.TestCase):
     def test_clerk_jwks_url_validator(self):
         """CLERK_JWKS_URL must be an absolute http(s) URL."""
         # Valid absolute URL
-        s = Settings(
-            CLERK_JWKS_URL="https://clerk.example.com/.well-known/jwks.json"
-        )
+        s = Settings(CLERK_JWKS_URL="https://clerk.example.com/.well-known/jwks.json")
         self.assertEqual(
             s.CLERK_JWKS_URL, "https://clerk.example.com/.well-known/jwks.json"
         )
@@ -81,9 +80,7 @@ class TestPillar5Config(unittest.TestCase):
     def test_list_parsing_json_and_csv(self):
         """CORS_ORIGINS, CLERK_AUTHORIZED_PARTIES, and ALLOWED_FILE_TYPES accept JSON or CSV strings."""
         # JSON string array
-        s1 = Settings(
-            CORS_ORIGINS='["http://localhost:3000", "http://localhost:8000"]'
-        )
+        s1 = Settings(CORS_ORIGINS='["http://localhost:3000", "http://localhost:8000"]')
         self.assertEqual(
             s1.CORS_ORIGINS, ["http://localhost:3000", "http://localhost:8000"]
         )

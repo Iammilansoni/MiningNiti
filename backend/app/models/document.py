@@ -26,6 +26,8 @@ except (ImportError, Exception):
 
         def get_col_spec(self, **kw):
             return f"vector({self.dim})" if self.dim else "vector"
+
+
 from sqlalchemy.orm import relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin

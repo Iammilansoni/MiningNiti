@@ -66,12 +66,17 @@ class TestPillar3ChatService(unittest.TestCase):
         self.assertIsNotNone(turn.session.id)
         self.assertEqual(turn.session.user_id, self.user.clerk_user_id)
         self.assertEqual(turn.session.title, "New Chat")
-        self.assertEqual(turn.validated_query, "What are the coal dust explosion prevention norms?")
+        self.assertEqual(
+            turn.validated_query, "What are the coal dust explosion prevention norms?"
+        )
         self.assertEqual(turn.history, [])
 
         # User message must be persisted
         self.assertEqual(turn.user_message.role, "user")
-        self.assertEqual(turn.user_message.content, "What are the coal dust explosion prevention norms?")
+        self.assertEqual(
+            turn.user_message.content,
+            "What are the coal dust explosion prevention norms?",
+        )
         self.assertEqual(turn.user_message.session_id, turn.session.id)
 
     def test_prepare_turn_reuses_existing_valid_session(self):
@@ -153,7 +158,9 @@ class TestPillar3ChatService(unittest.TestCase):
         self.db.commit()
 
         msg1 = ChatMessage(session_id=session.id, role="user", content="First question")
-        msg2 = ChatMessage(session_id=session.id, role="assistant", content="First answer")
+        msg2 = ChatMessage(
+            session_id=session.id, role="assistant", content="First answer"
+        )
         self.db.add_all([msg1, msg2])
         self.db.commit()
 
@@ -168,10 +175,16 @@ class TestPillar3ChatService(unittest.TestCase):
         # History should contain only the 2 prior turns, NOT the second question
         self.assertEqual(len(turn.history), 2)
         self.assertEqual(turn.history[0], {"role": "user", "content": "First question"})
-        self.assertEqual(turn.history[1], {"role": "assistant", "content": "First answer"})
+        self.assertEqual(
+            turn.history[1], {"role": "assistant", "content": "First answer"}
+        )
 
         # But in the database, 3 messages should now exist
-        db_count = self.db.query(ChatMessage).filter(ChatMessage.session_id == session.id).count()
+        db_count = (
+            self.db.query(ChatMessage)
+            .filter(ChatMessage.session_id == session.id)
+            .count()
+        )
         self.assertEqual(db_count, 3)
 
     def test_finalize_turn_persists_assistant_message(self):
@@ -231,7 +244,9 @@ class TestPillar3ChatService(unittest.TestCase):
         self.db.add(session)
         self.db.commit()
 
-        sources = [{"document_id": "d1", "file_name": "manual.pdf", "page_numbers": [1]}]
+        sources = [
+            {"document_id": "d1", "file_name": "manual.pdf", "page_numbers": [1]}
+        ]
         assistant_msg = ChatService.finalize_turn(
             db=self.db,
             session=session,
@@ -245,16 +260,22 @@ class TestPillar3ChatService(unittest.TestCase):
 
     def test_finalize_turn_preserves_custom_title_after_first_turn(self):
         """When session already has > 2 messages, session title should not be overwritten."""
-        session = ChatSession(user_id=self.user.clerk_user_id, title="Original Custom Title")
+        session = ChatSession(
+            user_id=self.user.clerk_user_id, title="Original Custom Title"
+        )
         self.db.add(session)
         self.db.commit()
 
         # Seed 3 prior messages
-        self.db.add_all([
-            ChatMessage(session_id=session.id, role="user", content="Turn 1"),
-            ChatMessage(session_id=session.id, role="assistant", content="Answer 1"),
-            ChatMessage(session_id=session.id, role="user", content="Turn 2"),
-        ])
+        self.db.add_all(
+            [
+                ChatMessage(session_id=session.id, role="user", content="Turn 1"),
+                ChatMessage(
+                    session_id=session.id, role="assistant", content="Answer 1"
+                ),
+                ChatMessage(session_id=session.id, role="user", content="Turn 2"),
+            ]
+        )
         self.db.commit()
 
         ChatService.finalize_turn(
@@ -310,7 +331,13 @@ class TestPillar3RouteIntegration(unittest.IsolatedAsyncioTestCase):
         with patch.object(
             ChatService,
             "generate_response",
-            new=AsyncMock(return_value=("Bench height standard is max 10m.", mock_sources, {"input": 80, "output": 25})),
+            new=AsyncMock(
+                return_value=(
+                    "Bench height standard is max 10m.",
+                    mock_sources,
+                    {"input": 80, "output": 25},
+                )
+            ),
         ):
             response = await send_message(
                 request=req,
@@ -318,11 +345,15 @@ class TestPillar3RouteIntegration(unittest.IsolatedAsyncioTestCase):
                 db=self.db,
             )
 
-            self.assertEqual(response.message.content, "Bench height standard is max 10m.")
+            self.assertEqual(
+                response.message.content, "Bench height standard is max 10m."
+            )
             self.assertEqual(response.message.role, "assistant")
             self.assertEqual(len(response.message.sources), 1)
             self.assertEqual(response.message.sources[0].file_name, "opencast_regs.pdf")
-            self.assertEqual(response.session_title, "What is an opencast bench height standard?")
+            self.assertEqual(
+                response.session_title, "What is an opencast bench height standard?"
+            )
 
             import uuid
 
@@ -358,7 +389,9 @@ class TestPillar3RouteIntegration(unittest.IsolatedAsyncioTestCase):
             yield f"event: token\ndata: {json.dumps({'text': 'gradient must not exceed 1 in 16.'})}\n\n"
             yield f"event: done\ndata: {json.dumps({'sources_count': 1, 'tokens_used': {'input': 50, 'output': 12}})}\n\n"
 
-        with patch.object(ChatService, "generate_response_stream", side_effect=mock_event_stream):
+        with patch.object(
+            ChatService, "generate_response_stream", side_effect=mock_event_stream
+        ):
             streaming_response = await stream_chat(
                 request=req,
                 user_id=self.user.clerk_user_id,
@@ -366,7 +399,9 @@ class TestPillar3RouteIntegration(unittest.IsolatedAsyncioTestCase):
             )
 
             self.assertEqual(streaming_response.media_type, "text/event-stream")
-            self.assertEqual(streaming_response.headers.get("Cache-Control"), "no-cache")
+            self.assertEqual(
+                streaming_response.headers.get("Cache-Control"), "no-cache"
+            )
 
             # Consume the SSE generator
             received_events = []
@@ -380,15 +415,24 @@ class TestPillar3RouteIntegration(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(received_events[3].startswith("event: done\n"))
 
             # Verify that finalization stored assistant message in DB
-            session = self.db.query(ChatSession).filter(ChatSession.user_id == self.user.clerk_user_id).first()
+            session = (
+                self.db.query(ChatSession)
+                .filter(ChatSession.user_id == self.user.clerk_user_id)
+                .first()
+            )
             self.assertIsNotNone(session)
             assistant_msg = (
                 self.db.query(ChatMessage)
-                .filter(ChatMessage.session_id == session.id, ChatMessage.role == "assistant")
+                .filter(
+                    ChatMessage.session_id == session.id,
+                    ChatMessage.role == "assistant",
+                )
                 .first()
             )
             self.assertIsNotNone(assistant_msg)
-            self.assertEqual(assistant_msg.content, "Haul road gradient must not exceed 1 in 16.")
+            self.assertEqual(
+                assistant_msg.content, "Haul road gradient must not exceed 1 in 16."
+            )
             self.assertEqual(assistant_msg.model_used, CHAT_MODEL)
             self.assertIsNotNone(assistant_msg.response_time_ms)
             self.assertEqual(assistant_msg.tokens_used, {"input": 50, "output": 12})

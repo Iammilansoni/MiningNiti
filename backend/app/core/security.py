@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 import httpx
+
 try:
     import jwt
     from jwt import PyJWK
@@ -33,6 +34,7 @@ except (ImportError, Exception):
 
     class ExpiredSignatureError(InvalidTokenError):
         pass
+
 
 from app.config import settings
 from app.core.exceptions import AuthenticationError
