@@ -16,6 +16,8 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from app.config import settings
+
 try:
     import google.generativeai as genai
 
@@ -25,7 +27,6 @@ except (ImportError, Exception):
 
 from app.agents.base import QuotaExceededError
 from app.agents.orchestrator import AgentOrchestrator
-from app.config import settings
 from app.db.session import get_db_context
 from app.models.document import (
     ComplianceStatus,
