@@ -46,7 +46,7 @@ def client(tmp_path, monkeypatch, db_session):
     "content_type",
     [
         "application/x-msdownload",
-        "image/png",
+        "application/zip",
         "application/octet-stream",
         "text/html",
         "",
