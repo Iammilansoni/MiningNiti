@@ -8,7 +8,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from app.agents.base import BaseAgent
-from app.models.document import DocumentCategory
+from app.schemas.agents import ClassifierOutput
 
 logger = logging.getLogger(__name__)
 
@@ -95,24 +95,5 @@ Respond with a JSON object:
   "reasoning": "<brief explanation of classification decision>"
 }}
 """
-        result = await self._generate_json(prompt)
-
-        category_str = (result.get("category") or "other").lower().strip()
-        category_map = {
-            "safety_protocol": DocumentCategory.SAFETY_PROTOCOL,
-            "equipment_manual": DocumentCategory.EQUIPMENT_MANUAL,
-            "regulatory": DocumentCategory.REGULATORY,
-            "incident_report": DocumentCategory.INCIDENT_REPORT,
-            "geological": DocumentCategory.GEOLOGICAL,
-            "environmental": DocumentCategory.ENVIRONMENTAL,
-            "training": DocumentCategory.TRAINING,
-            "permit": DocumentCategory.PERMIT,
-            "maintenance": DocumentCategory.MAINTENANCE,
-        }
-
-        return {
-            "category": category_map.get(category_str, DocumentCategory.OTHER).value,
-            "subcategory": result.get("subcategory"),
-            "confidence": float(result.get("confidence") or 0.5),
-            "reasoning": result.get("reasoning", ""),
-        }
+        output = await self._generate_structured(prompt, ClassifierOutput)
+        return output.model_dump()

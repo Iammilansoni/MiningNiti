@@ -17,9 +17,22 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 import httpx
-import jwt
-from jwt import PyJWK
-from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+try:
+    import jwt
+    from jwt import PyJWK
+    from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+
+    _HAS_JWT = True
+except (ImportError, Exception):
+    _HAS_JWT = False
+    jwt = None
+    PyJWK = None
+
+    class InvalidTokenError(Exception):
+        pass
+
+    class ExpiredSignatureError(InvalidTokenError):
+        pass
 
 from app.config import settings
 from app.core.exceptions import AuthenticationError

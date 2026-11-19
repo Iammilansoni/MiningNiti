@@ -59,6 +59,9 @@ docker-compose -f docker-compose.prod.yml up -d
 - **Database**: PostgreSQL 16 with `pgvector` + `pg_trgm`. Schema is owned by Alembic (`alembic upgrade head`, run automatically by `scripts/migrate.py` at container start). `init_db()` still runs `create_all()` as a safety net and calls `ensure_indexes()`, which idempotently creates the HNSW and GIN trigram indexes that `create_all()` cannot express.
   - `scripts/migrate.py` handles three cases: fresh DB, a legacy DB built by `create_all()` with no `alembic_version` (stamped at `001`, then indexes ensured), and a DB already under Alembic.
 - **Agent pipeline**: Document upload → Orchestrator runs the classifier first (its category feeds the others), then safety, entity extraction and summarizer concurrently via `asyncio.gather` → chunks + embeddings saved to pgvector. A fifth agent, the compliance auditor, is **not** in this pipeline — it runs on demand from `compliance_service.py` when an audit is created.
+  - Agents use typed Pydantic v2 schemas (`app/schemas/agents.py`) and `BaseAgent._generate_structured` for guaranteed output structure and automatic string-to-hazard coercion.
+- **Chat pipeline**: Unified through `ChatService.prepare_turn()` and `finalize_turn()`. Both `/chat/send` and `/chat/stream` share identical prompt guardrails, anti-echo history isolation, persistence, citations, and audit logging.
+- **Document extraction**: Managed by a polymorphic `BaseExtractor` hierarchy (`app/services/extractors.py`, `get_extractor`) supporting PDF (pdfplumber + OCR fallback), DOCX, TXT, and Images (`ImageExtractor` with direct binary OCR) with format-agnostic pagination.
 - **Analysis cache**: `services/analysis_cache.py` keys completed analyses by SHA-256 of the extracted text plus `PIPELINE_VERSION`, so identical content skips all four LLM calls. Failed or partial analyses are never cached, which is what keeps re-analysis working after a quota error. No-ops when Redis is absent.
 - **Agent retries**: Retry and provider-fallback live in `BaseAgent._generate_json` **only**. Do not add a second backoff layer in the orchestrator — one existed and multiplied with the inner one (up to 9 attempts and minutes of sleep per agent).
 - **Background work**: An in-process `asyncio.Queue` (`services/queue.py`) with a worker started at app startup. There is no Celery and no `app/workers/` package. Queued work does not survive a restart or scale across replicas.
@@ -67,6 +70,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## Testing
 
+- **Pillar unit tests** (`tests/unit/test_pillar*.py`): 59 fast standalone unit tests verifying the 5-pillar refactoring (Pydantic agent schemas, dead code pruning, unified chat service, document extractors & OCR, and configuration validation). Run via `pytest tests/unit/test_pillar*.py` or `python -m unittest discover -s tests/unit -p "test_pillar*.py"` in ~1.1s.
 - **Unit tests** (`tests/unit/`): Use SQLite in-memory, no external services needed. Fixtures in `tests/conftest.py` mock auth and inject test DB sessions.
 - **Integration tests** (`tests/integration/`): Require running PostgreSQL (with pgvector) and Redis. Marked with `@pytest.mark.integration`.
 - **pytest config**: `asyncio_mode = auto` — async tests run without explicit `@pytest.mark.asyncio`.

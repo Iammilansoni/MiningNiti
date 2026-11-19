@@ -20,8 +20,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_id
 from app.db.session import get_db
-from app.models.chat import ChatMessage, ChatSession
 from app.schemas.chat import ChatRequest
+from app.services.chat_service import CHAT_MODEL, ChatService
 
 logger = logging.getLogger(__name__)
 
@@ -53,58 +53,29 @@ async def stream_chat(
         source.addEventListener('sources', (e) => renderSources(JSON.parse(e.data)))
         source.addEventListener('done', () => source.close())
     """
-    from app.services.chat_service import CHAT_MODEL, ChatService
-    from app.services.guardrails import MiningGuardrails
-
-    # ── Input Guardrails ────────────────────────────────────────────────────
-    validated_query = MiningGuardrails.validate_input(request.content)
-
-    # Get or create session
-    if request.session_id:
-        session = (
-            db.query(ChatSession)
-            .filter(
-                ChatSession.id == request.session_id, ChatSession.user_id == user_id
-            )
-            .first()
-        )
-        if not session:
-            from app.core.exceptions import NotFoundError
-
-            raise NotFoundError("Chat session", request.session_id)
-    else:
-        session = ChatSession(user_id=user_id, title="New Chat")
-        db.add(session)
-        db.commit()
-        db.refresh(session)
-
     chat_service = ChatService()
 
-    # Load prior turns BEFORE persisting this one, or the current question is
-    # replayed to the model as its own history.
-    history = chat_service.load_session_history(db, session.id)
-
-    # Save user message immediately
-    user_message = ChatMessage(
-        session_id=session.id,
-        role="user",
+    # 1. Prepare chat turn (validate input, load history, persist user message)
+    turn = chat_service.prepare_turn(
+        db=db,
+        user_id=user_id,
         content=request.content,
+        session_id=request.session_id,
     )
-    db.add(user_message)
-    db.commit()
 
     async def event_generator():
         full_response = []
         sources = []
         tokens_used = None
+        start_time = datetime.utcnow()
 
         try:
             async for event in chat_service.generate_response_stream(
-                query=validated_query,
+                query=turn.validated_query,
                 user_id=user_id,
                 document_ids=request.document_ids,
                 db=db,
-                history=history,
+                history=turn.history,
             ):
                 # Forward each SSE event to client
                 yield event
@@ -141,30 +112,36 @@ async def stream_chat(
         finally:
             # Persist assistant message after stream completes
             if full_response:
-                response_text = "".join(full_response)
-                assistant_message = ChatMessage(
-                    session_id=session.id,
-                    role="assistant",
-                    content=response_text,
-                    sources=sources if request.include_sources else [],
-                    model_used=CHAT_MODEL,
-                    tokens_used=tokens_used,
+                response_time_ms = int(
+                    (datetime.utcnow() - start_time).total_seconds() * 1000
                 )
-                db.add(assistant_message)
-
-                # Auto-title on first message
-                msg_count = (
-                    db.query(ChatMessage)
-                    .filter(ChatMessage.session_id == session.id)
-                    .count()
-                )
-                if msg_count <= 2:
-                    session.title = request.content[:50] + (
-                        "..." if len(request.content) > 50 else ""
+                try:
+                    chat_service.finalize_turn(
+                        db=db,
+                        session=turn.session,
+                        user_id=user_id,
+                        content="".join(full_response),
+                        sources=sources,
+                        include_sources=request.include_sources,
+                        response_time_ms=response_time_ms,
+                        tokens_used=tokens_used,
+                        raw_user_content=request.content,
+                    )
+                except Exception as save_err:
+                    logger.error(
+                        f"Failed to persist streamed assistant message: {save_err}",
+                        exc_info=True,
                     )
 
-                session.updated_at = datetime.utcnow()
-                db.commit()
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
 
     return StreamingResponse(
         event_generator(),

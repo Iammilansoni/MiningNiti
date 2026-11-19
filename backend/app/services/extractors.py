@@ -8,6 +8,7 @@ context-aware answers that cite page numbers.
 """
 
 import asyncio
+from abc import ABC, abstractmethod
 import io
 import logging
 import os
@@ -136,7 +137,37 @@ class ExtractedDocument:
 # ── Extractors ─────────────────────────────────────────────────────────────────
 
 
-class PDFExtractor:
+class BaseExtractor(ABC):
+    """Abstract base class for format-specific document text extractors."""
+
+    @abstractmethod
+    def extract(self, file_path: str) -> ExtractedDocument:
+        """Extract text and page-level metadata from a document file."""
+        raise NotImplementedError
+
+    def _approximate_pages(
+        self, text: str, chars_per_page: int = 3000
+    ) -> List[PageContent]:
+        """Approximate page boundaries for continuous formats (DOCX, TXT, OCR)."""
+        if not text:
+            return []
+        pages = []
+        for i in range(0, max(1, len(text)), chars_per_page):
+            page_text = text[i : i + chars_per_page]
+            pages.append(
+                PageContent(
+                    page_number=len(pages) + 1,
+                    text=page_text,
+                    char_start=i,
+                    char_end=i + len(page_text),
+                )
+            )
+        return pages or [
+            PageContent(page_number=1, text=text, char_start=0, char_end=len(text))
+        ]
+
+
+class PDFExtractor(BaseExtractor):
     """
     Page-aware PDF extraction.
 
@@ -224,11 +255,32 @@ class PDFExtractor:
 
         pages: List[PageContent] = []
         char_offset = 0
+        ocr_pages = 0
+        ocr_budget = [settings.OCR_MAX_PAGES]
 
         try:
             reader = PdfReader(file_path)
             for page_num, page in enumerate(reader.pages, start=1):
                 page_text = page.extract_text() or ""
+
+                # OCR fallback for scanned pages in pypdf path
+                if (
+                    settings.ENABLE_OCR
+                    and len(page_text.strip()) < settings.OCR_MIN_CHARS
+                    and ocr_budget[0] > 0
+                ):
+                    from app.services.pdf_layout import ocr_page
+
+                    ocr_text = ocr_page(file_path, page_num)
+                    if ocr_text:
+                        ocr_budget[0] -= 1
+                        ocr_pages += 1
+                        page_text = (
+                            f"{page_text}\n{ocr_text}".strip()
+                            if page_text
+                            else ocr_text
+                        )
+
                 pages.append(
                     PageContent(
                         page_number=page_num,
@@ -249,6 +301,8 @@ class PDFExtractor:
                         clean_key = key.lstrip("/").lower()
                         metadata[clean_key] = str(val)
 
+            metadata["ocr_pages"] = ocr_pages
+
             return ExtractedDocument(
                 full_text=full_text,
                 pages=pages,
@@ -262,7 +316,7 @@ class PDFExtractor:
             raise ValueError(f"Failed to extract text from PDF: {e}")
 
 
-class DocxExtractor:
+class DocxExtractor(BaseExtractor):
     """DOCX text extraction with paragraph tracking (approximate page numbers)."""
 
     def extract(self, file_path: str) -> ExtractedDocument:
@@ -272,8 +326,6 @@ class DocxExtractor:
         paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
         full_text = "\n".join(paragraphs)
 
-        # DOCX doesn't expose true page numbers in python-docx.
-        # We approximate: every ~3000 chars ≈ 1 page.
         pages = self._approximate_pages(full_text)
 
         return ExtractedDocument(
@@ -284,56 +336,46 @@ class DocxExtractor:
             metadata={},
         )
 
-    def _approximate_pages(
-        self, text: str, chars_per_page: int = 3000
-    ) -> List[PageContent]:
-        pages = []
-        for i in range(0, max(1, len(text)), chars_per_page):
-            page_text = text[i : i + chars_per_page]
-            pages.append(
-                PageContent(
-                    page_number=len(pages) + 1,
-                    text=page_text,
-                    char_start=i,
-                    char_end=i + len(page_text),
-                )
-            )
-        return pages or [
-            PageContent(page_number=1, text=text, char_start=0, char_end=len(text))
-        ]
 
-
-class PlainTextExtractor:
-    """Plain text extraction."""
+class PlainTextExtractor(BaseExtractor):
+    """Plain text extraction with resilient encoding detection."""
 
     def extract(self, file_path: str) -> ExtractedDocument:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            full_text = f.read()
+        full_text = ""
+        for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+            try:
+                with open(file_path, "r", encoding=encoding) as f:
+                    full_text = f.read()
+                break
+            except UnicodeDecodeError:
+                continue
 
-        # Approximate pages for plain text too
-        chars_per_page = 3000
-        pages = []
-        for i in range(0, max(1, len(full_text)), chars_per_page):
-            page_text = full_text[i : i + chars_per_page]
-            pages.append(
-                PageContent(
-                    page_number=len(pages) + 1,
-                    text=page_text,
-                    char_start=i,
-                    char_end=i + len(page_text),
-                )
-            )
+        pages = self._approximate_pages(full_text)
 
         return ExtractedDocument(
             full_text=full_text,
-            pages=pages
-            or [
-                PageContent(
-                    page_number=1, text=full_text, char_start=0, char_end=len(full_text)
-                )
-            ],
+            pages=pages,
             total_pages=max(1, len(pages)),
             file_type="text/plain",
+            metadata={},
+        )
+
+
+class ImageExtractor(BaseExtractor):
+    """Standalone image extraction via OCR (PNG, JPG, TIFF, WebP)."""
+
+    def extract(self, file_path: str) -> ExtractedDocument:
+        from app.services.pdf_layout import ocr_image
+
+        ocr_text = ocr_image(file_path) if settings.ENABLE_OCR else ""
+        pages = self._approximate_pages(ocr_text)
+
+        return ExtractedDocument(
+            full_text=ocr_text,
+            pages=pages,
+            total_pages=max(1, len(pages)),
+            file_type="image",
+            metadata={"ocr_pages": 1 if ocr_text else 0},
         )
 
 
@@ -344,13 +386,32 @@ EXTENSION_MAP = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
     "application/msword": ".doc",
     "text/plain": ".txt",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg",
+    "image/tiff": ".tiff",
+    "image/bmp": ".bmp",
+    "image/webp": ".webp",
 }
 
 _extractors = {
     "pdf": PDFExtractor(),
     "docx": DocxExtractor(),
     "txt": PlainTextExtractor(),
+    "image": ImageExtractor(),
 }
+
+
+def get_extractor(file_type: str) -> BaseExtractor:
+    """Return the appropriate extractor for the given MIME type."""
+    lowered = (file_type or "").lower()
+    if "pdf" in lowered:
+        return _extractors["pdf"]
+    elif any(k in lowered for k in ("docx", "wordprocessingml", "msword")):
+        return _extractors["docx"]
+    elif lowered.startswith("image/"):
+        return _extractors["image"]
+    return _extractors["txt"]
 
 
 async def download_and_extract(file_url: str, file_type: str) -> ExtractedDocument:
@@ -396,12 +457,8 @@ async def download_and_extract(file_url: str, file_type: str) -> ExtractedDocume
         tmp_path = tmp.name
 
     try:
-        if "pdf" in file_type.lower():
-            return _extractors["pdf"].extract(tmp_path)
-        elif "docx" in file_type.lower() or "wordprocessingml" in file_type.lower():
-            return _extractors["docx"].extract(tmp_path)
-        else:
-            return _extractors["txt"].extract(tmp_path)
+        extractor = get_extractor(file_type)
+        return extractor.extract(tmp_path)
     finally:
         try:
             os.unlink(tmp_path)

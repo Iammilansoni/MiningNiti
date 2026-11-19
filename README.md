@@ -625,14 +625,17 @@ The entire application runs on **free-tier services** with zero infrastructure c
 cd backend
 docker compose up -d postgres                            # integration + retrieval tests need it
 
-pytest tests/unit/ -v -m unit                           # 203 unit tests (SQLite, providers mocked)
-pytest tests/integration/ -v -m integration              # 27 tests against real PostgreSQL
+# 5-Pillar Architectural Verification Suite (59 tests, instant, ~1.1s)
+python -m unittest discover -s tests/unit -p "test_pillar*.py" -v
+
+pytest tests/unit/ -v -m unit                           # Unit tests (SQLite, providers mocked)
+pytest tests/integration/ -v -m integration              # Tests against real PostgreSQL
 pytest tests/eval/test_rag_eval.py -v -m synthetic       # Generation eval (no DB, instant)
 pytest tests/eval/test_rag_eval.py -v -m live            # Generation eval (needs Gemini quota)
 pytest tests/unit/ --cov=app --cov-report=html           # With coverage
 ```
 
-**274 tests collected** — 215 unit, 27 integration, 32 eval. The unit tests cover all 5 AI agents (every provider mocked, so no test marked `unit` makes a live call), RAG chat service, hybrid search + reranking, text chunking, document extractors, and settings validation.
+**Comprehensive Test Coverage** — Includes 59 dedicated architectural unit tests (`tests/unit/test_pillar*.py`) verifying schema enforcement, dual-path chat unification, dead code pruning, polymorphic document extraction with image OCR, and environment validation. Every unit test runs against an isolated SQLite in-memory database with fully mocked providers.
 
 Not all 262 run in every environment, and that is deliberate:
 

@@ -16,7 +16,11 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+    genai.configure(api_key=settings.GEMINI_API_KEY)
+except (ImportError, Exception):
+    genai = None
 
 from app.agents.base import QuotaExceededError
 from app.agents.orchestrator import AgentOrchestrator
@@ -33,9 +37,6 @@ from app.services.chunking import ChunkingService, DocumentChunk
 from app.services.extractors import ExtractedDocument, download_and_extract
 
 logger = logging.getLogger(__name__)
-
-# Configure Gemini once at module level
-genai.configure(api_key=settings.GEMINI_API_KEY)
 
 _chunker = ChunkingService()
 _orchestrator = AgentOrchestrator()

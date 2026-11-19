@@ -7,6 +7,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from app.agents.base import BaseAgent
+from app.schemas.agents import SummarizerOutput
 
 logger = logging.getLogger(__name__)
 
@@ -98,36 +99,19 @@ Respond with a JSON object:
   "confidence": <0.0-1.0>
 }}
 """
-        result = await self._generate_json(prompt)
-
-        # _generate_json returns {} once it has exhausted its retries on a
-        # non-quota failure. Falling through to "Summary not available." made
-        # that indistinguishable from a successful run over an empty document,
-        # and it was stored with confidence 0.7. Say plainly that nothing was
-        # produced, and carry an error marker so the orchestrator, the analysis
-        # cache and document_service can all see it.
-        if not result:
+        raw_json = await self._generate_json(prompt)
+        if not raw_json:
             message = (
                 "Summary unavailable — the summarization provider returned no "
                 "usable response after retries. Re-analyze to try again."
             )
-            return {
-                "summary": message,
-                "key_points": [],
-                "action_items": [],
-                "document_purpose": "",
-                "confidence": 0.0,
-                "word_count": 0,
-                "status": "error",
-                "error": "summarizer provider returned no usable response",
-            }
+            output = SummarizerOutput(
+                summary=message,
+                confidence=0.0,
+                status="error",
+                error="summarizer provider returned no usable response",
+            )
+        else:
+            output = SummarizerOutput.model_validate(raw_json)
 
-        summary = result.get("summary") or "Summary not available."
-        return {
-            "summary": summary,
-            "key_points": result.get("key_points", []),
-            "action_items": result.get("action_items", []),
-            "document_purpose": result.get("document_purpose", ""),
-            "confidence": float(result.get("confidence") or 0.7),
-            "word_count": len(summary.split()),
-        }
+        return output.model_dump(exclude_none=True)
