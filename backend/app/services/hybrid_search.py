@@ -70,7 +70,8 @@ async def vector_search(
         doc_filter = "AND d.id = ANY(CAST(:doc_ids AS uuid[]))"
         params["doc_ids"] = document_ids
 
-    sql = text(f"""
+    sql = text(
+        f"""
         SELECT
             de.id,
             de.chunk_text,
@@ -91,7 +92,8 @@ async def vector_search(
           AND (1 - (de.embedding <=> CAST(:embedding AS vector))) >= :threshold
         ORDER BY de.embedding <=> CAST(:embedding AS vector)
         LIMIT :top_k
-    """)
+    """
+    )
 
     try:
         rows = db.execute(sql, params).fetchall()
@@ -171,7 +173,8 @@ def fulltext_search(
         doc_filter = "AND d.id = ANY(CAST(:doc_ids AS uuid[]))"
         params["doc_ids"] = document_ids
 
-    sql = text(f"""
+    sql = text(
+        f"""
         WITH q AS (SELECT {_OR_TSQUERY} AS tsq)
         SELECT
             de.id,
@@ -194,7 +197,8 @@ def fulltext_search(
           AND de.chunk_tsv @@ q.tsq
         ORDER BY lexical_score DESC
         LIMIT :top_k
-    """)
+    """
+    )
 
     try:
         rows = db.execute(sql, params).fetchall()
