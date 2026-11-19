@@ -23,8 +23,8 @@ os.environ.setdefault("CLERK_JWKS_URL", "https://clerk.test/.well-known/jwks.jso
 
 from app.schemas.agents import (
     ClassifierOutput,
-    SafetyAnalyzerOutput,
     EntityExtractorOutput,
+    SafetyAnalyzerOutput,
     SummarizerOutput,
 )
 
@@ -42,7 +42,9 @@ class TestAgentExecution(unittest.IsolatedAsyncioTestCase):
             "confidence": 0.92,
             "reasoning": "Contains safety instructions.",
         }
-        with patch.object(agent, "_generate_structured", new_callable=AsyncMock) as mock_gen:
+        with patch.object(
+            agent, "_generate_structured", new_callable=AsyncMock
+        ) as mock_gen:
             mock_gen.return_value = ClassifierOutput.model_validate(mock_data)
             result = await agent.analyze("Sample mining document content")
 
@@ -60,7 +62,9 @@ class TestAgentExecution(unittest.IsolatedAsyncioTestCase):
             "confidence": 0.4,
             "reasoning": "Ambiguous",
         }
-        with patch.object(agent, "_generate_structured", new_callable=AsyncMock) as mock_gen:
+        with patch.object(
+            agent, "_generate_structured", new_callable=AsyncMock
+        ) as mock_gen:
             mock_gen.return_value = ClassifierOutput.model_validate(mock_data)
             result = await agent.analyze("Sample mining document content")
 
@@ -85,7 +89,9 @@ class TestAgentExecution(unittest.IsolatedAsyncioTestCase):
             "recommendations": ["Conduct weekly inspections"],
             "summary": "Generally compliant.",
         }
-        with patch.object(agent, "_generate_structured", new_callable=AsyncMock) as mock_gen:
+        with patch.object(
+            agent, "_generate_structured", new_callable=AsyncMock
+        ) as mock_gen:
             mock_gen.return_value = SafetyAnalyzerOutput.model_validate(mock_data)
             result = await agent.analyze("Sample safety document")
 
@@ -99,10 +105,10 @@ class TestAgentExecution(unittest.IsolatedAsyncioTestCase):
         from app.agents.safety_analyzer import SafetyAnalyzerAgent
 
         agent = SafetyAnalyzerAgent()
-        mock_data = {
-            "hazards": ["Loose rock on highwall"]
-        }
-        with patch.object(agent, "_generate_structured", new_callable=AsyncMock) as mock_gen:
+        mock_data = {"hazards": ["Loose rock on highwall"]}
+        with patch.object(
+            agent, "_generate_structured", new_callable=AsyncMock
+        ) as mock_gen:
             mock_gen.return_value = SafetyAnalyzerOutput.model_validate(mock_data)
             result = await agent.analyze("Sample safety document")
 
@@ -155,7 +161,9 @@ class TestAgentExecution(unittest.IsolatedAsyncioTestCase):
             mock_gen.return_value = mock_data
             result = await agent.analyze("Sample document")
 
-        self.assertEqual(result["summary"], "This is an executive summary of the safety report.")
+        self.assertEqual(
+            result["summary"], "This is an executive summary of the safety report."
+        )
         self.assertEqual(len(result["key_points"]), 2)
         self.assertEqual(result["word_count"], 9)
 

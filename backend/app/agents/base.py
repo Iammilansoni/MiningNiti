@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 try:
     import google.generativeai as genai
     from google.generativeai.types import GenerationConfig
+
     _HAS_GENAI = True
 except (ImportError, Exception):
     genai = None

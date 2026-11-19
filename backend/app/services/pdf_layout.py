@@ -175,9 +175,7 @@ def ocr_image(image_path: str) -> str:
 
     try:
         with Image.open(image_path) as img:
-            return pytesseract.image_to_string(
-                img, lang=settings.OCR_LANGUAGE
-            ).strip()
+            return pytesseract.image_to_string(img, lang=settings.OCR_LANGUAGE).strip()
     except Exception as e:
         if not _ocr_unavailable_logged:
             logger.warning(

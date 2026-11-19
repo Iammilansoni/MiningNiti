@@ -21,8 +21,14 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, AsyncGenerator, Generator
 
 from sqlalchemy import create_engine, event, text
+
 try:
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    from sqlalchemy.ext.asyncio import (
+        AsyncSession,
+        async_sessionmaker,
+        create_async_engine,
+    )
+
     _HAS_ASYNC_SA = True
 except (ImportError, Exception):
     _HAS_ASYNC_SA = False
@@ -56,7 +62,10 @@ if settings.SSL_CERT_PATH:
 
 try:
     engine = create_engine(
-        settings.DATABASE_URL, poolclass=QueuePool, connect_args=connect_args, **engine_args
+        settings.DATABASE_URL,
+        poolclass=QueuePool,
+        connect_args=connect_args,
+        **engine_args,
     )
 except (ImportError, Exception) as e:
     logger.warning(

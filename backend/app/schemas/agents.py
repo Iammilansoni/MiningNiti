@@ -5,7 +5,9 @@ Replaces manual dict extraction and imperative coercion logic with type-safe sch
 """
 
 from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 from app.schemas.document import ComplianceStatus, DocumentCategory
 
 
@@ -99,7 +101,9 @@ class SafetyAnalyzerOutput(BaseModel):
     def _coerce_recommendations(cls, v: Any) -> List[str]:
         if not isinstance(v, list):
             return []
-        return [str(item).strip() for item in v if item is not None and str(item).strip()]
+        return [
+            str(item).strip() for item in v if item is not None and str(item).strip()
+        ]
 
     @field_validator("status", mode="before")
     @classmethod
@@ -138,7 +142,13 @@ class EntityExtractorOutput(BaseModel):
     error: Optional[str] = None
 
     @field_validator(
-        "equipment", "chemicals", "locations", "personnel", "dates", "regulations", mode="before"
+        "equipment",
+        "chemicals",
+        "locations",
+        "personnel",
+        "dates",
+        "regulations",
+        mode="before",
     )
     @classmethod
     def _deduplicate_and_clean(cls, v: Any) -> List[str]:
@@ -185,7 +195,9 @@ class SummarizerOutput(BaseModel):
     def _clean_str_list(cls, v: Any) -> List[str]:
         if not isinstance(v, list):
             return []
-        return [str(item).strip() for item in v if item is not None and str(item).strip()]
+        return [
+            str(item).strip() for item in v if item is not None and str(item).strip()
+        ]
 
     def model_post_init(self, __context: Any) -> None:
         if self.summary:

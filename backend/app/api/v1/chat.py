@@ -255,9 +255,7 @@ async def send_message(
             history=turn.history,
         )
 
-        response_time_ms = int(
-            (datetime.utcnow() - start_time).total_seconds() * 1000
-        )
+        response_time_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
 
         # 3. Finalize assistant turn (persist message, auto-title, audit log)
         assistant_message = chat_service.finalize_turn(
