@@ -117,6 +117,7 @@ uploads/*
 !uploads/.gitkeep
 
 # ── Local tooling (never commit) ────────────────────────────────────────────
+.claude/
 .mimocode/
 miningniti-api/
 

@@ -14,24 +14,39 @@ import asyncio
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig
+try:
+    import google.generativeai as genai
+    from google.generativeai.types import GenerationConfig
+    _HAS_GENAI = True
+except (ImportError, Exception):
+    genai = None
+    GenerationConfig = None
+    _HAS_GENAI = False
+
+from pydantic import BaseModel
+
+SchemaT = TypeVar("SchemaT", bound=BaseModel)
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Configure Gemini once at module level
-genai.configure(api_key=settings.GEMINI_API_KEY)
-
-# Generation config that forces JSON output — no more regex parsing
-_JSON_GENERATION_CONFIG = GenerationConfig(
-    response_mime_type="application/json",
-    temperature=0.1,  # Low temperature for consistent structured output
-    top_p=0.95,
-)
+# Configure Gemini if available
+if _HAS_GENAI and genai:
+    try:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        _JSON_GENERATION_CONFIG = GenerationConfig(
+            response_mime_type="application/json",
+            temperature=0.1,  # Low temperature for consistent structured output
+            top_p=0.95,
+        )
+    except Exception as e:
+        logger.warning(f"Could not configure Gemini at module init: {e}")
+        _JSON_GENERATION_CONFIG = None
+else:
+    _JSON_GENERATION_CONFIG = None
 
 _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 2.0  # seconds — minimum delay between retries
@@ -300,6 +315,22 @@ class BaseAgent(ABC):
         logger.error(f"{self.name} failed after {_MAX_RETRIES} attempts: {last_error}")
         return {}
 
+    async def _generate_structured(self, prompt: str, schema: Type[SchemaT]) -> SchemaT:
+        """
+        Generate structured output validated by a Pydantic model.
+        Falls back to schema defaults if the provider returns empty or partial data.
+        """
+        raw_json = await self._generate_json(prompt)
+        if not raw_json:
+            return schema()
+        try:
+            return schema.model_validate(raw_json)
+        except Exception as e:
+            logger.warning(
+                f"{self.name}: Schema validation error: {e}. Falling back to default schema."
+            )
+            return schema()
+
     # ── Text helpers ───────────────────────────────────────────────────────────
 
     def _prepare_text(self, text: str, max_chars: int = 15000) -> str:
@@ -317,25 +348,3 @@ class BaseAgent(ABC):
         head = text[:12000]
         tail = text[-3000:]
         return head + "\n\n[... middle of document omitted for analysis ...]\n\n" + tail
-
-    # ── Kept for backward compatibility ───────────────────────────────────────
-
-    def _parse_json(self, text: str) -> Dict[str, Any]:
-        """Legacy JSON parser — kept for any subclass that still needs it."""
-        import json
-        import re
-
-        text = text.strip()
-        if text.startswith("```"):
-            lines = text.split("\n")
-            text = "\n".join(line for line in lines if not line.startswith("```"))
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            match = re.search(r"\{.*\}", text, re.DOTALL)
-            if match:
-                try:
-                    return json.loads(match.group())
-                except json.JSONDecodeError:
-                    pass
-        return {}

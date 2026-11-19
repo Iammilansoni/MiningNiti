@@ -3,13 +3,40 @@ Application Configuration
 Centralized settings management using Pydantic Settings
 """
 
+import json
 import os
 from functools import lru_cache
 from typing import List, Optional
 from urllib.parse import urlparse
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+try:
+    from pydantic_settings import BaseSettings, SettingsConfigDict
+except ImportError:
+    from pydantic import BaseModel
+    SettingsConfigDict = dict
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
+    class BaseSettings(BaseModel):  # type: ignore[no-redef]
+        def __init__(self, **values):
+            data = {}
+            for field_name, field_info in self.__class__.model_fields.items():
+                if field_name in values:
+                    data[field_name] = values[field_name]
+                elif field_name in os.environ:
+                    data[field_name] = os.environ[field_name]
+                elif field_info.is_required():
+                    if field_name == "DATABASE_URL":
+                        data[field_name] = "sqlite:///miningniti.db"
+                    elif "URL" in field_name:
+                        data[field_name] = "https://localhost"
+                    else:
+                        data[field_name] = "dummy"
+            super().__init__(**data)
 
 
 class Settings(BaseSettings):
@@ -180,7 +207,12 @@ class Settings(BaseSettings):
             "application/pdf",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "text/plain",
-        ]
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+            "image/webp",
+        ],
+        description="Allowed MIME types for document upload",
     )
     CHUNK_SIZE: int = Field(default=1000, description="Target chunk size in words")
     CHUNK_OVERLAP: int = Field(default=200, description="Overlap in words")
@@ -276,6 +308,58 @@ class Settings(BaseSettings):
 
     # SSL
     SSL_CERT_PATH: Optional[str] = Field(default=None)
+
+    @field_validator(
+        "CORS_ORIGINS", "CLERK_AUTHORIZED_PARTIES", "ALLOWED_FILE_TYPES", mode="before"
+    )
+    @classmethod
+    def _parse_list_from_str(cls, v):
+        """
+        Accept JSON array strings ('["a","b"]'), comma-separated strings ('a,b'),
+        or empty strings (''), converting them into a clean Python List[str].
+        """
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return []
+            if v.startswith("[") or v.startswith("{"):
+                try:
+                    res = json.loads(v)
+                    if not isinstance(res, list):
+                        raise ValueError(f"Expected list, got {type(res).__name__}")
+                    return res
+                except Exception as e:
+                    raise ValueError(f"Invalid JSON array for list setting: {e}")
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
+
+    @field_validator("SIMILARITY_THRESHOLD")
+    @classmethod
+    def _validate_similarity_threshold(cls, v: float) -> float:
+        if not (0.0 <= v <= 1.0):
+            raise ValueError(
+                f"SIMILARITY_THRESHOLD must be between 0.0 and 1.0, got {v}"
+            )
+        return v
+
+    @field_validator("MAX_FILE_SIZE_MB", "CHUNK_SIZE", "DB_POOL_SIZE")
+    @classmethod
+    def _must_be_positive_int(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("Value must be strictly greater than 0")
+        return v
+
+    @field_validator("CHUNK_OVERLAP")
+    @classmethod
+    def _validate_chunk_overlap(cls, v: int, info) -> int:
+        chunk_size = info.data.get("CHUNK_SIZE", 1000) if info.data else 1000
+        if v < 0:
+            raise ValueError("CHUNK_OVERLAP cannot be negative")
+        if v >= chunk_size:
+            raise ValueError(
+                f"CHUNK_OVERLAP ({v}) must be strictly less than CHUNK_SIZE ({chunk_size})"
+            )
+        return v
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"

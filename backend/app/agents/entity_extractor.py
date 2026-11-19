@@ -7,6 +7,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from app.agents.base import BaseAgent
+from app.schemas.agents import EntityExtractorOutput
 
 logger = logging.getLogger(__name__)
 
@@ -117,41 +118,13 @@ Notes:
 - For personnel, prefer roles over names for privacy
 - Include regulation citations in standard format
 """
-        result = await self._generate_json(prompt)
+        raw_json = await self._generate_json(prompt)
+        if not raw_json:
+            output = EntityExtractorOutput(
+                status="error",
+                error="entity extractor provider returned no usable response",
+            )
+        else:
+            output = EntityExtractorOutput.model_validate(raw_json)
 
-        # An exhausted _generate_json returns {}, which used to be laundered
-        # into six empty lists — a document with no entities and a document the
-        # extractor never managed to read looked identical. Mark the failure.
-        if not result:
-            return {
-                "equipment": [],
-                "chemicals": [],
-                "locations": [],
-                "personnel": [],
-                "dates": [],
-                "regulations": [],
-                "entity_count": 0,
-                "status": "error",
-                "error": "entity extractor provider returned no usable response",
-            }
-
-        entities = {
-            "equipment": self._deduplicate(result.get("equipment", [])),
-            "chemicals": self._deduplicate(result.get("chemicals", [])),
-            "locations": self._deduplicate(result.get("locations", [])),
-            "personnel": self._deduplicate(result.get("personnel", [])),
-            "dates": self._deduplicate(result.get("dates", [])),
-            "regulations": self._deduplicate(result.get("regulations", [])),
-        }
-        entities["entity_count"] = sum(len(v) for v in entities.values())
-        return entities
-
-    def _deduplicate(self, items: List[str]) -> List[str]:
-        """Remove duplicates while preserving order"""
-        seen = set()
-        result = []
-        for item in items:
-            if item and item.lower() not in seen:
-                seen.add(item.lower())
-                result.append(item)
-        return result
+        return output.model_dump(exclude_none=True)

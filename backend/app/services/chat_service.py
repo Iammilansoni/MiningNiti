@@ -14,6 +14,8 @@ Key improvements over v1:
 """
 
 import asyncio
+from dataclasses import dataclass
+from datetime import datetime
 import json
 import logging
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
@@ -32,15 +34,25 @@ except ImportError:
         return lambda f: f
 
 
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+    _HAS_GEMINI = True
+except (ImportError, Exception):
+    _HAS_GEMINI = False
+    genai = None
+
 from sqlalchemy.orm import Session
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Configure Gemini once
-genai.configure(api_key=settings.GEMINI_API_KEY)
+# Configure Gemini once if available
+if _HAS_GEMINI and getattr(settings, "GEMINI_API_KEY", None):
+    try:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+    except Exception as e:
+        logger.warning(f"Could not configure Gemini: {e}")
 
 # Groq decommissioned llama-3.3-70b-versatile on 2026-08-16. gpt-oss-120b is the
 # recommended replacement: 131k context (up from 128k) and the same family the
@@ -48,6 +60,18 @@ genai.configure(api_key=settings.GEMINI_API_KEY)
 #
 # Exported because every caller that records `model_used` must name the model
 # that actually generated the text. Three call sites previously hardcoded Gemini
+# names here while generation ran on Groq, so the stored provenance was false.
+CHAT_MODEL = "openai/gpt-oss-120b"
+
+
+@dataclass
+class ChatTurnContext:
+    """Context and state prepared for an incoming chat turn."""
+
+    session: Any
+    user_message: Any
+    validated_query: str
+    history: List[Dict[str, str]]
 # names here while generation ran on Groq, so the stored provenance was false.
 CHAT_MODEL = "openai/gpt-oss-120b"
 
@@ -199,6 +223,138 @@ class ChatService:
             logger.error(f"Stream generation error: {e}", exc_info=True)
             yield f"event: error\ndata: {json.dumps({'message': str(e)})}\n\n"
 
+    # ── Turn Lifecycle (Unified Orchestration) ────────────────────────────────
+
+    @staticmethod
+    def prepare_turn(
+        db: Session,
+        user_id: str,
+        content: str,
+        session_id: Optional[str] = None,
+    ) -> ChatTurnContext:
+        """
+        Validate user input against guardrails, retrieve or create the chat session,
+        load prior conversation turns, and persist the incoming user message.
+
+        Guarantees:
+          1. Input passes injection and length checks (MiningGuardrails).
+          2. Session ownership is verified (raises 404 NotFoundError if invalid).
+          3. Prior history is captured BEFORE the new turn is persisted,
+             avoiding autoflush prompt echo.
+          4. User message is persisted durably.
+        """
+        from app.core.exceptions import NotFoundError
+        from app.models.chat import ChatMessage, ChatSession
+        from app.services.guardrails import MiningGuardrails
+
+        # 1. Input Guardrails
+        validated_query = MiningGuardrails.validate_input(content)
+
+        # 2. Get or create session
+        import uuid
+
+        if session_id:
+            try:
+                resolved_id = (
+                    uuid.UUID(str(session_id))
+                    if not isinstance(session_id, uuid.UUID)
+                    else session_id
+                )
+            except (ValueError, AttributeError):
+                raise NotFoundError("Chat session", session_id)
+
+            session = (
+                db.query(ChatSession)
+                .filter(
+                    ChatSession.id == resolved_id,
+                    ChatSession.user_id == user_id,
+                )
+                .first()
+            )
+            if not session:
+                raise NotFoundError("Chat session", session_id)
+        else:
+            session = ChatSession(user_id=user_id, title="New Chat")
+            db.add(session)
+            db.commit()
+            db.refresh(session)
+
+        # 3. Load prior turns BEFORE persisting the new user message.
+        # This prevents autoflush or eager commits from replaying the live question as history.
+        history = ChatService.load_session_history(db, session.id)
+
+        # 4. Save user message
+        user_message = ChatMessage(
+            session_id=session.id,
+            role="user",
+            content=content,
+        )
+        db.add(user_message)
+        db.commit()
+        db.refresh(user_message)
+
+        return ChatTurnContext(
+            session=session,
+            user_message=user_message,
+            validated_query=validated_query,
+            history=history,
+        )
+
+    @staticmethod
+    def finalize_turn(
+        db: Session,
+        session: Any,
+        user_id: str,
+        content: str,
+        sources: Optional[List[Dict[str, Any]]] = None,
+        include_sources: bool = True,
+        response_time_ms: Optional[int] = None,
+        tokens_used: Optional[Dict[str, int]] = None,
+        raw_user_content: Optional[str] = None,
+    ) -> Any:
+        """
+        Persist the assistant response, auto-title the session on early turns,
+        record an audit log, and commit all changes atomically.
+        """
+        from app.models.audit import AuditAction, create_audit_log
+        from app.models.chat import ChatMessage
+
+        assistant_message = ChatMessage(
+            session_id=session.id,
+            role="assistant",
+            content=content,
+            sources=sources if include_sources and sources else [],
+            model_used=CHAT_MODEL,
+            response_time_ms=response_time_ms,
+            tokens_used=tokens_used,
+        )
+        db.add(assistant_message)
+
+        # Auto-generate title if this is the first turn (<= 2 messages total)
+        msg_count = (
+            db.query(ChatMessage).filter(ChatMessage.session_id == session.id).count()
+        )
+        if msg_count <= 2 and raw_user_content:
+            session.title = raw_user_content[:50] + (
+                "..." if len(raw_user_content) > 50 else ""
+            )
+
+        session.updated_at = datetime.utcnow()
+
+        # Audit log for enterprise compliance
+        audit = create_audit_log(
+            action=AuditAction.CHAT_MESSAGE.value,
+            user_id=user_id,
+            resource_type="chat_session",
+            resource_id=str(session.id),
+            details={"message_length": len(raw_user_content or "")},
+        )
+        db.add(audit)
+
+        db.commit()
+        db.refresh(assistant_message)
+        return assistant_message
+
     # ── Conversation Memory ───────────────────────────────────────────────────
 
     @staticmethod
@@ -222,6 +378,13 @@ class ChatService:
         recent slice rather than a sampling of the conversation.
         """
         from app.models.chat import ChatMessage
+        import uuid
+
+        if isinstance(session_id, str):
+            try:
+                session_id = uuid.UUID(session_id)
+            except (ValueError, AttributeError):
+                pass
 
         max_turns = max_turns or settings.CHAT_HISTORY_MAX_TURNS
         max_chars = max_chars or settings.CHAT_HISTORY_MAX_CHARS
@@ -394,6 +557,9 @@ class ChatService:
 
     async def _get_embedding(self, text: str) -> List[float]:
         """Get embedding for query text using Gemini."""
+        if not _HAS_GEMINI or not genai:
+            logger.error("Gemini SDK not available for embeddings")
+            return []
         try:
             result = await asyncio.to_thread(
                 genai.embed_content,

@@ -227,11 +227,6 @@ def fulltext_search(
     ]
 
 
-# Backwards-compatible alias: the old name described an implementation that
-# was never BM25 and never returned rows.
-bm25_search = fulltext_search
-
-
 def reciprocal_rank_fusion(
     list_a: List[Dict[str, Any]],
     list_b: List[Dict[str, Any]],

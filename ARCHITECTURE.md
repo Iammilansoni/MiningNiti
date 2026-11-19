@@ -179,6 +179,35 @@ demand rather than in CI, because it needs an API key.
 
 Total infrastructure cost: $0/month, all free tiers.
 
+## Architectural Refactoring: The 5-Pillar Modernization
+
+The codebase was comprehensively refactored across five architectural pillars to enforce strict type safety, eliminate dead code, unify dual execution paths, consolidate document extraction, and centralize environment configuration:
+
+1. **Pillar 1: Schema-Driven Multi-Agent Execution (`app/schemas/agents.py`, `app/agents/`)**
+   - Replaced brittle ad-hoc dictionaries and raw regex parsers with typed Pydantic v2 schemas: `ClassifierOutput`, `HazardItem`, `SafetyAnalyzerOutput`, `EntityExtractorOutput`, and `SummarizerOutput`.
+   - Built a generic `BaseAgent._generate_structured(schema)` method supporting resilient fallback, schema validation, and automatic coercion (e.g. converting plain LLM hazard strings into structured `HazardItem` models).
+
+2. **Pillar 2: Dead Code & Redundant Alias Pruning (`app/agents/base.py`, `app/services/hybrid_search.py`)**
+   - Pruned obsolete regex JSON parser `_parse_json()` in favor of direct Pydantic JSON validation.
+   - Removed the misleading alias `bm25_search = fulltext_search` in `hybrid_search.py`, clarifying that lexical search is backed by PostgreSQL `tsvector` and `ts_rank_cd`.
+   - Unified the canonical citation contract across models (`total_pages` and `page_numbers`).
+
+3. **Pillar 3: Unified Chat & Streaming Pipeline (`app/services/chat_service.py`, `app/api/v1/chat*.py`)**
+   - Eliminated diverging logic between synchronous (`/chat/send`) and streaming (`/chat/stream`) endpoints by introducing `ChatTurnContext`, `ChatService.prepare_turn()`, and `ChatService.finalize_turn()`.
+   - Enforced complete parity: prompt-injection guardrails, anti-echo history replay isolation, user turn persistence, assistant message persistence, citation formatting, audit logging, and response latency tracking now run identically in both paths.
+
+4. **Pillar 4: Consolidating Document Extractors & OCR (`app/services/extractors.py`, `pdf_layout.py`)**
+   - Replaced scattered extraction helpers with an object-oriented `BaseExtractor(ABC)` hierarchy (`PDFExtractor`, `DocxExtractor`, `PlainTextExtractor`, `ImageExtractor`) managed by a polymorphic `get_extractor(file_type)` registry.
+   - Added format-agnostic pagination approximation (`_approximate_pages()`) so non-PDF files (DOCX, TXT, Images) produce queryable page-level citations.
+   - Fixed binary image byte corruption by introducing `ocr_image()` with direct `Image.open(BytesIO)` processing.
+   - Enhanced table layout extraction with Markdown splitting that repeats header rows across chunk boundaries.
+
+5. **Pillar 5: Centralizing Configuration & Environment Management (`app/config.py`, `backend/.env.example`)**
+   - Implemented dynamic string-to-list parsing (`mode="before"`) for `CORS_ORIGINS`, `CLERK_AUTHORIZED_PARTIES`, and `ALLOWED_FILE_TYPES` supporting both JSON arrays and comma-separated strings.
+   - Aligned `ALLOWED_FILE_TYPES` with image MIME types (`image/png`, `image/jpeg`, etc.).
+   - Added fail-fast boundary validation for `SIMILARITY_THRESHOLD` ($0.0 \le v \le 1.0$), `CHUNK_OVERLAP` ($< \text{CHUNK\_SIZE}$), and positive pool/chunk sizes.
+   - Updated `.env.example` to authoritatively document all 37 settings while pruning legacy dead keys.
+
 ## Known Limits
 
 - Database access is synchronous SQLAlchemy inside async endpoints, so

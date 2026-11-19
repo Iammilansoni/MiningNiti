@@ -25,7 +25,7 @@ from app.schemas.chat import (
     ChatSessionResponse,
     ChatSessionUpdateRequest,
 )
-from app.services.guardrails import MiningGuardrails
+from app.services.chat_service import CHAT_MODEL, ChatService
 
 logger = logging.getLogger(__name__)
 
@@ -235,96 +235,43 @@ async def send_message(
     Uses RAG to find relevant document context.
     """
     start_time = datetime.utcnow()
-
-    # ── Input Guardrails ────────────────────────────────────────────────────
-    validated_query = MiningGuardrails.validate_input(request.content)
-
-    # Get or create session
-    if request.session_id:
-        session = (
-            db.query(ChatSession)
-            .filter(
-                ChatSession.id == request.session_id, ChatSession.user_id == user_id
-            )
-            .first()
-        )
-        if not session:
-            raise NotFoundError("Chat session", request.session_id)
-    else:
-        # Create new session
-        session = ChatSession(user_id=user_id, title="New Chat")
-        db.add(session)
-        db.commit()
-        db.refresh(session)
-
-    # Generate AI response with RAG
-    from app.services.chat_service import CHAT_MODEL, ChatService
-
     chat_service = ChatService()
 
-    # Load prior turns BEFORE staging this one. The add() below is uncommitted,
-    # but autoflush would still surface it to the history query.
-    history = chat_service.load_session_history(db, session.id)
-
-    # Save user message (but don't commit yet - wait for successful response)
-    user_message = ChatMessage(
-        session_id=session.id, role="user", content=request.content
+    # 1. Prepare chat turn (validate input, load history, persist user message)
+    turn = chat_service.prepare_turn(
+        db=db,
+        user_id=user_id,
+        content=request.content,
+        session_id=request.session_id,
     )
-    db.add(user_message)
 
     try:
+        # 2. Generate AI response with RAG
         ai_response, sources, tokens_used = await chat_service.generate_response(
-            query=validated_query,
+            query=turn.validated_query,
             user_id=user_id,
             document_ids=request.document_ids,
             db=db,
-            history=history,
+            history=turn.history,
         )
 
-        # Calculate response time
-        end_time = datetime.utcnow()
-        response_time_ms = int((end_time - start_time).total_seconds() * 1000)
+        response_time_ms = int(
+            (datetime.utcnow() - start_time).total_seconds() * 1000
+        )
 
-        # Save assistant message
-        assistant_message = ChatMessage(
-            session_id=session.id,
-            role="assistant",
+        # 3. Finalize assistant turn (persist message, auto-title, audit log)
+        assistant_message = chat_service.finalize_turn(
+            db=db,
+            session=turn.session,
+            user_id=user_id,
             content=ai_response,
-            sources=sources if request.include_sources else [],
-            model_used=CHAT_MODEL,
+            sources=sources,
+            include_sources=request.include_sources,
             response_time_ms=response_time_ms,
             tokens_used=tokens_used,
+            raw_user_content=request.content,
         )
-        db.add(assistant_message)
-
-        # Get fresh message count from database
-        message_count = (
-            db.query(ChatMessage).filter(ChatMessage.session_id == session.id).count()
-        )
-
-        # Update session title if first/second message
-        if message_count <= 2:
-            # Auto-generate title from first user message
-            session.title = request.content[:50] + (
-                "..." if len(request.content) > 50 else ""
-            )
-
-        session.updated_at = datetime.utcnow()
-
-        # Audit log
-        audit = create_audit_log(
-            action=AuditAction.CHAT_MESSAGE.value,
-            user_id=user_id,
-            resource_type="chat_session",
-            resource_id=str(session.id),
-            details={"message_length": len(request.content)},
-        )
-        db.add(audit)
-
-        # Commit all changes atomically
-        db.commit()
-        db.refresh(assistant_message)
-    except Exception as e:
+    except Exception:
         db.rollback()
         raise
 
@@ -338,6 +285,6 @@ async def send_message(
             model_used=CHAT_MODEL,
             response_time_ms=response_time_ms,
         ),
-        session_id=str(session.id),
-        session_title=session.title,
+        session_id=str(turn.session.id),
+        session_title=turn.session.title,
     )

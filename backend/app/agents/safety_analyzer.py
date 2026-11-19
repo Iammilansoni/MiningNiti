@@ -10,6 +10,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from app.agents.base import BaseAgent
+from app.schemas.agents import SafetyAnalyzerOutput
 
 logger = logging.getLogger(__name__)
 
@@ -118,23 +119,5 @@ Be thorough but practical. Focus on actionable findings.
             "  0-39:   Critical issues or violations present\n"
         )
 
-        result = await self._generate_json(prompt)
-
-        return {
-            "score": float(result.get("score") or 50),
-            "status": (result.get("status") or "pending").lower(),
-            "confidence": float(result.get("confidence") or 0.5),
-            "hazards": result.get("hazards", []),
-            "recommendations": result.get("recommendations", []),
-            "compliance_details": result.get("compliance_details", {}),
-            "reasoning": result.get(
-                "reasoning",
-                {
-                    "score_explanation": "",
-                    "positive_factors": [],
-                    "negative_factors": [],
-                    "evidence": [],
-                },
-            ),
-            "summary": result.get("summary", ""),
-        }
+        output = await self._generate_structured(prompt, SafetyAnalyzerOutput)
+        return output.model_dump()

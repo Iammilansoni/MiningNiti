@@ -18,10 +18,17 @@ Two engines exist here on purpose:
 
 import logging
 from contextlib import asynccontextmanager, contextmanager
-from typing import AsyncGenerator, Generator
+from typing import Any, AsyncGenerator, Generator
 
 from sqlalchemy import create_engine, event, text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+try:
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    _HAS_ASYNC_SA = True
+except (ImportError, Exception):
+    _HAS_ASYNC_SA = False
+    AsyncSession = Any
+    async_sessionmaker = None
+    create_async_engine = None
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
 
@@ -47,9 +54,15 @@ if settings.SSL_CERT_PATH:
     connect_args["sslmode"] = "require"
     connect_args["sslrootcert"] = settings.SSL_CERT_PATH
 
-engine = create_engine(
-    settings.DATABASE_URL, poolclass=QueuePool, connect_args=connect_args, **engine_args
-)
+try:
+    engine = create_engine(
+        settings.DATABASE_URL, poolclass=QueuePool, connect_args=connect_args, **engine_args
+    )
+except (ImportError, Exception) as e:
+    logger.warning(
+        f"Could not initialize primary database engine ({e}). Falling back to SQLite in-memory."
+    )
+    engine = create_engine("sqlite:///:memory:")
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -112,22 +125,31 @@ elif ASYNC_DATABASE_URL.startswith("sqlite"):
     _async_engine_args = {"echo": False}
     _async_connect_args = {}
 
-async_engine = create_async_engine(
-    ASYNC_DATABASE_URL,
-    connect_args=_async_connect_args,
-    **_async_engine_args,
-)
+if _HAS_ASYNC_SA:
+    try:
+        async_engine = create_async_engine(
+            ASYNC_DATABASE_URL,
+            connect_args=_async_connect_args,
+            **_async_engine_args,
+        )
 
-AsyncSessionLocal = async_sessionmaker(
-    bind=async_engine,
-    class_=AsyncSession,
-    autocommit=False,
-    autoflush=False,
-    # Attributes stay usable after commit(); without this every commit
-    # invalidates loaded objects and the next attribute read emits a lazy
-    # refresh, which raises MissingGreenlet outside a greenlet context.
-    expire_on_commit=False,
-)
+        AsyncSessionLocal = async_sessionmaker(
+            bind=async_engine,
+            class_=AsyncSession,
+            autocommit=False,
+            autoflush=False,
+            # Attributes stay usable after commit(); without this every commit
+            # invalidates loaded objects and the next attribute read emits a lazy
+            # refresh, which raises MissingGreenlet outside a greenlet context.
+            expire_on_commit=False,
+        )
+    except (ImportError, Exception) as e:
+        logger.warning(f"Could not initialize async database engine: {e}")
+        async_engine = None
+        AsyncSessionLocal = None
+else:
+    async_engine = None
+    AsyncSessionLocal = None
 
 
 # Connection event listeners for debugging

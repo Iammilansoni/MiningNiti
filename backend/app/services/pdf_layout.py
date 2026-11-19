@@ -155,6 +155,38 @@ def ocr_page(pdf_path: str, page_number: int) -> str:
         return ""
 
 
+def ocr_image(image_path: str) -> str:
+    """
+    OCR a standalone image file (PNG, JPG, TIFF, WebP, etc.).
+    Uses pytesseract directly on the opened image.
+    """
+    global _ocr_unavailable_logged
+
+    try:
+        import pytesseract
+        from PIL import Image
+    except ImportError:
+        if not _ocr_unavailable_logged:
+            logger.warning(
+                "OCR requested for image, but pytesseract/Pillow are not installed."
+            )
+            _ocr_unavailable_logged = True
+        return ""
+
+    try:
+        with Image.open(image_path) as img:
+            return pytesseract.image_to_string(
+                img, lang=settings.OCR_LANGUAGE
+            ).strip()
+    except Exception as e:
+        if not _ocr_unavailable_logged:
+            logger.warning(
+                f"Image OCR unavailable ({e}). Install tesseract-ocr system packages."
+            )
+            _ocr_unavailable_logged = True
+        return ""
+
+
 # ── Page extraction ────────────────────────────────────────────────────────────
 
 
