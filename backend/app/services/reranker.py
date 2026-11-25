@@ -37,7 +37,7 @@ def _get_model():
         except ImportError:
             logger.error(
                 "sentence-transformers not installed. "
-                "Install with: pip install sentence-transformers"
+                "Install dependencies with: uv sync (or uv add sentence-transformers)"
             )
             raise
     return _model

@@ -181,8 +181,9 @@ class TestPDFExtractor(unittest.TestCase):
         mock_pdfplumber_module = MagicMock()
         mock_pdfplumber_module.open.return_value = mock_pdf
 
-        with patch.dict("sys.modules", {"pdfplumber": mock_pdfplumber_module}), patch(
-            "app.services.pdf_layout.extract_page", return_value=mock_extraction
+        with (
+            patch.dict("sys.modules", {"pdfplumber": mock_pdfplumber_module}),
+            patch("app.services.pdf_layout.extract_page", return_value=mock_extraction),
         ):
             doc = extractor.extract("dummy.pdf")
 
@@ -202,11 +203,13 @@ class TestPDFExtractor(unittest.TestCase):
         mock_reader.metadata = {}
 
         # pdfplumber raises ImportError to trigger pypdf path
-        with patch.object(
-            extractor, "_extract_with_layout", side_effect=ImportError
-        ), patch("pypdf.PdfReader", return_value=mock_reader), patch(
-            "app.services.pdf_layout.ocr_page",
-            return_value="OCR Recovered Text from Scanned PDF",
+        with (
+            patch.object(extractor, "_extract_with_layout", side_effect=ImportError),
+            patch("pypdf.PdfReader", return_value=mock_reader),
+            patch(
+                "app.services.pdf_layout.ocr_page",
+                return_value="OCR Recovered Text from Scanned PDF",
+            ),
         ):
             doc = extractor.extract("scanned.pdf")
 

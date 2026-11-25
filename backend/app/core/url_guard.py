@@ -65,14 +65,11 @@ def _is_blocked(ip: ipaddress._BaseAddress) -> bool:
     """
     True for any address that is not a public unicast destination.
 
-    `is_global` is the deny-by-default gate: it is False for RFC1918, loopback,
-    link-local (169.254.169.254 metadata), CGNAT 100.64/10, TEST-NET, benchmark
-    and reserved ranges alike. Note that `is_private` alone is NOT sufficient —
-    on Python 3.11 it returns False for 100.64.0.0/10, which would let a request
-    through to a carrier-grade NAT neighbour.
-
     The explicit flags are kept as belt-and-braces for multicast/unspecified,
-    which some address classes report inconsistently across versions.
+    which some address classes report inconsistently across versions; `is_private`
+    alone is avoided because older Python releases returned False for
+    100.64.0.0/10 (CGNAT), which would let a request reach a carrier-grade NAT
+    neighbour.
     """
     ip = _normalize(ip)
     return not ip.is_global or ip.is_multicast or ip.is_unspecified  # 0.0.0.0, ::
