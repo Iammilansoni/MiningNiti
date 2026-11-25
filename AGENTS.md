@@ -4,7 +4,7 @@
 
 Two independent apps in a single repo (no monorepo tooling — root `package.json` is empty):
 
-- **`backend/`** — FastAPI 0.128+ + Python 3.14, SQLAlchemy + pgvector, multi-provider AI (Gemini, Groq, Mistral, Cerebras)
+- **`backend/`** — FastAPI 0.128+ + Python 3.14, SQLAlchemy + pgvector, multi-provider AI (Gemini, Groq, Mistral, NVIDIA NIM)
 - **`frontend/`** — Next.js 16 (App Router), React 19, Clerk auth, Tailwind CSS v4, shadcn/ui
 
 ## Key Commands
@@ -66,7 +66,7 @@ docker-compose -f docker-compose.prod.yml up -d
 - **Agent retries**: Retry and provider-fallback live in `BaseAgent._generate_json` **only**. Do not add a second backoff layer in the orchestrator — one existed and multiplied with the inner one (up to 9 attempts and minutes of sleep per agent).
 - **Background work**: An in-process `asyncio.Queue` (`services/queue.py`) with a worker started at app startup. There is no Celery and no `app/workers/` package. Queued work does not survive a restart or scale across replicas.
 - **Crash recovery**: On startup, documents stuck in `processing`/`analyzing` state are auto-reset to `PENDING`
-- **LLM providers**: Groq, Mistral, and Cerebras all use the OpenAI-compatible client (`AsyncOpenAI` with custom `base_url`). Gemini uses the native `google-generativeai` SDK.
+- **LLM providers**: Groq, Mistral, and NVIDIA NIM (`https://integrate.api.nvidia.com/v1`) all use the OpenAI-compatible client (`AsyncOpenAI` with custom `base_url`). Gemini uses the native `google-generativeai` SDK.
 
 ## Testing
 
@@ -76,7 +76,7 @@ docker-compose -f docker-compose.prod.yml up -d
 - **pytest config**: `asyncio_mode = auto` — async tests run without explicit `@pytest.mark.asyncio`.
 - **Test markers**: `unit`, `integration`, `slow`, `synthetic`, `live`, `retrieval`, `uses_cache`. Use `-m unit` to skip integration tests.
 - **Analysis cache in tests**: an autouse fixture in `conftest.py` disables it for every test, because `REDIS_URL` points at localhost and a live cache would let one test serve another's mocked result. Opt back in with `@pytest.mark.uses_cache`.
-- **Mocking agents**: mock `agent.client` for Groq/Mistral/Cerebras agents and `agent.model` only for Gemini ones. Mocking the wrong attribute leaves the real client in place and the test silently hits the network.
+- **Mocking agents**: mock `agent.client` for Groq/Mistral/NVIDIA NIM agents and `agent.model` only for Gemini ones. Mocking the wrong attribute leaves the real client in place and the test silently hits the network.
 - **CI** runs unit tests with coverage, integration tests as non-blocking.
 
 ## Linting & Formatting

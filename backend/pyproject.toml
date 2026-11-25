@@ -26,7 +26,6 @@ dependencies = [
     "google-auth>=2.35.0",
     "google-api-python-client>=2.140.0",
     "openai>=1.50.0",
-    "cerebras-cloud-sdk>=1.0.0",
 
     # Data Processing & Local Embeddings / Reranker
     "numpy>=2.3.0",

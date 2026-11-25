@@ -3,11 +3,14 @@ LLM Provider Initialization
 Configures and exposes asynchronous clients for multiple AI providers.
 """
 
+from typing import Optional
+
 import google.generativeai as genai
-from cerebras.cloud.sdk import AsyncCerebras
 from openai import AsyncOpenAI
 
 from app.config import settings
+
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 # Initialize Groq client using OpenAI compatibility wrapper
 groq_client = AsyncOpenAI(
@@ -31,9 +34,15 @@ def get_mistral_client() -> AsyncOpenAI:
     return mistral_client
 
 
-# Initialize Cerebras client
-cerebras_client = AsyncCerebras(api_key=settings.CEREBRAS_API_KEY)
+_nvidia_client: Optional[AsyncOpenAI] = None
+_nvidia_client_key: Optional[str] = None
 
 
-def get_cerebras_client() -> AsyncCerebras:
-    return cerebras_client
+def get_nvidia_client() -> AsyncOpenAI:
+    """Return an OpenAI-compatible client for NVIDIA NIM (lazy init avoids empty-key errors)."""
+    global _nvidia_client, _nvidia_client_key
+    key = settings.NVIDIA_API_KEY or "not-configured"
+    if _nvidia_client is None or _nvidia_client_key != key:
+        _nvidia_client = AsyncOpenAI(base_url=NVIDIA_BASE_URL, api_key=key)
+        _nvidia_client_key = key
+    return _nvidia_client

@@ -20,7 +20,8 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY:-}
+      - NVIDIA_MODEL=${NVIDIA_MODEL:-nvidia/nemotron-3.5-super-vl-120b-a12b}
       - CLERK_JWKS_URL=${CLERK_JWKS_URL}
     depends_on:
       postgres:
@@ -39,13 +40,14 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
-      # All four provider keys are required Fields in app/config.py. Omitting
-      # any of them raises a ValidationError at import and the container never
-      # starts.
+      # Core provider keys (GEMINI, GROQ, MISTRAL) are required Fields in
+      # app/config.py; omitting any raises a ValidationError at startup.
+      # NVIDIA_API_KEY enables NVIDIA NIM for Entity Extractor & Summarizer.
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY:-}
+      - NVIDIA_MODEL=${NVIDIA_MODEL:-nvidia/nemotron-3.5-super-vl-120b-a12b}
       - CLERK_JWKS_URL=${CLERK_JWKS_URL}
       - CLERK_AUTHORIZED_PARTIES=${CLERK_AUTHORIZED_PARTIES}
       - CORS_ORIGINS=${CORS_ORIGINS}

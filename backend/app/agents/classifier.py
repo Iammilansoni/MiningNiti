@@ -7,7 +7,7 @@ import asyncio
 import logging
 from typing import Any, Dict, Optional
 
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, get_secondary_provider
 from app.schemas.agents import ClassifierOutput
 
 logger = logging.getLogger(__name__)
@@ -30,17 +30,14 @@ class ClassifierAgent(BaseAgent):
     """
 
     def __init__(self):
-        # Groq decommissioned llama-3.3-70b-versatile on 2026-08-16; gpt-oss-120b
-        # is their recommended replacement and is already proven on Cerebras here.
-        #
-        # Groq's free tier is 8K TPM / 200K TPD, the tightest budget in the
-        # system. Cerebras serves the identical model at 30K TPM / 1M TPD, so a
-        # 429 falls through instead of failing the whole document analysis.
+        # Groq's free tier (~8K TPM) is tight; fall back to NVIDIA NIM
+        # when rate-limited (if configured).
+        secondary = get_secondary_provider()
         super().__init__(
             model_name="openai/gpt-oss-120b",
             provider="groq",
-            fallback_model="gpt-oss-120b",
-            fallback_provider="cerebras",
+            fallback_model=secondary[1] if secondary else None,
+            fallback_provider=secondary[0] if secondary else None,
         )
 
     @property

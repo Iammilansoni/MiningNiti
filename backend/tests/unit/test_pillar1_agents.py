@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 # Ensure test runs even if optional packages are not installed globally in Python 3.14
-for mod in ["google.generativeai", "openai", "cerebras", "cerebras.cloud.sdk"]:
+for mod in ["google.generativeai", "openai"]:
     if mod not in sys.modules:
         sys.modules[mod] = MagicMock()
 

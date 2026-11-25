@@ -6,7 +6,7 @@ Document summarization for mining documents
 import logging
 from typing import Any, Dict, List, Optional
 
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, get_secondary_provider
 from app.schemas.agents import SummarizerOutput
 
 logger = logging.getLogger(__name__)
@@ -23,19 +23,20 @@ class SummarizerAgent(BaseAgent):
     """
 
     def __init__(self):
-        # Shift to Cerebras (gpt-oss-120b) to bypass Gemini API rate limits and avoid Groq parallel execution rate limits
-        super().__init__(
-            model_name="gpt-oss-120b",
-            provider="cerebras",
-            # Cerebras answers an exhausted account with 402
-            # payment_required, which took this agent out entirely while
-            # Groq was still serving. Groq hosts the same gpt-oss-120b
-            # weights, so the fallback is the same model on another host
-            # rather than a downgrade. It is only ever used after a quota
-            # refusal, so it costs nothing on the happy path.
-            fallback_provider="groq",
-            fallback_model="openai/gpt-oss-120b",
-        )
+        # Run on NVIDIA NIM primary with Groq fallback when configured.
+        secondary = get_secondary_provider()
+        if secondary:
+            super().__init__(
+                model_name=secondary[1],
+                provider=secondary[0],
+                fallback_model="openai/gpt-oss-120b",
+                fallback_provider="groq",
+            )
+        else:
+            super().__init__(
+                model_name="openai/gpt-oss-120b",
+                provider="groq",
+            )
 
     @property
     def system_prompt(self) -> str:

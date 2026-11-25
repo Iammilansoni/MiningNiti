@@ -298,9 +298,9 @@ class DocumentService:
 
                 # ── Step 7: Mark completed ───────────────────────────────────
                 #
-                # One agent losing its provider (Cerebras answers an exhausted
-                # account with 402) must not throw away the work of the other
-                # three, so the document is COMPLETED with whatever succeeded.
+                # One agent losing its provider (for example HTTP 402/429 quota
+                # exhaustion) must not throw away the work of the other three,
+                # so the document is COMPLETED with whatever succeeded.
                 # But it must not look like a clean run either: the analysis
                 # endpoint coerces entities to plain lists and drops the error
                 # markers, so the reason is recorded on processing_error, which
@@ -340,8 +340,8 @@ class DocumentService:
                 #
                 # The provider is named rather than assumed. This used to say
                 # "Gemini" unconditionally, which was wrong for every agent:
-                # the classifier runs on Groq and the extractor and summarizer
-                # on Cerebras.
+                # the classifier runs on Groq, the safety analyzer on Mistral,
+                # and the extractor and summarizer on NVIDIA NIM (or Groq).
                 provider = getattr(qe, "provider", "") or "AI"
                 logger.error(
                     f"{provider} quota exceeded during agent analysis for "

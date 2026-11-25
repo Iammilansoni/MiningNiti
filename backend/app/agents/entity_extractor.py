@@ -6,7 +6,7 @@ Mining-specific Named Entity Recognition
 import logging
 from typing import Any, Dict, List, Optional
 
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, get_secondary_provider
 from app.schemas.agents import EntityExtractorOutput
 
 logger = logging.getLogger(__name__)
@@ -26,19 +26,21 @@ class EntityExtractorAgent(BaseAgent):
     """
 
     def __init__(self):
-        # Cerebras: 1M tokens/day free, 2600+ TPS, 60K TPM — better for high-volume extraction than Groq
-        super().__init__(
-            model_name="gpt-oss-120b",
-            provider="cerebras",
-            # Cerebras answers an exhausted account with 402
-            # payment_required, which took this agent out entirely while
-            # Groq was still serving. Groq hosts the same gpt-oss-120b
-            # weights, so the fallback is the same model on another host
-            # rather than a downgrade. It is only ever used after a quota
-            # refusal, so it costs nothing on the happy path.
-            fallback_provider="groq",
-            fallback_model="openai/gpt-oss-120b",
-        )
+        # Use NVIDIA NIM primary with Groq fallback so extraction skips Groq's
+        # 8K TPM bottleneck whenever NVIDIA_API_KEY is configured.
+        secondary = get_secondary_provider()
+        if secondary:
+            super().__init__(
+                model_name=secondary[1],
+                provider=secondary[0],
+                fallback_model="openai/gpt-oss-120b",
+                fallback_provider="groq",
+            )
+        else:
+            super().__init__(
+                model_name="openai/gpt-oss-120b",
+                provider="groq",
+            )
 
     @property
     def system_prompt(self) -> str:

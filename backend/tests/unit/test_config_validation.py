@@ -96,7 +96,12 @@ VALID_JWKS = "https://x.clerk.accounts.dev/.well-known/jwks.json"
 
 @pytest.mark.parametrize(
     "key",
-    ["GEMINI_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY", "CEREBRAS_API_KEY"],
+    [
+        "GEMINI_API_KEY",
+        "GROQ_API_KEY",
+        "MISTRAL_API_KEY",
+        "NVIDIA_API_KEY",
+    ],
 )
 def test_trailing_newline_on_an_api_key_is_stripped(key):
     """The exact value that broke chat in production."""
@@ -106,7 +111,12 @@ def test_trailing_newline_on_an_api_key_is_stripped(key):
 
 @pytest.mark.parametrize(
     "key",
-    ["GEMINI_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY", "CEREBRAS_API_KEY"],
+    [
+        "GEMINI_API_KEY",
+        "GROQ_API_KEY",
+        "MISTRAL_API_KEY",
+        "NVIDIA_API_KEY",
+    ],
 )
 @pytest.mark.parametrize("bad", ["gsk_abc\ndef", "gsk abc", "gsk_abc\tdef"])
 def test_internal_whitespace_in_an_api_key_is_rejected(key, bad):

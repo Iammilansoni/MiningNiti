@@ -39,7 +39,7 @@ graph TD
 
     subgraph External [LLM Providers]
         Groq[Groq gpt-oss-120b]
-        Cerebras[Cerebras gpt-oss-120b]
+        NVIDIA[NVIDIA NIM Nemotron 3.5 Super VL]
         Mistral[Mistral magistral-small]
         Gemini[Gemini embeddings]
     end
@@ -57,7 +57,7 @@ graph TD
     Serv -- uploaded files --> Blob
 
     Agent --> Groq
-    Agent --> Cerebras
+    Agent --> NVIDIA
     Agent --> Mistral
     Serv -- embeddings --> Gemini
     Auth2 -- JWKS --> Clerk[Clerk]
@@ -72,14 +72,15 @@ compliance audit is created.
 |---|---|---|
 | Classifier | Groq `openai/gpt-oss-120b` | Upload, first — its category feeds the others |
 | Safety Analyzer | Mistral `magistral-small-latest` | Upload, in parallel (skipped for non-safety categories) |
-| Entity Extractor | Cerebras `gpt-oss-120b` | Upload, in parallel |
-| Summarizer | Cerebras `gpt-oss-120b` | Upload, in parallel |
+| Entity Extractor | NVIDIA NIM `nvidia/nemotron-3.5-super-vl-120b-a12b` | Upload, in parallel |
+| Summarizer | NVIDIA NIM `nvidia/nemotron-3.5-super-vl-120b-a12b` | Upload, in parallel |
 | Compliance Auditor | Groq `openai/gpt-oss-120b` | On demand, from `compliance_service.py` |
 
 Retry and provider fallback live in `BaseAgent._generate_json` only. The
-classifier and compliance auditor fall back to Cerebras when Groq rate-limits,
-because Groq's free tier (8K tokens/minute) is the tightest budget in the system
-and Cerebras serves the identical model at 30K/minute.
+classifier and compliance auditor fall back to NVIDIA NIM when Groq rate-limits,
+because Groq's free tier (8K tokens/minute) is the tightest budget in the system,
+while the entity extractor and summarizer run on NVIDIA NIM primary and fall back
+to Groq.
 
 ## Document Processing
 

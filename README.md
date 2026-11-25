@@ -72,7 +72,7 @@ The original entry was built for **Smart India Hackathon 2023** (Nov–Dec 2023)
 | **Architecture** | Single-pass RAG chatbot, built on LangChain | 5 specialized agents — 4 running concurrently on upload, plus an on-demand compliance auditor |
 | **Orchestration** | LangChain chains | No agent framework — orchestration is hand-written on `asyncio.gather` with per-agent error isolation, quota-aware provider failover, and a content-addressed result cache |
 | **Retrieval** | FAISS vector search | Hybrid: `pgvector` cosine + PostgreSQL full-text, fused with Reciprocal Rank Fusion, then cross-encoder reranked (`top-20 → top-5`) |
-| **Models** | Open-source model with DPO, Gemini-backed | 3 LLM providers (Groq, Cerebras, Mistral) with quota-aware automatic failover; Gemini for embeddings |
+| **Models** | Open-source model with DPO, Gemini-backed | 3 LLM providers (Groq, NVIDIA NIM, Mistral) with quota-aware automatic failover; Gemini for embeddings |
 | **Evaluation** | — | Hit Rate@k / MRR / Recall@k / nDCG@k harness over a labelled golden set, running as a **blocking CI gate**; LangSmith tracing on the orchestrator, retrieval, and chat |
 | **Security** | — | Clerk JWT (RS256-pinned, JWKS caching, `azp` validation), prompt-injection guardrails, DNS-resolving SSRF guard, 120 req/min rate limiting |
 | **Tests** | — | 316 unit tests (375 collected, including integration and eval suites) |
@@ -127,7 +127,7 @@ The original entry was built for **Smart India Hackathon 2023** (Nov–Dec 2023)
 Real failure modes shaped every major choice in MiningNiti:
 
 - **Hand-written async orchestration instead of LangChain:** Heavy agent frameworks hide control flow and retry behavior. Running `ClassifierAgent` first (so document category informs downstream prompts) and then fanning out `SafetyAnalyzer`, `EntityExtractor`, and `Summarizer` concurrently via `asyncio.gather()` keeps latency low and isolation clean—while Pydantic v2 schemas (`_generate_structured`) coerce messy LLM string outputs into valid models instead of crashing API responses.
-- **Same-model failover across providers, with retries in one place:** Free-tier rate limits vary sharply (`Groq` caps around ~8K TPM; `Cerebras` returns `402` when quota runs out). Pairing `Groq ↔ Cerebras` around identical `gpt-oss-120b` weights prevents quality regressions on failover, and keeping retries strictly inside `BaseAgent._generate_json` eliminated a duplicate outer loop that used to multiply failures into up to `9` attempts per agent.
+- **Quota-aware multi-provider routing with retries in one place:** Free-tier limits vary sharply (`Groq` caps around ~8K TPM). Routing `EntityExtractor` and `Summarizer` to **NVIDIA NIM** (`nvidia/nemotron-3.5-super-vl-120b-a12b`, with `enable_thinking: False` for fast JSON) with automatic fallback to `Groq`, while failing `Classifier` and `ComplianceAuditor` over from `Groq` to `NVIDIA NIM` on rate limits, keeps the pipeline resilient—and keeping retries strictly inside `BaseAgent._generate_json` eliminated a duplicate outer loop that used to multiply failures into up to `9` attempts per agent.
 - **Content-addressed caching that refuses to cache failures:** Keying Redis by `SHA-256(extracted_text) + PIPELINE_VERSION` lets duplicate uploads and restarted jobs skip all 4 LLM calls while automatically invalidating on prompt updates. `_is_cacheable()` checks every section and never stores degraded or rate-limited runs—so clicking *Re-analyze* genuinely retries rather than replaying a cached error for 7 days.
 - **Loud degradation instead of silent data corruption:** Re-analyzing skips re-extraction and re-embedding if chunk vectors already exist; partial agent failures save healthy sections alongside `processing_error` and `degraded_sections`; compliance quota errors are isolated as `status="error"` instead of inflating `missing` gaps; and `/api/v1/health` runs 60s-cached 1-token LLM pings rather than assuming `.env` keys work.
 - **Replacing silent `pg_trgm` zero-rows with `tsvector` + direct arm guards:** The original lexical arm matched `pg_trgm`'s `%` operator against 1,000-char chunks, scoring ~`0.13` below its `0.30` threshold and silently returning zero rows for months while cross-encoder reranking masked the gap on small test sets. Switching to a `STORED` `tsvector` GIN index (`ts_rank_cd`) plus direct CI guards on lookalike clauses (`30 CFR 75.323` vs `75.400`) proves both retrieval arms stay alive.
@@ -164,7 +164,7 @@ flowchart LR
     Hyb <-->|"Cosine + FTS"| PG
     Auditor <-->|"Matrix"| PG
 
-    Agents --> AI["Groq · Cerebras · Mistral · Gemini"]
+    Agents --> AI["Groq · NVIDIA NIM · Mistral · Gemini"]
     Rerank --> AI
     Auditor --> AI
     AI -.-> LS["LangSmith"]
@@ -178,11 +178,11 @@ flowchart LR
     Ext --> Q["asyncio.Queue Worker"]
     Q --> Cache{"Redis SHA-256 Cache"}
     Cache -->|"Complete Hit"| Save["Return Stored Analysis (0 LLM calls)"]
-    Cache -->|"Miss / Degraded"| Clf["1. Classifier (Groq <-> Cerebras)"]
+    Cache -->|"Miss / Degraded"| Clf["1. Classifier (Groq <-> NVIDIA NIM)"]
 
     Clf -->|"Category"| Saf["2a. Safety (Mistral)"]
-    Clf -->|"Category"| Ent["2b. Entities (Cerebras <-> Groq)"]
-    Clf -->|"Category"| Sum["2c. Summary (Cerebras <-> Groq)"]
+    Clf -->|"Category"| Ent["2b. Entities (NVIDIA NIM <-> Groq)"]
+    Clf -->|"Category"| Sum["2c. Summary (NVIDIA NIM <-> Groq)"]
 
     Saf --> Val["Pydantic v2 Validation + Fault Isolation"]
     Ent --> Val
@@ -191,7 +191,7 @@ flowchart LR
     Val --> DB[("PostgreSQL + degraded_sections")]
 
     AuditReq["On-Demand Compliance Audit"] --> Filter["Clause Boilerplate Filter (not_applicable)"]
-    Filter --> Aud["5. Compliance Auditor (Groq <-> Cerebras)"]
+    Filter --> Aud["5. Compliance Auditor (Groq <-> NVIDIA NIM)"]
     Aud -->|"5-clause batch + error isolation"| DB
 ```
 
@@ -222,7 +222,7 @@ flowchart LR
 | Layer | Technologies |
 |---|---|
 | **Backend** | Python 3.14+, `uv`, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic, `slowapi`, Gunicorn/Uvicorn |
-| **AI & Retrieval** | Groq (`openai/gpt-oss-120b`), Cerebras (`gpt-oss-120b`), Mistral (`magistral-small-latest`), Google Gemini (`gemini-embedding-001`, eval judge `gemini-3.7-flash`), `sentence-transformers` (`ms-marco-MiniLM-L-6-v2`), LangSmith |
+| **AI & Retrieval** | Groq (`openai/gpt-oss-120b`), NVIDIA NIM (`nvidia/nemotron-3.5-super-vl-120b-a12b`), Mistral (`magistral-small-latest`), Google Gemini (`gemini-embedding-001`, eval judge `gemini-3.7-flash`), `sentence-transformers` (`ms-marco-MiniLM-L-6-v2`), LangSmith |
 | **Data & Auth** | Supabase PostgreSQL 16 (`pgvector`, `pg_trgm`), Upstash Redis, Supabase Storage, Clerk (RS256 JWKS) |
 | **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack React Query, Zustand, Recharts, `react-pdf` |
 | **CI/CD** | GitHub Actions (`uv` lint/test/eval, `next build`, Docker build validation, auto-deploy to HuggingFace Spaces) + Vercel |
@@ -235,7 +235,7 @@ flowchart LR
 
 - **Docker & Docker Compose** (easiest full-stack local setup), **or** for manual runs: **Python 3.14+**, [**uv**](https://docs.astral.sh/uv/), and **Node.js 24+** (`frontend/.nvmrc`).
 - For local OCR and MIME sniffing without Docker: `tesseract-ocr`, `poppler`, and `libmagic`.
-- Free API accounts: PostgreSQL with `pgvector` (or Supabase), Clerk, Gemini, Groq, and Mistral (plus optional Cerebras, Redis, and Supabase Storage).
+- Free API accounts: PostgreSQL with `pgvector` (or Supabase), Clerk, Gemini, Groq, and Mistral (plus optional NVIDIA NIM, Redis, and Supabase Storage).
 
 ### 1. Configure Environment
 
@@ -282,7 +282,7 @@ npm run dev
 | `GROQ_API_KEY` | Backend | Yes | Classifier, Compliance Auditor, and RAG chat generation |
 | `MISTRAL_API_KEY` | Backend | Yes | Safety Analyzer agent (`magistral-small-latest`) |
 | `CLERK_JWKS_URL` | Backend | Yes | Clerk JWKS endpoint for RS256 JWT verification |
-| `CEREBRAS_API_KEY` | Backend | Recommended | Entity Extractor, Summarizer, and Groq quota failover (app boots without it) |
+| `NVIDIA_API_KEY` / `NVIDIA_MODEL` | Backend | Recommended | Entity Extractor, Summarizer, and Groq quota failover via NVIDIA NIM (`nvidia/nemotron-3.5-super-vl-120b-a12b`; app boots without it) |
 | `CLERK_AUTHORIZED_PARTIES` | Backend | Recommended | JSON list of allowed frontend `azp` origins |
 | `CORS_ORIGINS` / `CORS_ORIGIN_REGEX` | Backend | Recommended | Allowed browser origins for self-hosted deployments |
 | `REDIS_URL` | Backend | Optional | Content-addressed analysis cache (`rediss://` for Upstash TLS — no `?tls=true`) |

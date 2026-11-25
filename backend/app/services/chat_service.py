@@ -56,8 +56,7 @@ if _HAS_GEMINI and getattr(settings, "GEMINI_API_KEY", None):
         logger.warning(f"Could not configure Gemini: {e}")
 
 # Groq decommissioned llama-3.3-70b-versatile on 2026-08-16. gpt-oss-120b is the
-# recommended replacement: 131k context (up from 128k) and the same family the
-# entity extractor and summarizer already run on Cerebras.
+# recommended replacement with a 131k context window (up from 128k).
 #
 # Exported because every caller that records `model_used` must name the model
 # that actually generated the text. Three call sites previously hardcoded Gemini

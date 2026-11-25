@@ -39,7 +39,7 @@ export default function PrivacyPage() {
             </p>
             <ul>
               <li><strong>Clerk</strong> — for user authentication and session management</li>
-              <li><strong>Google Gemini / Groq / Mistral / Cerebras</strong> — for AI document analysis and chat responses</li>
+              <li><strong>Google Gemini / Groq / Mistral / NVIDIA NIM</strong> — for AI document analysis and chat responses</li>
             </ul>
 
             <h2>Data Deletion</h2>

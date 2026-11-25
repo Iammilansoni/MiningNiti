@@ -81,10 +81,15 @@ class Settings(BaseSettings):
         ..., description="Groq API Key for Classifier & Entity Extractors"
     )
     MISTRAL_API_KEY: str = Field(..., description="Mistral API Key for Safety Analyzer")
-    CEREBRAS_API_KEY: str = Field(default="", description="Cerebras API Key")
+    NVIDIA_API_KEY: str = Field(
+        default="", description="NVIDIA NIM API Key (build.nvidia.com)"
+    )
 
     @field_validator(
-        "GEMINI_API_KEY", "GROQ_API_KEY", "MISTRAL_API_KEY", "CEREBRAS_API_KEY"
+        "GEMINI_API_KEY",
+        "GROQ_API_KEY",
+        "MISTRAL_API_KEY",
+        "NVIDIA_API_KEY",
     )
     @classmethod
     def _api_key_must_not_contain_whitespace(cls, v: str) -> str:
@@ -118,6 +123,10 @@ class Settings(BaseSettings):
     # Groq (chat_service.CHAT_MODEL), not here. gemini-1.5-flash is retired.
     GEMINI_MODEL: str = Field(default="gemini-3.7-flash")
     EMBEDDING_MODEL: str = Field(default="models/gemini-embedding-001")
+    NVIDIA_MODEL: str = Field(
+        default="nvidia/nemotron-3.5-super-vl-120b-a12b",
+        description="NVIDIA NIM model used by document agents and fallback routing",
+    )
 
     # AGENT_PROVIDER_MAP was removed here: nothing ever read it, and it had
     # drifted into naming retired models (gemini-1.5-flash), a model the entity

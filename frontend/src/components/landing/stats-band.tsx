@@ -10,7 +10,7 @@ import { motion, useInView } from 'framer-motion';
 const stats = [
   { value: 100, suffix: '%', label: 'Hit Rate@5', description: 'Retrieval eval, blocking gate in CI' },
   { value: 274, suffix: '', label: 'Automated Tests', description: 'Unit, integration and retrieval eval' },
-  { value: 4, suffix: '', label: 'AI Providers', description: 'Groq, Cerebras, Mistral and Gemini' },
+  { value: 4, suffix: '', label: 'AI Providers', description: 'Groq, NVIDIA NIM, Mistral and Gemini' },
   { value: 0, suffix: '/mo', label: 'Infrastructure Cost', description: 'Runs entirely on free tiers' },
 ];
 

@@ -71,10 +71,9 @@ class QuotaExceededError(RuntimeError):
 
 
 # Substrings that identify a quota/billing refusal in a provider error message.
-# 402 matters as much as 429 here: Cerebras answers an exhausted account with
-# `Error code: 402 ... payment_required_error`, which the old 429-only check
-# classified as a transient error and then slept through three pointless
-# retries before returning an empty dict.
+# 402 matters as much as 429 here: some OpenAI-compatible providers answer an
+# exhausted account with `Error code: 402 ... payment_required_error`, which a
+# 429-only check classified as transient and slept through pointless retries.
 _QUOTA_MARKERS = (
     "429",
     "rate_limit",
@@ -111,6 +110,23 @@ def _parse_retry_delay(err_str: str) -> Optional[float]:
     return None
 
 
+def _clean_json_text(raw: str) -> str:
+    """Strip <think> reasoning tags or outer Markdown fences before json.loads."""
+    cleaned = re.sub(r"<think>.*?</think>", "", raw or "", flags=re.DOTALL).strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(
+            r"^```(?:json)?\s*|\s*```$", "", cleaned, flags=re.DOTALL
+        ).strip()
+    return cleaned
+
+
+def get_secondary_provider() -> Optional[tuple[str, str]]:
+    """Pick the configured secondary OpenAI-compatible provider (NVIDIA NIM)."""
+    if settings.NVIDIA_API_KEY:
+        return ("nvidia", settings.NVIDIA_MODEL)
+    return None
+
+
 class BaseAgent(ABC):
     """
     Abstract base class for mining document intelligence agents.
@@ -133,7 +149,7 @@ class BaseAgent(ABC):
         self.model_name = model_name or settings.GEMINI_MODEL
         self.name = self.__class__.__name__
 
-        # Fallback config (e.g. Cerebras when Groq is rate-limited)
+        # Fallback config (e.g. NVIDIA NIM when Groq is rate-limited)
         self.fallback_model = fallback_model
         self.fallback_provider = fallback_provider
         self._fallback_client = None
@@ -144,6 +160,23 @@ class BaseAgent(ABC):
 
         self._init_client()
 
+    @staticmethod
+    def _resolve_openai_client(provider_name: str):
+        """Resolve an OpenAI-compatible client by provider name."""
+        from app.services.llm_provider import (
+            get_groq_client,
+            get_mistral_client,
+            get_nvidia_client,
+        )
+
+        loaders = {
+            "groq": get_groq_client,
+            "mistral": get_mistral_client,
+            "nvidia": get_nvidia_client,
+        }
+        loader = loaders.get(provider_name)
+        return loader() if loader else None
+
     def _init_client(self):
         """Initialize the primary provider client."""
         if self.provider == "gemini":
@@ -151,33 +184,18 @@ class BaseAgent(ABC):
                 model_name=self.model_name,
                 generation_config=_JSON_GENERATION_CONFIG,
             )
-        elif self.provider == "groq":
-            from app.services.llm_provider import get_groq_client
-
-            self.client = get_groq_client()
-        elif self.provider == "mistral":
-            from app.services.llm_provider import get_mistral_client
-
-            self.client = get_mistral_client()
-        elif self.provider == "cerebras":
-            from app.services.llm_provider import get_cerebras_client
-
-            self.client = get_cerebras_client()
+        else:
+            client = self._resolve_openai_client(self.provider)
+            if client is not None:
+                self.client = client
 
     def _init_fallback_client(self):
         """Initialize the fallback provider client."""
-        if self.fallback_provider == "cerebras":
-            from app.services.llm_provider import get_cerebras_client
-
-            self._fallback_client = get_cerebras_client()
-        elif self.fallback_provider == "groq":
-            from app.services.llm_provider import get_groq_client
-
-            self._fallback_client = get_groq_client()
-        elif self.fallback_provider == "mistral":
-            from app.services.llm_provider import get_mistral_client
-
-            self._fallback_client = get_mistral_client()
+        if not self.fallback_provider:
+            return
+        client = self._resolve_openai_client(self.fallback_provider)
+        if client is not None:
+            self._fallback_client = client
         logger.info(
             f"{self.name}: Fallback configured — {self.fallback_provider}/{self.fallback_model}"
         )
@@ -207,26 +225,35 @@ class BaseAgent(ABC):
 
     # ── Generation with retry + fallback ───────────────────────────────────────
 
-    async def _call_openai_compat(self, client, model: str, prompt: str) -> str:
+    async def _call_openai_compat(
+        self, client, model: str, prompt: str, provider_name: str = ""
+    ) -> str:
         """Call an OpenAI-compatible provider and return text response."""
-        response = await client.chat.completions.create(
-            model=model,
-            messages=[
+        kwargs: Dict[str, Any] = {
+            "model": model,
+            "messages": [
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": prompt},
             ],
-            response_format={"type": "json_object"},
-            temperature=0.1,
-        )
+            "response_format": {"type": "json_object"},
+            "temperature": 0.1,
+        }
+        # Disable internal reasoning tokens on NVIDIA NIM so responses stay fast
+        # and never exhaust max_tokens inside reasoning_content with empty content.
+        if provider_name == "nvidia":
+            kwargs["extra_body"] = {"chat_template_kwargs": {"enable_thinking": False}}
+
+        response = await client.chat.completions.create(**kwargs)
         return response.choices[0].message.content or ""
 
     async def _generate_json(self, prompt: str) -> Dict[str, Any]:
         """
         Generate structured JSON output with retry and automatic provider fallback.
 
-        Primary provider is tried first. On 429/rate-limit errors, if a fallback
-        is configured (e.g. Cerebras when Groq is rate-limited), the request
-        is retried on the fallback provider before raising QuotaExceededError.
+        Primary provider is tried first. On quota/billing errors (e.g. 429 or
+        402), if a fallback is configured (e.g. NVIDIA NIM when Groq hits
+        rate limits), the request is retried on the fallback provider before
+        raising QuotaExceededError.
         """
         import json
 
@@ -241,13 +268,13 @@ class BaseAgent(ABC):
                         full_prompt,
                     )
                     text_response = getattr(response, "text", "")
-                elif self.provider in ["groq", "mistral", "cerebras"]:
+                elif self.provider in ["groq", "mistral", "nvidia"]:
                     text_response = await self._call_openai_compat(
-                        self.client, self.model_name, prompt
+                        self.client, self.model_name, prompt, self.provider
                     )
 
                 try:
-                    return json.loads(text_response)
+                    return json.loads(_clean_json_text(text_response))
                 except (json.JSONDecodeError, AttributeError) as parse_err:
                     logger.warning(
                         f"{self.name} attempt {attempt}: JSON parse failed — {parse_err}. "
@@ -277,9 +304,12 @@ class BaseAgent(ABC):
                         )
                         try:
                             text_response = await self._call_openai_compat(
-                                self._fallback_client, self.fallback_model, prompt
+                                self._fallback_client,
+                                self.fallback_model,
+                                prompt,
+                                self.fallback_provider or "",
                             )
-                            result = json.loads(text_response)
+                            result = json.loads(_clean_json_text(text_response))
                             self._using_fallback = True
                             return result
                         except Exception as fb_err:

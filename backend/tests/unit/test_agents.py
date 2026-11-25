@@ -274,10 +274,9 @@ class TestSummarizerAgent:
         from app.agents.summarizer import SummarizerAgent
 
         agent = SummarizerAgent()
-        # SummarizerAgent is provider="cerebras" and goes through
-        # BaseAgent._call_openai_compat(self.client, ...). Patching `.model`
-        # here was a no-op that let this "unit" test make a live HTTPS call to
-        # api.cerebras.ai — patch the attribute the code path actually reads.
+        # SummarizerAgent uses an OpenAI-compatible client (NVIDIA NIM or Groq)
+        # via BaseAgent._call_openai_compat(self.client, ...). Patching `.model`
+        # is a no-op that would hit the live network — patch `.client`.
         agent.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await agent.analyze(sample_mining_text)
@@ -294,10 +293,9 @@ class TestSummarizerAgent:
         from app.agents.summarizer import SummarizerAgent
 
         agent = SummarizerAgent()
-        # SummarizerAgent is provider="cerebras" and goes through
-        # BaseAgent._call_openai_compat(self.client, ...). Patching `.model`
-        # here was a no-op that let this "unit" test make a live HTTPS call to
-        # api.cerebras.ai — patch the attribute the code path actually reads.
+        # SummarizerAgent uses an OpenAI-compatible client (NVIDIA NIM or Groq)
+        # via BaseAgent._call_openai_compat(self.client, ...). Patching `.model`
+        # is a no-op that would hit the live network — patch `.client`.
         agent.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await agent.analyze(sample_mining_text)
@@ -317,9 +315,9 @@ class TestAgentOrchestrator:
         orchestrator.classifier.client = make_mock_client(MOCK_CLASSIFICATION_JSON)
         orchestrator.safety_analyzer.client = make_mock_client(MOCK_SAFETY_JSON)
         orchestrator.entity_extractor.client = make_mock_client(MOCK_ENTITIES_JSON)
-        # SummarizerAgent runs on Cerebras, so _generate_json goes through
-        # self.client (OpenAI-compatible), not self.model. Mocking .model left
-        # the real client in place and the test hit the network.
+        # SummarizerAgent uses an OpenAI-compatible client (NVIDIA NIM or Groq), so
+        # _generate_json goes through self.client, not self.model. Mocking .model
+        # left the real client in place and the test hit the network.
         orchestrator.summarizer.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await orchestrator.analyze_document(sample_mining_text)
@@ -337,9 +335,9 @@ class TestAgentOrchestrator:
         orchestrator.classifier.client = make_mock_client(MOCK_CLASSIFICATION_JSON)
         orchestrator.safety_analyzer.client = make_mock_client(MOCK_SAFETY_JSON)
         orchestrator.entity_extractor.client = make_mock_client(MOCK_ENTITIES_JSON)
-        # SummarizerAgent runs on Cerebras, so _generate_json goes through
-        # self.client (OpenAI-compatible), not self.model. Mocking .model left
-        # the real client in place and the test hit the network.
+        # SummarizerAgent uses an OpenAI-compatible client (NVIDIA NIM or Groq), so
+        # _generate_json goes through self.client, not self.model. Mocking .model
+        # left the real client in place and the test hit the network.
         orchestrator.summarizer.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await orchestrator.analyze_document(sample_mining_text)
@@ -407,9 +405,9 @@ class TestAgentOrchestrator:
         orchestrator.classifier.client = make_mock_client(MOCK_CLASSIFICATION_JSON)
         orchestrator.safety_analyzer.client = make_mock_client(MOCK_SAFETY_JSON)
         orchestrator.entity_extractor.client = make_mock_client(MOCK_ENTITIES_JSON)
-        # SummarizerAgent runs on Cerebras, so _generate_json goes through
-        # self.client (OpenAI-compatible), not self.model. Mocking .model left
-        # the real client in place and the test hit the network.
+        # SummarizerAgent uses an OpenAI-compatible client (NVIDIA NIM or Groq), so
+        # _generate_json goes through self.client, not self.model. Mocking .model
+        # left the real client in place and the test hit the network.
         orchestrator.summarizer.client = make_mock_client(MOCK_SUMMARY_JSON)
 
         result = await orchestrator.analyze_document(
@@ -441,3 +439,107 @@ class TestAgentOrchestrator:
         # Should still return — summary will have "error" key
         assert "summary" in result
         assert "error" in result["summary"] or "summary" in result["summary"]
+
+
+class TestNvidiaNimIntegration:
+    """Tests for NVIDIA NIM routing, reasoning tag cleanup, and provider health checks."""
+
+    @pytest.mark.unit
+    def test_secondary_provider_uses_nvidia_when_configured(self, monkeypatch):
+        from app.agents.base import get_secondary_provider
+        from app.config import settings
+
+        monkeypatch.setattr(settings, "NVIDIA_API_KEY", "nvapi-test-key")
+        monkeypatch.setattr(
+            settings, "NVIDIA_MODEL", "nvidia/nemotron-3.5-super-vl-120b-a12b"
+        )
+        assert get_secondary_provider() == (
+            "nvidia",
+            "nvidia/nemotron-3.5-super-vl-120b-a12b",
+        )
+
+        monkeypatch.setattr(settings, "NVIDIA_API_KEY", "")
+        assert get_secondary_provider() is None
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_nvidia_entity_extractor_strips_think_tags(
+        self, sample_mining_text, monkeypatch
+    ):
+        from app.agents.entity_extractor import EntityExtractorAgent
+        from app.config import settings
+
+        monkeypatch.setattr(settings, "NVIDIA_API_KEY", "nvapi-test-key")
+        monkeypatch.setattr(
+            settings, "NVIDIA_MODEL", "nvidia/nemotron-3.5-super-vl-120b-a12b"
+        )
+
+        agent = EntityExtractorAgent()
+        assert agent.provider == "nvidia"
+        assert agent.model_name == "nvidia/nemotron-3.5-super-vl-120b-a12b"
+        assert agent.fallback_provider == "groq"
+
+        wrapped = (
+            f"<think>extracting entities step by step</think>\n{MOCK_ENTITIES_JSON}"
+        )
+        agent.client = make_mock_client(wrapped)
+        result = await agent.analyze(sample_mining_text)
+        assert "Caterpillar D11" in result["equipment"]
+        call_kwargs = agent.client.chat.completions.create.call_args.kwargs
+        assert call_kwargs["extra_body"] == {
+            "chat_template_kwargs": {"enable_thinking": False}
+        }
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_classifier_falls_back_to_nvidia_on_429(
+        self, sample_mining_text, monkeypatch
+    ):
+        from app.agents.classifier import ClassifierAgent
+        from app.config import settings
+
+        monkeypatch.setattr(settings, "NVIDIA_API_KEY", "nvapi-test-key")
+        agent = ClassifierAgent()
+        assert agent.fallback_provider == "nvidia"
+
+        failing_client = MagicMock()
+        failing_client.chat.completions.create = AsyncMock(
+            side_effect=RuntimeError("Error code: 429 - rate_limit_exceeded")
+        )
+        agent.client = failing_client
+        agent._fallback_client = make_mock_client(MOCK_CLASSIFICATION_JSON)
+
+        result = await agent.analyze(sample_mining_text)
+        assert result["category"] == "safety_protocol"
+        assert agent._using_fallback is True
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_health_probes_nvidia_when_configured(self, monkeypatch):
+        from app.api.v1 import health
+        from app.config import settings
+
+        monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk-test")
+        monkeypatch.setattr(settings, "NVIDIA_API_KEY", "nvapi-test")
+        monkeypatch.setattr(
+            settings, "NVIDIA_MODEL", "nvidia/nemotron-3.5-super-vl-120b-a12b"
+        )
+
+        mock_client = make_mock_client("ok")
+        mock_client.chat.completions.create.return_value.choices[0].finish_reason = (
+            "stop"
+        )
+
+        with (
+            patch(
+                "app.services.llm_provider.get_groq_client", return_value=mock_client
+            ),
+            patch(
+                "app.services.llm_provider.get_nvidia_client", return_value=mock_client
+            ),
+        ):
+            res = await health.check_providers(use_cache=False)
+
+        assert res["status"] == "ok"
+        assert set(res["providers"].keys()) == {"groq", "nvidia"}
+        assert res["providers"]["nvidia"]["ok"] is True

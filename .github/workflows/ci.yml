@@ -121,7 +121,7 @@ jobs:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY_TEST || 'test-api-key-placeholder' }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY_TEST || 'test-api-key-placeholder' }}
       MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY_TEST || 'test-api-key-placeholder' }}
-      CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY_TEST || 'test-api-key-placeholder' }}
+      NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY_TEST || 'test-api-key-placeholder' }}
       CLERK_JWKS_URL: https://test.clerk.com/.well-known/jwks.json
       REDIS_URL: redis://localhost:6379/0
       ENVIRONMENT: test

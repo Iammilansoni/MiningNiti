@@ -10,7 +10,7 @@ across multiple evidence chunks.
 import logging
 from typing import Any, Dict, List, Optional
 
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, get_secondary_provider
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +25,13 @@ class ComplianceAuditorAgent(BaseAgent):
     """
 
     def __init__(self):
-        # Groq decommissioned llama-3.3-70b-versatile on 2026-08-16. Cerebras
-        # serves the same model with a far larger free token budget, so it backs
-        # Groq up on rate-limit errors rather than failing the audit.
+        # Fall back to NVIDIA NIM if Groq hits rate limits.
+        secondary = get_secondary_provider()
         super().__init__(
             model_name="openai/gpt-oss-120b",
             provider="groq",
-            fallback_model="gpt-oss-120b",
-            fallback_provider="cerebras",
+            fallback_model=secondary[1] if secondary else None,
+            fallback_provider=secondary[0] if secondary else None,
         )
 
     @property

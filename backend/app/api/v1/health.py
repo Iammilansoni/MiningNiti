@@ -20,9 +20,9 @@ router = APIRouter()
 # ── Provider liveness ─────────────────────────────────────────────────────────
 #
 # /health used to report the AI subsystem as "configured" purely because API
-# keys were present. That is not a health check: in production Cerebras was
-# returning 402 payment_required on every call while /health still said
-# "healthy", and only /health/providers — which nothing polls — knew.
+# keys were present. That is not a health check: an exhausted or invalid
+# provider key can fail every completion call with 401/402 while /health still
+# says "healthy", and only /health/providers — which nothing polls — knew.
 #
 # So both endpoints now share the real ping below. The constraints that kept
 # the pings out of /health are handled rather than avoided:
@@ -91,7 +91,7 @@ async def check_providers(use_cache: bool = True) -> Dict[str, Any]:
     of "is the AI working".
     """
     from app.services.chat_service import CHAT_MODEL
-    from app.services.llm_provider import get_cerebras_client, get_groq_client
+    from app.services.llm_provider import get_groq_client, get_nvidia_client
 
     now = time.monotonic()
     if use_cache:
@@ -112,10 +112,10 @@ async def check_providers(use_cache: bool = True) -> Dict[str, Any]:
         targets = [
             ("groq", get_groq_client(), CHAT_MODEL, settings.GROQ_API_KEY),
             (
-                "cerebras",
-                get_cerebras_client(),
-                "gpt-oss-120b",
-                settings.CEREBRAS_API_KEY,
+                "nvidia",
+                get_nvidia_client(),
+                settings.NVIDIA_MODEL,
+                settings.NVIDIA_API_KEY,
             ),
         ]
 
