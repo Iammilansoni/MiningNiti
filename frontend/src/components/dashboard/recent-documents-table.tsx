@@ -29,33 +29,33 @@ export function RecentDocumentsTable() {
   const recentDocs = data?.documents || [];
 
   return (
-    <SectionCard className="flex flex-col h-full bg-white/[0.02] backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/[0.08] rounded-2xl">
-      <div className="flex items-center justify-between border-b border-border p-4">
-        <h2 className="text-sm font-semibold text-foreground">Recent Documents</h2>
-        <Button variant="ghost" size="sm" asChild className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">
+    <SectionCard className="flex flex-col h-full min-w-0 overflow-hidden bg-white/[0.02] backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] border border-white/[0.08] rounded-2xl">
+      <div className="flex items-center justify-between gap-2 border-b border-border p-4">
+        <h2 className="text-sm font-semibold text-foreground truncate">Recent Documents</h2>
+        <Button variant="ghost" size="sm" asChild className="h-8 shrink-0 text-xs text-muted-foreground hover:text-foreground hover:bg-accent">
           <Link href="/documents">
             View All <ArrowRight className="ml-1 size-3" />
           </Link>
         </Button>
       </div>
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-w-0 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-white/[0.02] text-foreground/50 border-b border-white/[0.05]">
             <tr>
-              <th className="h-9 px-4 text-left font-medium">Document</th>
-              <th className="h-9 px-4 text-left font-medium hidden sm:table-cell">Category</th>
-              <th className="h-9 px-4 text-left font-medium">Status</th>
-              <th className="h-9 px-4 text-right font-medium hidden md:table-cell">Uploaded</th>
+              <th className="h-9 px-3 sm:px-4 text-left font-medium">Document</th>
+              <th className="h-9 px-3 sm:px-4 text-left font-medium hidden sm:table-cell">Category</th>
+              <th className="h-9 px-3 sm:px-4 text-left font-medium">Status</th>
+              <th className="h-9 px-3 sm:px-4 text-right font-medium hidden md:table-cell">Uploaded</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="border-b border-border">
-                  <td className="p-4"><Skeleton className="h-5 w-48" /></td>
-                  <td className="p-4 hidden sm:table-cell"><Skeleton className="h-5 w-24" /></td>
-                  <td className="p-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
-                  <td className="p-4 hidden md:table-cell"><Skeleton className="h-5 w-24 ml-auto" /></td>
+                  <td className="p-3 sm:p-4"><Skeleton className="h-5 w-32 sm:w-48" /></td>
+                  <td className="p-3 sm:p-4 hidden sm:table-cell"><Skeleton className="h-5 w-24" /></td>
+                  <td className="p-3 sm:p-4"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                  <td className="p-3 sm:p-4 hidden md:table-cell"><Skeleton className="h-5 w-24 ml-auto" /></td>
                 </tr>
               ))
             ) : isError ? (
@@ -64,8 +64,8 @@ export function RecentDocumentsTable() {
               </tr>
             ) : recentDocs.length === 0 ? (
               <tr>
-                <td colSpan={4} className="p-12">
-                  <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
+                <td colSpan={4} className="p-8 sm:p-12">
+                  <div className="flex flex-col items-center justify-center text-center p-6 sm:p-8 border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
                     <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 text-foreground/40">
                       <FileText className="w-6 h-6" />
                     </div>
@@ -79,23 +79,23 @@ export function RecentDocumentsTable() {
             ) : (
               recentDocs.map((doc) => (
                 <tr key={doc.id} className="group border-b border-white/[0.05] hover:bg-white/[0.03] transition-all duration-300 last:border-0 hover:shadow-[inset_4px_0_0_#3B82F6]">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
+                  <td className="p-3 sm:p-4 max-w-[160px] sm:max-w-[240px] lg:max-w-[280px]">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                       <FileText className="size-4 text-primary shrink-0" />
                       <span className="font-medium truncate text-foreground/90">{doc.title || doc.file_name}</span>
                     </div>
                   </td>
-                  <td className="p-4 hidden sm:table-cell text-foreground/50">
-                    {doc.category || 'Uncategorized'}
+                  <td className="p-3 sm:p-4 hidden sm:table-cell text-foreground/50 capitalize whitespace-nowrap">
+                    {doc.category?.replace('_', ' ') || 'Uncategorized'}
                   </td>
-                  <td className="p-4">
+                  <td className="p-3 sm:p-4 whitespace-nowrap">
                     {doc.status === 'completed' && <StatusBadge label="Verified" tone="success" />}
                     {doc.status === 'processing' && <StatusBadge label="Processing" tone="info" pulse />}
                     {doc.status === 'failed' && <StatusBadge label="Failed" tone="danger" />}
                     {doc.status === 'pending' && <StatusBadge label="Pending" tone="neutral" />}
                     {doc.status === 'analyzing' && <StatusBadge label="Analyzing" tone="warning" pulse />}
                   </td>
-                  <td className="p-4 hidden md:table-cell text-right text-foreground/50 whitespace-nowrap">
+                  <td className="p-3 sm:p-4 hidden md:table-cell text-right text-foreground/50 whitespace-nowrap">
                     {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
                   </td>
                 </tr>

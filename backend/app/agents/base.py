@@ -258,6 +258,7 @@ class BaseAgent(ABC):
         import json
 
         last_error: Optional[Exception] = None
+        fallback_tried = False
         for attempt in range(1, _MAX_RETRIES + 1):
             try:
                 full_prompt = f"{self.system_prompt}\n\n{prompt}"
@@ -292,12 +293,14 @@ class BaseAgent(ABC):
                 is_quota = _is_quota_error(err_str)
 
                 if is_quota:
-                    # Try fallback provider if available and not already using it
+                    # Try fallback once per call (do not permanently disable
+                    # fallback on singleton agents across subsequent documents).
                     if (
                         self._fallback_client
                         and self.fallback_model
-                        and not self._using_fallback
+                        and not fallback_tried
                     ):
+                        fallback_tried = True
                         logger.warning(
                             f"{self.name}: Primary provider rate-limited. "
                             f"Falling back to {self.fallback_provider}/{self.fallback_model}"

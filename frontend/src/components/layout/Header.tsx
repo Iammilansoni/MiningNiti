@@ -3,8 +3,9 @@
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useUIStore } from '@/stores/uiStore';
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Bell } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import CommandPalette from '@/components/ui/command-palette';
 
 // Dynamically import UserButton with ssr:false to prevent hydration mismatch.
 // Clerk's UserButton depends on browser auth state which is unavailable during SSR.
@@ -44,43 +45,36 @@ export function Header() {
   const isDetail = rest.length > 0;
 
   return (
-    <header className="sticky top-0 z-40 flex h-(--header-height) w-full items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md">
-      <div className="flex items-center gap-4">
-        {/* Mobile Menu Toggle */}
+    <header className="sticky top-0 z-40 flex h-(--header-height) w-full min-w-0 items-center justify-between gap-2 border-b border-border bg-background/80 px-4 backdrop-blur-md">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        {/* Mobile & Tablet Menu Toggle */}
         <button
           suppressHydrationWarning
           onClick={() => setMobileMenuOpen(true)}
-          className="md:hidden flex items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="lg:hidden flex items-center justify-center rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
         >
           <Menu className="size-5" />
           <span className="sr-only">Open Menu</span>
         </button>
 
         {/* Breadcrumbs / Page Title */}
-        <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground/70">MiningNiti</span>
-          <span className="text-muted-foreground/30" aria-hidden>/</span>
+        <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-2 text-sm min-w-0">
+          <span className="text-muted-foreground/70 shrink-0">MiningNiti</span>
+          <span className="text-muted-foreground/30 shrink-0" aria-hidden>/</span>
           {isDetail ? (
             <>
-              <span className="text-muted-foreground/70">{sectionLabel}</span>
-              <span className="text-muted-foreground/30" aria-hidden>/</span>
-              <span className="font-medium text-foreground" aria-current="page">Detail</span>
+              <span className="text-muted-foreground/70 truncate">{sectionLabel}</span>
+              <span className="text-muted-foreground/30 shrink-0" aria-hidden>/</span>
+              <span className="font-medium text-foreground truncate" aria-current="page">Detail</span>
             </>
           ) : (
-            <span className="font-medium text-foreground" aria-current="page">{sectionLabel}</span>
+            <span className="font-medium text-foreground truncate" aria-current="page">{sectionLabel}</span>
           )}
         </nav>
       </div>
 
-      <div className="flex items-center gap-3">
-        {/* Command Palette Trigger (Visual only for now) */}
-        <button suppressHydrationWarning className="hidden md:flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-          <Search className="size-3.5" />
-          <span className="mr-6">Search documents...</span>
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 text-muted-foreground">
-            <span className="text-xs">⌘</span>K
-          </kbd>
-        </button>
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <CommandPalette compact />
 
         <div className="flex items-center gap-1">
           <button suppressHydrationWarning className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative">
@@ -91,7 +85,7 @@ export function Header() {
           <ThemeToggle />
         </div>
 
-        <div className="pl-2 ml-2 border-l border-border flex items-center">
+        <div className="pl-2 ml-1 sm:ml-2 border-l border-border flex items-center shrink-0">
           <UserButton 
             afterSignOutUrl="/"
             appearance={{

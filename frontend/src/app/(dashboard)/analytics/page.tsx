@@ -110,7 +110,7 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
+      <div className="w-full max-w-[1400px] mx-auto space-y-6 md:space-y-8 animate-fade-in-up min-w-0">
         <div className="animate-pulse bg-muted h-10 w-64 rounded" />
         <div className="animate-pulse bg-muted h-32 w-full rounded-xl" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
 
   if (isError) {
     return (
-      <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
+      <div className="w-full max-w-[1400px] mx-auto space-y-6 md:space-y-8 animate-fade-in-up min-w-0">
         <div className="w-full p-6 bg-destructive/10 border border-destructive/20 rounded-xl mb-8 flex flex-col items-start gap-3">
           <p className="text-destructive font-medium">Failed to load analytics data.</p>
           <p className="text-sm text-muted-foreground">
@@ -145,7 +145,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 md:space-y-8 animate-fade-in-up min-w-0">
       <PageHeader
         className="relative z-10"
         title="Compliance Analytics"
@@ -156,8 +156,8 @@ export default function AnalyticsPage() {
         <EntityMetrics metrics={metricsData} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
-        <div className="panel col-span-1 lg:col-span-2 p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10 min-w-0">
+        <div className="panel col-span-1 lg:col-span-2 p-4 sm:p-6 min-w-0">
           <div className="mb-6">
             <h2 className="text-base font-semibold tracking-tight text-foreground">Document Uploads (7-day)</h2>
             <p className="text-sm text-muted-foreground">Daily upload volume over the past week</p>
@@ -165,7 +165,7 @@ export default function AnalyticsPage() {
           <SafetyScoreChart data={scoreData} />
         </div>
 
-        <div className="panel col-span-1 p-6">
+        <div className="panel col-span-1 p-4 sm:p-6 min-w-0">
           <div className="mb-6">
             <h2 className="text-base font-semibold tracking-tight text-foreground">Document Categories</h2>
             <p className="text-sm text-muted-foreground">Distribution by document type</p>

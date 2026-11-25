@@ -123,7 +123,7 @@ export function ChatMessage({ message, isStreaming, onCitationClick }: ChatMessa
           </div>
 
           {/* Message body */}
-          <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-foreground/85 prose-headings:text-foreground prose-strong:text-foreground prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[13px] prose-code:before:content-none prose-code:after:content-none">
+          <div className="prose prose-sm dark:prose-invert max-w-none min-w-0 break-words [&_pre]:overflow-x-auto [&_pre]:max-w-full [&_table]:block [&_table]:overflow-x-auto prose-p:leading-relaxed prose-p:text-foreground/85 prose-headings:text-foreground prose-strong:text-foreground prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-code:text-primary prose-code:bg-primary/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-[13px] prose-code:before:content-none prose-code:after:content-none">
             {message.content ? (
               <>
               <ReactMarkdown

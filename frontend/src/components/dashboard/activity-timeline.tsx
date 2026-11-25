@@ -13,7 +13,7 @@ export function ActivityTimeline() {
   const { getToken } = useAuth();
 
   const { data: docsData, isLoading: isLoadingDocs } = useQuery({
-    queryKey: ['activity-documents'],
+    queryKey: ['recent-documents'],
     queryFn: () => getDocuments(getToken, { page_size: 5 }),
     // Poll while a recent upload is still processing so this feed doesn't
     // need a manual refresh to reflect the completed/failed state.

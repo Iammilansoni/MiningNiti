@@ -8,10 +8,10 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NAV_ITEMS = [
-  { href: '#platform', label: 'Platform' },
-  { href: '#features', label: 'Intelligence' },
-  { href: '#architecture', label: 'Architecture' },
-  { href: '#trust', label: 'Security' },
+  { href: '/#platform', label: 'Platform' },
+  { href: '/#features', label: 'Intelligence' },
+  { href: '/#architecture', label: 'Architecture' },
+  { href: '/#trust', label: 'Security' },
 ];
 
 export function Navbar() {

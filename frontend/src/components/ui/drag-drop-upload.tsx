@@ -28,7 +28,7 @@ export function DragDropUpload({
     'text/plain': ['.txt'],
   },
   maxFiles = 10,
-  maxSize = 16 * 1024 * 1024,
+  maxSize = 50 * 1024 * 1024,
   disabled = false,
 }: DragDropUploadProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);

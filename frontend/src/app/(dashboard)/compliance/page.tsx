@@ -133,7 +133,7 @@ export default function CompliancePage() {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 md:space-y-8 animate-fade-in-up min-w-0">
       {/* Header */}
       <PageHeader
         title="Compliance Audits"
@@ -263,15 +263,15 @@ export default function CompliancePage() {
             {audits.map((audit) => (
               <div
                 key={audit.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg hover:bg-muted/30 transition-colors"
               >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="flex items-center justify-center size-10 rounded-lg bg-primary/10">
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="flex items-center justify-center size-10 rounded-lg bg-primary/10 shrink-0">
                     <FileCheck className="size-5 text-primary" />
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-medium truncate">{audit.title}</h3>
-                    <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
                       <StatusBadge tone={statusVariant(audit.status)} label={audit.status} />
                       {audit.overall_score != null && (
                         <span className="font-medium">

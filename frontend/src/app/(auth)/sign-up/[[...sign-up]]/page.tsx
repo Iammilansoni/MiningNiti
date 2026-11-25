@@ -105,16 +105,10 @@ export default function Page() {
                 socialButtonsBlockButton:
                   'bg-white/[0.06] border-white/15 hover:bg-white/[0.12]',
                 socialButtonsBlockButtonText: 'text-white',
+                socialButtonsProviderIcon__github: 'invert brightness-200',
               },
             }}
           />
-
-          <p className="mt-6 text-center text-[13px] text-white/35">
-            Already have an account?{' '}
-            <Link href="/sign-in" className="text-purple-400 hover:text-[#c4a0f0] font-medium transition-colors">
-              Sign in
-            </Link>
-          </p>
         </div>
       </section>
     </main>

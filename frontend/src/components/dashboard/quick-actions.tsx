@@ -40,16 +40,16 @@ const actions = [
 
 export function QuickActions() {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2 min-w-0">
       {actions.map((action) => (
-        <Link key={action.title} href={action.href} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl">
-          <SectionCard className="h-full p-4 flex items-start gap-4 hover:bg-muted/50 transition-colors bg-card border-border shadow-sm">
+        <Link key={action.title} href={action.href} className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl">
+          <SectionCard className="h-full min-w-0 p-4 flex items-start gap-3 hover:bg-muted/50 transition-colors bg-card border-border shadow-sm">
             <div className={cn('size-10 rounded-lg flex items-center justify-center shrink-0', action.bg)}>
               <action.icon className={cn('size-5', action.color)} />
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">{action.title}</h3>
-              <p className="mt-1 text-xs text-muted-foreground">{action.description}</p>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-foreground truncate">{action.title}</h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-snug">{action.description}</p>
             </div>
           </SectionCard>
         </Link>

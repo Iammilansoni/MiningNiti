@@ -38,11 +38,11 @@ export function MobileNav() {
     setMobileMenuOpen(false);
   }, [pathname, setMobileMenuOpen]);
 
-  // Nothing opens this at md and up, but a viewport that grows past the
+  // Nothing opens this at lg and up, but a viewport that grows past the
   // breakpoint while the drawer is open would leave it stranded on top of the
   // desktop layout.
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
+    const mq = window.matchMedia('(min-width: 1024px)');
     const onChange = () => {
       if (mq.matches) setMobileMenuOpen(false);
     };
@@ -55,7 +55,7 @@ export function MobileNav() {
     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
       <SheetContent
         side="left"
-        className="w-[min(18rem,85vw)] bg-sidebar text-sidebar-foreground p-0 md:hidden"
+        className="w-[min(18rem,85vw)] bg-sidebar text-sidebar-foreground p-0 lg:hidden"
       >
         <SheetHeader className="border-b border-sidebar-border px-4 py-4">
           <SheetTitle className="flex items-center gap-2 text-sidebar-foreground">

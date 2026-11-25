@@ -429,7 +429,7 @@ export default function DocumentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-6 animate-pulse">
+      <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-pulse min-w-0">
         <div className="h-8 bg-muted rounded w-48" />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="h-96 bg-muted rounded-xl" />
@@ -441,7 +441,7 @@ export default function DocumentDetailPage() {
 
   if (isError || !doc) {
     return (
-      <div className="p-6 md:p-10 max-w-[1400px] mx-auto">
+      <div className="w-full max-w-[1400px] mx-auto min-w-0">
         <Button variant="ghost" onClick={() => router.push('/documents')} className="mb-6">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to Registry
         </Button>
@@ -455,7 +455,7 @@ export default function DocumentDetailPage() {
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300 min-w-0">
       {/* ── Breadcrumb ── */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link href="/documents" className="hover:text-foreground transition-colors flex items-center gap-1">
@@ -534,14 +534,14 @@ export default function DocumentDetailPage() {
       )}
 
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 min-w-0">
+        <div className="flex items-start gap-4 min-w-0">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
             <FileText className="w-6 h-6 text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{doc.title}</h1>
-            <p className="text-muted-foreground text-sm mt-1">{doc.file_name}</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground break-words">{doc.title}</h1>
+            <p className="text-muted-foreground text-sm mt-1 truncate">{doc.file_name}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <StatusBadge
                 label={doc.status === 'completed' ? 'Verified' : doc.status === 'processing' ? 'Processing' : doc.status === 'failed' ? 'Failed' : doc.status === 'analyzing' ? 'Analyzing' : 'Pending'}
@@ -556,7 +556,7 @@ export default function DocumentDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex flex-wrap gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={() => openDocumentInNewTab(doc.id, getToken).catch((e: Error) => toast.error(e.message))}>
             <Download className="w-4 h-4 mr-2" /> Download
           </Button>
@@ -648,20 +648,20 @@ export default function DocumentDetailPage() {
         </div>
 
         {/* ── Right: Tabbed Analysis ── */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 min-w-0 space-y-4">
           {/* Tab Bar */}
-          <div className="flex gap-1 border-b border-border">
+          <div className="flex gap-1 border-b border-border overflow-x-auto">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                className={`flex items-center gap-2 px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap shrink-0 ${
                   activeTab === id
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-4 h-4 shrink-0" />
                 {label}
               </button>
             ))}

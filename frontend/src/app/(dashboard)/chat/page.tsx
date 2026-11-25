@@ -92,7 +92,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-var(--header-height))] -m-4 md:-m-8 w-[calc(100%+2rem)] md:w-[calc(100%+4rem)] relative overflow-hidden bg-background">
+    <div className="flex flex-col h-[calc(100vh-var(--header-height))] -mx-4 -my-4 lg:-mx-8 lg:-my-8 relative overflow-hidden bg-background">
 
       {/* Ambient Background */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -102,19 +102,19 @@ export default function ChatPage() {
       </div>
 
       {/* Header */}
-      <header className="absolute top-0 w-full bg-background/60 backdrop-blur-xl z-10 px-8 py-5 border-b border-border/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center border border-primary/20">
+      <header className="absolute top-0 inset-x-0 bg-background/60 backdrop-blur-xl z-10 px-4 sm:px-8 py-4 sm:py-5 border-b border-border/50">
+        <div className="flex items-center justify-between gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center border border-primary/20 shrink-0">
               <Sparkles className="w-5 h-5 text-primary" />
             </div>
-            <div>
-              <h1 className="text-lg font-semibold text-foreground tracking-tight">Mining Intelligence</h1>
-              <p className="text-[11px] text-muted-foreground font-medium tracking-wide">AI-powered document analysis & compliance assistant</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight truncate">Mining Intelligence</h1>
+              <p className="text-[11px] text-muted-foreground font-medium tracking-wide truncate">AI-powered document analysis & compliance assistant</p>
             </div>
           </div>
           {messages.length > 0 && (
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground shrink-0">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>{messages.length} messages</span>
             </div>

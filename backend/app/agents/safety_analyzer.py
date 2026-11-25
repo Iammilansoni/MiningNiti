@@ -9,7 +9,7 @@ Processes up to 15000 chars of document content (vs 5000 in v1).
 import logging
 from typing import Any, Dict, List, Optional
 
-from app.agents.base import BaseAgent
+from app.agents.base import BaseAgent, get_secondary_provider
 from app.schemas.agents import SafetyAnalyzerOutput
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,15 @@ class SafetyAnalyzerAgent(BaseAgent):
 
     def __init__(self):
         # magistral-small-latest is a reasoning model, not a standard chat model.
-        # It uses chain-of-thought internally for compliance scoring.
-        super().__init__(model_name="magistral-small-latest", provider="mistral")
+        # Fail over to NVIDIA NIM (or Groq if NIM is unconfigured) when Mistral
+        # quota is exhausted so safety scoring stays available.
+        secondary = get_secondary_provider()
+        super().__init__(
+            model_name="magistral-small-latest",
+            provider="mistral",
+            fallback_model=secondary[1] if secondary else "openai/gpt-oss-120b",
+            fallback_provider=secondary[0] if secondary else "groq",
+        )
 
     @property
     def system_prompt(self) -> str:

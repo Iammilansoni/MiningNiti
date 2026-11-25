@@ -29,7 +29,7 @@ export default function SettingsPage() {
   ] as const;
 
   return (
-    <div className="p-4 md:p-8 max-w-[1000px] mx-auto space-y-8 animate-fade-in-up">
+    <div className="w-full max-w-[1000px] mx-auto space-y-6 md:space-y-8 animate-fade-in-up min-w-0">
       <PageHeader
         className="relative z-10"
         title="Settings"

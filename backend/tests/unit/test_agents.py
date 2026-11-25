@@ -543,3 +543,33 @@ class TestNvidiaNimIntegration:
         assert res["status"] == "ok"
         assert set(res["providers"].keys()) == {"groq", "nvidia"}
         assert res["providers"]["nvidia"]["ok"] is True
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_safety_analyzer_falls_back_repeatedly_on_mistral_quota(
+        self, sample_mining_text, monkeypatch
+    ):
+        from app.agents.safety_analyzer import SafetyAnalyzerAgent
+        from app.config import settings
+
+        monkeypatch.setattr(settings, "NVIDIA_API_KEY", "nvapi-test-key")
+        agent = SafetyAnalyzerAgent()
+        assert agent.provider == "mistral"
+        assert agent.fallback_provider == "nvidia"
+
+        failing_client = MagicMock()
+        failing_client.chat.completions.create = AsyncMock(
+            side_effect=RuntimeError(
+                "the mistral account has no quota left for this request"
+            )
+        )
+        agent.client = failing_client
+        agent._fallback_client = make_mock_client(MOCK_SAFETY_JSON)
+
+        first = await agent.analyze(sample_mining_text)
+        second = await agent.analyze(sample_mining_text)
+
+        assert first["score"] == 82.0
+        assert second["score"] == 82.0
+        assert agent._using_fallback is True
+        assert agent._fallback_client.chat.completions.create.await_count == 2

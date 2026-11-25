@@ -10,16 +10,16 @@ export default function DashboardLayout({
   return (
     <div className="grain flex h-screen w-full bg-background relative overflow-hidden text-foreground">
       
-      {/* Below md the sidebar is hidden, so this drawer is the only navigation. */}
+      {/* Below lg the sidebar is hidden, so this drawer is the only navigation. */}
       <MobileNav />
 
       {/* Edge-to-edge Sidebar */}
-      <div className="hidden md:flex relative z-20 h-screen border-r border-white/[0.05] bg-sidebar/95 backdrop-blur-xl">
+      <div className="hidden lg:flex relative z-20 h-screen shrink-0 border-r border-white/[0.05] bg-sidebar/95 backdrop-blur-xl">
         <Sidebar />
       </div>
       
       {/* Main Content */}
-      <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col relative overflow-hidden bg-background">
+      <main id="main-content" tabIndex={-1} className="flex-1 min-w-0 flex flex-col relative overflow-hidden bg-background">
         
         {/* Subtle Ambient Background Gradients */}
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -27,10 +27,10 @@ export default function DashboardLayout({
           <div className="absolute bottom-[-20%] right-[-10%] w-[40%] h-[50%] rounded-full bg-emerald-500/5 blur-[120px] mix-blend-screen" />
         </div>
 
-        <div className="relative z-10 flex flex-col h-full">
+        <div className="relative z-10 flex flex-1 min-w-0 min-h-0 flex-col h-full">
           <Header />
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
-            <div className="w-full max-w-(--content-max-width) mx-auto p-4 md:p-8">
+          <div className="flex-1 min-w-0 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
+            <div className="w-full min-w-0 max-w-(--content-max-width) mx-auto p-4 lg:p-8">
               {children}
             </div>
           </div>

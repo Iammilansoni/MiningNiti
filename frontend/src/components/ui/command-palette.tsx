@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   Search,
   Settings,
+  ShieldCheck,
   Upload,
   Wand2,
 } from 'lucide-react';
@@ -32,7 +33,11 @@ interface PaletteItem {
   category: string;
 }
 
-export default function CommandPalette() {
+interface CommandPaletteProps {
+  compact?: boolean;
+}
+
+export default function CommandPalette({ compact = false }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -77,6 +82,14 @@ export default function CommandPalette() {
         icon: <MessageSquareText className="size-4" />,
         shortcut: 'G A',
         action: () => router.push('/chat'),
+        category: 'Navigation',
+      },
+      {
+        id: 'compliance',
+        label: 'Open compliance audits',
+        icon: <ShieldCheck className="size-4" />,
+        shortcut: 'G C',
+        action: () => router.push('/compliance'),
         category: 'Navigation',
       },
       {
@@ -128,16 +141,33 @@ export default function CommandPalette() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex h-9 w-full max-w-xl items-center gap-2 rounded-md border bg-background px-3 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
-      >
-        <Search className="size-4" />
-        <span className="flex-1 text-left">Search documents, actions, and pages</span>
-        <Badge variant="outline" className="text-[11px] font-medium">
-          Ctrl K
-        </Badge>
-      </button>
+      {compact ? (
+        <button
+          type="button"
+          suppressHydrationWarning
+          onClick={() => setOpen(true)}
+          className="hidden sm:flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring shrink-0"
+        >
+          <Search className="size-3.5 shrink-0" />
+          <span className="hidden md:inline mr-4 whitespace-nowrap">Search documents...</span>
+          <span className="md:hidden mr-2 whitespace-nowrap">Search...</span>
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 text-muted-foreground">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex h-9 w-full max-w-xl items-center gap-2 rounded-md border bg-background px-3 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <Search className="size-4" />
+          <span className="flex-1 text-left">Search documents, actions, and pages</span>
+          <Badge variant="outline" className="text-[11px] font-medium">
+            Ctrl K
+          </Badge>
+        </button>
+      )}
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <Command className="rounded-lg border shadow-[var(--shadow-overlay)]">

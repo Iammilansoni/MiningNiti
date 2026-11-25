@@ -6,17 +6,17 @@ import { ActivityTimeline } from '@/components/dashboard/activity-timeline';
 
 export default function DashboardPage() {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="min-w-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <WelcomeHeader />
       <KPIGrid />
       
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 flex flex-col gap-4">
+      <div className="grid gap-4 lg:grid-cols-3 min-w-0">
+        <div className="lg:col-span-2 min-w-0 flex flex-col gap-4">
           <RecentDocumentsTable />
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="min-w-0 flex flex-col gap-4">
           <QuickActions />
-          <div className="flex-1 min-h-[300px]">
+          <div className="flex-1 min-h-[300px] min-w-0">
             <ActivityTimeline />
           </div>
         </div>

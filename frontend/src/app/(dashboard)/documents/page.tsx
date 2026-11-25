@@ -55,6 +55,15 @@ export default function DocumentsPage() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upload') === 'true') {
+      setIsUploadOpen(true);
+    }
+    const q = params.get('search');
+    if (q) {
+      setSearchValue(q);
+      setDebouncedSearch(q);
+    }
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
@@ -105,18 +114,18 @@ export default function DocumentsPage() {
   const docs = data?.documents || [];
 
   return (
-    <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 md:space-y-8 animate-fade-in-up min-w-0">
       <PageHeader
         className="relative z-10"
         title="Document Registry"
         description="Manage, upload, and track compliance documents."
         actions={
-        <div className="flex gap-3">
-          <Button variant="outline" className="gap-2" onClick={() => refetch()}>
+        <div className="flex flex-wrap gap-2 sm:gap-3">
+          <Button variant="outline" size="sm" className="gap-2 sm:h-9 sm:px-4" onClick={() => refetch()}>
             <RefreshCw className="w-4 h-4" />
             Refresh
           </Button>
-          <Button className="gap-2" onClick={() => setIsUploadOpen(true)}>
+          <Button size="sm" className="gap-2 sm:h-9 sm:px-4" onClick={() => setIsUploadOpen(true)}>
             <Upload className="w-4 h-4" /> Upload Document
           </Button>
         </div>
@@ -125,7 +134,7 @@ export default function DocumentsPage() {
 
       <UploadModal open={isUploadOpen} onOpenChange={setIsUploadOpen} />
 
-      <SectionCard className="panel p-0 overflow-hidden z-10">
+      <SectionCard className="panel p-0 overflow-hidden z-10 min-w-0">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-4 justify-between bg-muted/20">
           {/* ── Search (now wired!) ── */}
           <div className="relative max-w-md w-full">
@@ -153,16 +162,16 @@ export default function DocumentsPage() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-w-0">
           <table className="w-full text-sm text-left border-collapse">
             <thead className="text-xs uppercase bg-muted/50 text-muted-foreground">
               <tr>
-                <th className="px-6 py-4 font-semibold">Document Name</th>
-                <th className="px-6 py-4 font-semibold hidden md:table-cell">Category</th>
-                <th className="px-6 py-4 font-semibold hidden lg:table-cell">Safety Score</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold hidden sm:table-cell">Uploaded</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                <th className="px-3 sm:px-6 py-4 font-semibold">Document Name</th>
+                <th className="px-3 sm:px-6 py-4 font-semibold hidden md:table-cell">Category</th>
+                <th className="px-3 sm:px-6 py-4 font-semibold hidden lg:table-cell">Safety Score</th>
+                <th className="px-3 sm:px-6 py-4 font-semibold">Status</th>
+                <th className="px-3 sm:px-6 py-4 font-semibold hidden sm:table-cell">Uploaded</th>
+                <th className="px-3 sm:px-6 py-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -171,25 +180,25 @@ export default function DocumentsPage() {
                 // the table: a skeleton that reflows on load reads as a glitch.
                 [...Array(5)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="size-4 rounded bg-muted/60 shrink-0" />
-                        <div className="h-4 w-40 rounded bg-muted/60" />
+                        <div className="h-4 w-32 sm:w-40 rounded bg-muted/60" />
                       </div>
                     </td>
-                    <td className="px-6 py-4 hidden md:table-cell">
+                    <td className="px-3 sm:px-6 py-4 hidden md:table-cell">
                       <div className="h-4 w-20 rounded bg-muted/60" />
                     </td>
-                    <td className="px-6 py-4 hidden lg:table-cell">
+                    <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
                       <div className="h-4 w-12 rounded bg-muted/60" />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <div className="h-5 w-20 rounded-full bg-muted/60" />
                     </td>
-                    <td className="px-6 py-4 hidden sm:table-cell">
+                    <td className="px-3 sm:px-6 py-4 hidden sm:table-cell">
                       <div className="h-4 w-24 rounded bg-muted/60" />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4">
                       <div className="ml-auto size-4 rounded bg-muted/60" />
                     </td>
                   </tr>
@@ -227,16 +236,16 @@ export default function DocumentsPage() {
                     className="hover:bg-muted/30 transition-colors group cursor-pointer"
                     onClick={() => handleViewDetails(doc.id)}
                   >
-                    <td className="px-6 py-4 font-medium text-foreground">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 sm:px-6 py-4 font-medium text-foreground">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <FileText className="size-4 text-primary shrink-0" />
-                        <span className="truncate max-w-[200px] md:max-w-xs">{doc.title || doc.file_name}</span>
+                        <span className="truncate max-w-[140px] sm:max-w-[220px] lg:max-w-xs">{doc.title || doc.file_name}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground hidden md:table-cell capitalize">
+                    <td className="px-3 sm:px-6 py-4 text-muted-foreground hidden md:table-cell capitalize whitespace-nowrap">
                       {doc.category?.replace('_', ' ') || '—'}
                     </td>
-                    <td className="px-6 py-4 hidden lg:table-cell">
+                    <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
                       {doc.safety_score != null ? (
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -251,17 +260,17 @@ export default function DocumentsPage() {
                         <span className="text-muted-foreground/50">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
                       {doc.status === 'completed' && <StatusBadge label="Verified" tone="success" />}
                       {doc.status === 'processing' && <StatusBadge label="Processing" tone="info" pulse />}
                       {doc.status === 'failed' && <StatusBadge label="Failed" tone="danger" />}
                       {doc.status === 'pending' && <StatusBadge label="Pending" tone="neutral" />}
                       {doc.status === 'analyzing' && <StatusBadge label="Analyzing" tone="warning" pulse />}
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground hidden sm:table-cell whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-4 text-muted-foreground hidden sm:table-cell whitespace-nowrap">
                       {formatDistanceToNow(new Date(doc.created_at), { addSuffix: true })}
                     </td>
-                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 sm:px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
@@ -303,7 +312,7 @@ export default function DocumentsPage() {
         </div>
 
         {/* Pagination */}
-        <div className="p-4 border-t border-border flex items-center justify-between bg-muted/10">
+        <div className="p-4 border-t border-border flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-muted/10">
           <span className="text-sm text-muted-foreground">
             {data ? `Showing ${docs.length} of ${data.total} document${data.total !== 1 ? 's' : ''}` : 'Loading...'}
           </span>

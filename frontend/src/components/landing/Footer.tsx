@@ -39,18 +39,18 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-white mb-4">Platform</h3>
             <ul className="space-y-3 text-sm text-white/40">
-                <li><Link href="#architecture" className="hover:text-white transition-colors">Architecture</Link></li>
-               <li><Link href="#features" className="hover:text-white transition-colors">Features</Link></li>
-               <li><Link href="#trust" className="hover:text-white transition-colors">Security</Link></li>
-               <li><Link href="#integrations" className="hover:text-white transition-colors">Integrations</Link></li>
+                <li><Link href="/#architecture" className="hover:text-white transition-colors">Architecture</Link></li>
+               <li><Link href="/#features" className="hover:text-white transition-colors">Features</Link></li>
+               <li><Link href="/#trust" className="hover:text-white transition-colors">Security</Link></li>
+               <li><Link href="/#integrations" className="hover:text-white transition-colors">Integrations</Link></li>
             </ul>
           </div>
 
           <div>
             <h3 className="font-semibold text-white mb-4">Resources</h3>
             <ul className="space-y-3 text-sm text-white/40">
-                <li><Link href="#faq" className="hover:text-white transition-colors">FAQ</Link></li>
-               <li><Link href="/dashboard/chat" className="hover:text-white transition-colors">Documentation</Link></li>
+                <li><Link href="/#faq" className="hover:text-white transition-colors">FAQ</Link></li>
+               <li><Link href="/about" className="hover:text-white transition-colors">Documentation</Link></li>
             </ul>
           </div>
 

@@ -72,7 +72,7 @@ export default function PromptsPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-[1400px] mx-auto space-y-8 animate-fade-in-up">
+    <div className="w-full max-w-[1400px] mx-auto space-y-6 md:space-y-8 animate-fade-in-up min-w-0">
       <PageHeader
         className="relative z-10"
         title="Prompt Library"
