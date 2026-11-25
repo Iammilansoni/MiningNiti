@@ -18,6 +18,7 @@ Pipeline:
 
 import asyncio
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
@@ -36,6 +37,8 @@ logger = logging.getLogger(__name__)
 
 # Max concurrent LLM calls to avoid rate limits
 _MAX_CONCURRENT_ASSESSMENTS = 5
+# Persist progress counter every N clauses to avoid per-clause DB commits
+_PROGRESS_UPDATE_INTERVAL = 5
 # Top-K evidence chunks per clause (after reranking)
 _TOP_K = 5
 # Over-fetch count for reranking
@@ -64,9 +67,21 @@ class ComplianceService:
         """
         logger.info(f"Starting compliance audit: {audit_id}")
 
+        try:
+            resolved_audit_id = (
+                uuid.UUID(str(audit_id))
+                if not isinstance(audit_id, uuid.UUID)
+                else audit_id
+            )
+        except (ValueError, AttributeError):
+            logger.error(f"Invalid audit ID: {audit_id}")
+            return False
+
         with get_db_context() as db:
             audit = (
-                db.query(ComplianceAudit).filter(ComplianceAudit.id == audit_id).first()
+                db.query(ComplianceAudit)
+                .filter(ComplianceAudit.id == resolved_audit_id)
+                .first()
             )
 
             if not audit:
@@ -127,6 +142,8 @@ class ComplianceService:
                 gap_count = 0
                 missing_count = 0
                 not_applicable_count = 0
+                error_count = 0
+                quota_error_count = 0
 
                 for i, result in enumerate(results):
                     status = result.get("status", "missing")
@@ -136,6 +153,10 @@ class ComplianceService:
                         gap_count += 1
                     elif status == "not_applicable":
                         not_applicable_count += 1
+                    elif status == "error":
+                        error_count += 1
+                        if result.get("quota_exceeded"):
+                            quota_error_count += 1
                     else:
                         missing_count += 1
 
@@ -155,13 +176,10 @@ class ComplianceService:
                 # ── Step 5: Compute aggregate stats ─────────────────────
                 #
                 # not_applicable clauses (pure definitions/gazette masthead/
-                # table-of-contents content — see clause_filter.py) are
-                # excluded from the score denominator. They were never
-                # something an operational document could "comply with", so
-                # counting them as "total" clauses manufactures a
-                # near-zero score no matter how compliant the operational
-                # document actually is: two real audits scored 1.8% and 0%
-                # this way before the filter existed.
+                # table-of-contents content — see clause_filter.py) and clauses
+                # whose assessment failed ("error") are excluded from the score
+                # denominator so neither boilerplate nor provider outages
+                # manufacture false compliance gaps.
                 total = len(results)
                 applicable = compliant_count + gap_count + missing_count
                 audit.compliant_count = compliant_count
@@ -174,6 +192,20 @@ class ComplianceService:
                 )
 
                 # ── Step 6: Mark completed ──────────────────────────────
+                if quota_error_count:
+                    audit.processing_error = (
+                        f"AI analysis incomplete: API quota exceeded on "
+                        f"{quota_error_count} clause(s). Partial results saved. "
+                        "Re-run when quota resets."
+                    )
+                elif error_count:
+                    audit.processing_error = (
+                        f"Partial audit: {error_count} clause(s) failed assessment "
+                        "and were excluded from scoring."
+                    )
+                else:
+                    audit.processing_error = None
+
                 audit.status = AuditStatus.COMPLETED
                 audit.completed_at = datetime.now(timezone.utc)
                 db.commit()
@@ -183,9 +215,10 @@ class ComplianceService:
                     f"Score: {audit.overall_score}%, "
                     f"Compliant: {compliant_count}, Gaps: {gap_count}, "
                     f"Missing: {missing_count}, "
-                    f"Not applicable: {not_applicable_count}"
+                    f"Not applicable: {not_applicable_count}, "
+                    f"Errors: {error_count}"
                 )
-                return True
+                return quota_error_count == 0
 
             except QuotaExceededError as qe:
                 logger.error(f"Quota exceeded during audit {audit_id}: {qe}")
@@ -221,8 +254,31 @@ class ComplianceService:
         Returns a list of result dicts (one per clause, in order).
         """
         results: List[Optional[Dict]] = [None] * len(clauses)
+        completed_so_far = 0
+
+        def _flush_progress(processed: int) -> None:
+            try:
+                resolved = (
+                    uuid.UUID(str(audit_id))
+                    if not isinstance(audit_id, uuid.UUID)
+                    else audit_id
+                )
+                with get_db_context() as progress_db:
+                    progress_audit = (
+                        progress_db.query(ComplianceAudit)
+                        .filter(ComplianceAudit.id == resolved)
+                        .first()
+                    )
+                    if progress_audit:
+                        progress_audit.processed_clauses = processed
+                        progress_db.commit()
+            except Exception as progress_err:
+                logger.debug(
+                    f"Could not update compliance audit progress for {audit_id}: {progress_err}"
+                )
 
         async def assess_one(index: int, clause: DocumentEmbedding):
+            nonlocal completed_so_far
             async with self._semaphore:
                 try:
                     if not is_substantive_clause(clause.chunk_text):
@@ -277,18 +333,22 @@ class ComplianceService:
                             "recommendations": result.get("recommendations", []),
                         }
 
-                    # Update progress counter
-                    with get_db_context() as progress_db:
-                        progress_audit = (
-                            progress_db.query(ComplianceAudit)
-                            .filter(ComplianceAudit.id == audit_id)
-                            .first()
-                        )
-                        if progress_audit:
-                            progress_audit.processed_clauses = sum(
-                                1 for r in results if r is not None
-                            )
-                            progress_db.commit()
+                except QuotaExceededError as qe:
+                    provider = getattr(qe, "provider", "") or "the provider"
+                    logger.error(f"Clause {index} quota exceeded ({provider}): {qe}")
+                    results[index] = {
+                        "clause_text": clause.chunk_text,
+                        "section_title": clause.section_title,
+                        "status": "error",
+                        "assessment": (
+                            f"Assessment unavailable — {provider} API quota exceeded. "
+                            "Re-run this audit once quota resets."
+                        ),
+                        "confidence": 0.0,
+                        "evidence_chunks": [],
+                        "recommendations": [],
+                        "quota_exceeded": True,
+                    }
 
                 except Exception as e:
                     logger.error(
@@ -297,12 +357,20 @@ class ComplianceService:
                     results[index] = {
                         "clause_text": clause.chunk_text,
                         "section_title": clause.section_title,
-                        "status": "missing",
+                        "status": "error",
                         "assessment": f"Assessment failed: {str(e)}",
                         "confidence": 0.0,
                         "evidence_chunks": [],
                         "recommendations": [],
                     }
+
+                finally:
+                    completed_so_far += 1
+                    if (
+                        completed_so_far % _PROGRESS_UPDATE_INTERVAL == 0
+                        or completed_so_far == len(clauses)
+                    ):
+                        _flush_progress(completed_so_far)
 
         # Launch all clause assessments
         tasks = [assess_one(i, clause) for i, clause in enumerate(clauses)]
@@ -314,7 +382,7 @@ class ComplianceService:
                 results[i] = {
                     "clause_text": clauses[i].chunk_text,
                     "section_title": clauses[i].section_title,
-                    "status": "missing",
+                    "status": "error",
                     "assessment": "Assessment did not complete.",
                     "confidence": 0.0,
                     "evidence_chunks": [],
