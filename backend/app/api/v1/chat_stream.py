@@ -67,7 +67,34 @@ async def stream_chat(
         full_response = []
         sources = []
         tokens_used = None
+        finalized = False
         start_time = datetime.utcnow()
+
+        def _persist_assistant_turn():
+            nonlocal finalized
+            if finalized or not full_response:
+                return
+            finalized = True
+            response_time_ms = int(
+                (datetime.utcnow() - start_time).total_seconds() * 1000
+            )
+            try:
+                chat_service.finalize_turn(
+                    db=db,
+                    session=turn.session,
+                    user_id=user_id,
+                    content="".join(full_response),
+                    sources=sources,
+                    include_sources=request.include_sources,
+                    response_time_ms=response_time_ms,
+                    tokens_used=tokens_used,
+                    raw_user_content=request.content,
+                )
+            except Exception as save_err:
+                logger.error(
+                    f"Failed to persist streamed assistant message: {save_err}",
+                    exc_info=True,
+                )
 
         try:
             async for event in chat_service.generate_response_stream(
@@ -77,9 +104,6 @@ async def stream_chat(
                 db=db,
                 history=turn.history,
             ):
-                # Forward each SSE event to client
-                yield event
-
                 # Track sources from the sources event for DB persistence
                 if event.startswith("event: sources\n"):
                     data_line = event.split("data: ", 1)[-1].strip()
@@ -99,49 +123,28 @@ async def stream_chat(
 
                 elif event.startswith("event: done\n"):
                     data_line = event.split("data: ", 1)[-1].strip()
+                    done_data = {}
                     try:
                         done_data = json.loads(data_line)
                         tokens_used = done_data.get("tokens_used")
                     except Exception:
                         pass
 
+                    # Persist before emitting done so follow-up turns see this reply.
+                    _persist_assistant_turn()
+                    done_data["session_id"] = str(turn.session.id)
+                    yield f"event: done\ndata: {json.dumps(done_data)}\n\n"
+                    continue
+
+                # Forward each SSE event to client
+                yield event
+
         except Exception as e:
             logger.error(f"Streaming error: {e}", exc_info=True)
             yield f"event: error\ndata: {json.dumps({'message': str(e)})}\n\n"
 
         finally:
-            # Persist assistant message after stream completes
-            if full_response:
-                response_time_ms = int(
-                    (datetime.utcnow() - start_time).total_seconds() * 1000
-                )
-                try:
-                    chat_service.finalize_turn(
-                        db=db,
-                        session=turn.session,
-                        user_id=user_id,
-                        content="".join(full_response),
-                        sources=sources,
-                        include_sources=request.include_sources,
-                        response_time_ms=response_time_ms,
-                        tokens_used=tokens_used,
-                        raw_user_content=request.content,
-                    )
-                except Exception as save_err:
-                    logger.error(
-                        f"Failed to persist streamed assistant message: {save_err}",
-                        exc_info=True,
-                    )
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",  # Disable nginx buffering
-        },
-    )
+            _persist_assistant_turn()
 
     return StreamingResponse(
         event_generator(),

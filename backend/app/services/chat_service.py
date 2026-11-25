@@ -75,9 +75,6 @@ class ChatTurnContext:
     history: List[Dict[str, str]]
 
 
-# names here while generation ran on Groq, so the stored provenance was false.
-CHAT_MODEL = "openai/gpt-oss-120b"
-
 # ── System Prompt ──────────────────────────────────────────────────────────────
 _SYSTEM_PROMPT = """You are MiningNiti AI, an expert assistant specialized in the coal mining industry.
 
