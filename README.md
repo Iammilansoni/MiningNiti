@@ -11,7 +11,7 @@
 
 ### AI-Powered Document Intelligence for the Mining Industry
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.14+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.128+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16+-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
@@ -344,7 +344,7 @@ Query → Embed → Hybrid Search (Vector + Full-Text) → RRF → Cross-Encoder
 | Layer | Technology | Version |
 |---|---|---|
 | **Frontend** | Next.js (App Router, Turbopack) · React · TypeScript · Tailwind CSS v4 · shadcn/ui · Clerk Auth · Zustand · TanStack React Query · Recharts | 16.x / 19.x / 5.x |
-| **Backend** | FastAPI · Python · SQLAlchemy (synchronous sessions) · Pydantic v2 · slowapi Rate Limiting · sentence-transformers CrossEncoder | 0.128 / 3.11+ / 2.0 |
+| **Backend** | FastAPI · Python · SQLAlchemy (synchronous sessions) · Pydantic v2 · slowapi Rate Limiting · sentence-transformers CrossEncoder | 0.128 / 3.14+ / 2.0 |
 | **Database** | Supabase PostgreSQL + pgvector + pg_trgm (HNSW index) | 16+ |
 | **AI Agents** | Groq (GPT-OSS-120B — document agents *and* RAG chat generation) · Mistral (Magistral) · Cerebras (GPT-OSS-120B) | All free tiers |
 | **Embeddings & Eval** | Gemini `gemini-embedding-001` for chunk and query embeddings; `gemini-3.7-flash` as the judge in the on-demand generation eval — it generates no user-facing answers | All free tiers |
@@ -358,7 +358,7 @@ Query → Embed → Hybrid Search (Vector + Full-Text) → RRF → Cross-Encoder
 
 ### Prerequisites
 
-- **Python 3.11+** and **Node.js 24+** (pinned in `frontend/.nvmrc` and `frontend/package.json`)
+- **Python 3.14+** and **Node.js 24+** (pinned in `frontend/.nvmrc` and `frontend/package.json`)
 - **Docker & Docker Compose** (recommended for local development)
 - **Free accounts**: Supabase, Upstash, Clerk, Google AI Studio, Groq, Cerebras, Mistral
 
@@ -389,10 +389,8 @@ This starts PostgreSQL (with pgvector), Redis, backend, and frontend.
 **Backend:**
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+uv sync
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
 **Frontend:**

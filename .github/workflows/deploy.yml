@@ -27,13 +27,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up uv & Python
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.11"
-
-      - name: Install huggingface_hub
-        run: pip install --no-cache-dir "huggingface_hub>=0.25"
+          python-version: "3.14"
 
       - name: Verify required secrets are present
         env:
@@ -55,7 +52,7 @@ jobs:
           HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
           GIT_SHA: ${{ github.sha }}
         run: |
-          python - <<'PY'
+          uv run --no-project --with "huggingface_hub>=0.25" python - <<'PY'
           import os
           from huggingface_hub import HfApi
 
@@ -70,6 +67,7 @@ jobs:
               ignore_patterns=[
                   ".env",
                   ".env.*",
+                  ".venv/**",
                   "venv/**",
                   "**/__pycache__/**",
                   "*.pyc",

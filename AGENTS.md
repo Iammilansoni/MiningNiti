@@ -4,33 +4,33 @@
 
 Two independent apps in a single repo (no monorepo tooling — root `package.json` is empty):
 
-- **`backend/`** — FastAPI 0.128 + Python 3.11, SQLAlchemy + pgvector, multi-provider AI (Gemini, Groq, Mistral, Cerebras)
+- **`backend/`** — FastAPI 0.128+ + Python 3.14, SQLAlchemy + pgvector, multi-provider AI (Gemini, Groq, Mistral, Cerebras)
 - **`frontend/`** — Next.js 16 (App Router), React 19, Clerk auth, Tailwind CSS v4, shadcn/ui
 
 ## Key Commands
 
 ### Backend (`backend/`)
 ```bash
-# Run dev server (from backend/)
-uvicorn app.main:app --reload --port 8000
-# or
-python run.py
+# Install deps (creates backend/.venv from uv.lock)
+uv sync
 
-# Install deps
-pip install -r requirements.txt
+# Run dev server (from backend/)
+uv run uvicorn app.main:app --reload --port 8000
+# or
+uv run python run.py
 
 # Tests (unit only — fast, uses SQLite in-memory)
-pytest tests/unit/ -v -m unit
+uv run pytest tests/unit/ -v -m unit
 
 # Tests (integration — needs running PostgreSQL + Redis)
-pytest tests/integration/ -v -m integration
+uv run pytest tests/integration/ -v -m integration
 
 # Lint/format
-black --check app/ tests/
-isort --check-only app/ tests/
+uv run black --check app/ tests/
+uv run isort --check-only app/ tests/
 
 # Type check (non-blocking in CI, gradual adoption)
-mypy app/ --ignore-missing-imports
+uv run mypy app/ --ignore-missing-imports
 ```
 
 ### Frontend (`frontend/`)
@@ -97,6 +97,6 @@ docker-compose -f docker-compose.prod.yml up -d
 
 - Root `package.json` is `{}` — don't run `npm install` from root
 - `DATABASE_URL` in docker-compose uses `psycopg2` driver format; the backend also needs `psycopg` (binary) for async
-- There is no Celery integration despite the commented-out dependency in `requirements.txt`; background work is the in-process `asyncio.Queue` described above
+- There is no Celery integration (`pyproject.toml` omits it intentionally); background work is the in-process `asyncio.Queue` described above
 - The `frontend/.env.local` file is gitignored with no example file — check `frontend/src/lib/api.ts:5` for the `NEXT_PUBLIC_API_BASE_URL` fallback
 - `pytest.ini` sets `asyncio_mode = auto` globally — don't add explicit async markers

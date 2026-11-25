@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 env:
-  PYTHON_VERSION: "3.11"
+  PYTHON_VERSION: "3.14"
   # Keep in step with frontend/package.json engines and frontend/.nvmrc.
   # Vercel deprecated Node 20: builds created on or after 2026-10-01 fail.
   NODE_VERSION: "24"
@@ -24,25 +24,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+      - name: Set up uv & Python ${{ env.PYTHON_VERSION }}
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
 
       - name: Install lint dependencies
-        run: pip install black==24.8.0 isort==5.13.0 mypy==1.11.0
+        run: uv sync --locked
 
       - name: Check formatting (black)
-        run: black --check app/ tests/
+        run: uv run --no-sync black --check app/ tests/
 
       - name: Check imports (isort)
-        run: isort --check-only app/ tests/
+        run: uv run --no-sync isort --check-only app/ tests/
 
       - name: Type checking (mypy)
-        run: |
-          pip install -r requirements.txt
-          mypy app/ --ignore-missing-imports --no-error-summary
+        run: uv run --no-sync mypy app/ --ignore-missing-imports --no-error-summary
         # Still non-blocking, but not for the reason stated before: mypy 1.11.0
         # reports no type errors on this project at all - it exits 2 with
         # "INTERNAL ERROR" while following an import into
@@ -62,16 +61,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+      - name: Set up uv & Python ${{ env.PYTHON_VERSION }}
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install bandit
-        run: pip install bandit[toml]
-
       - name: Run bandit security scan
-        run: bandit -r app/ -ll -x app/tests
+        run: uvx --from "bandit[toml]" bandit -r app/ -ll -x app/tests
         # Non-blocking: currently exits 1 on 3 medium findings in app/ - B104
         # (uvicorn binding 0.0.0.0) and two B608 hardcoded-SQL hits in the
         # hybrid-search query builder. All three are in application code, so
@@ -133,24 +129,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
+      - name: Set up uv & Python ${{ env.PYTHON_VERSION }}
+        uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: uv sync --locked
 
       - name: Run Alembic migrations
         # No longer continue-on-error: the chain now bootstraps a fresh
         # database (revision 001 is a real baseline), so a failure here is a
         # genuine break, not the expected state it used to be.
-        run: python -m scripts.migrate
+        run: uv run --no-sync python -m scripts.migrate
 
       - name: Run unit tests
         run: |
-          pytest tests/unit/ -v --tb=short \
+          uv run --no-sync pytest tests/unit/ -v --tb=short \
             --cov=app \
             --cov-report=xml \
             --cov-report=term-missing \
@@ -164,7 +161,7 @@ jobs:
       # fixed, so a failure here is now a real failure.
       - name: Run integration tests
         run: |
-          pytest tests/integration/ -v --tb=short \
+          uv run --no-sync pytest tests/integration/ -v --tb=short \
             -m "integration"
 
       # ── Retrieval quality gate ────────────────────────────────────────────
@@ -180,8 +177,8 @@ jobs:
 
       - name: Retrieval quality eval
         run: |
-          pytest tests/eval/test_retrieval_metrics.py -v --tb=short -m unit
-          pytest tests/eval/test_retrieval_eval.py -v -s --tb=short -m retrieval
+          uv run --no-sync pytest tests/eval/test_retrieval_metrics.py -v --tb=short -m unit
+          uv run --no-sync pytest tests/eval/test_retrieval_eval.py -v -s --tb=short -m retrieval
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
