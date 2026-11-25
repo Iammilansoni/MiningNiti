@@ -9,16 +9,18 @@
  ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝
 ```
 
-### AI-Powered Document Intelligence for the Mining Industry
+### Multi-Agent Document Intelligence & Hybrid RAG Platform for Mining Compliance
 
 [![Python](https://img.shields.io/badge/Python-3.14+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![uv](https://img.shields.io/badge/uv-Package_Manager-DE5FE9?style=for-the-badge&logo=uv&logoColor=white)](https://docs.astral.sh/uv/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.128+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16+-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
-[![PostgreSQL](https://img.shields.io/badge/Supabase-pgvector-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+[![Supabase pgvector](https://img.shields.io/badge/Supabase-pgvector-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 
-[Project History](#project-history) · [Architecture](#architecture) · [Quick Start](#quick-start) · [API Reference](#api-endpoints) · [Deploy](#deployment) · [Contributing](#contributing)
+[**Live App (`miningniti.vercel.app`)**](https://miningniti.vercel.app)
+
+[Overview](#overview) · [Project History](#project-history) · [Live Demo](#live-demo) · [Engineering Decisions](#key-engineering-decisions) · [Architecture](#architecture) · [Quick Start](#quick-start) · [Evaluation & Testing](#evaluation--testing) · [Trade-offs](#trade-offs--known-limitations) · [API & Structure](#api--project-structure)
 
 ---
 
@@ -38,24 +40,22 @@
 
 ---
 
-MiningNiti is a full-stack AI platform that transforms how coal mining organizations manage safety documentation, regulatory compliance, and institutional knowledge. It combines a **multi-agent AI pipeline** (4 agents on upload plus an on-demand compliance auditor, across 3 LLM providers) with **production-grade RAG** (hybrid search + cross-encoder reranking) and **real-time compliance auditing** — turning thousands of fragmented PDFs into an instantly queryable, citation-backed source of truth.
+## Overview
 
----
+**MiningNiti** is a full-stack AI backend and document intelligence workspace built for mining safety regulations (MSHA, DGMS, OSHA), operational SOPs, and incident reports. It parses PDFs, DOCX files, text, and scanned images, runs a concurrent multi-agent analysis pipeline on upload, indexes chunks into PostgreSQL (`pgvector` + full-text), serves citation-backed SSE chat over hybrid retrieval with cross-encoder reranking, and cross-checks operational documents clause-by-clause against regulations.
 
-## Project history
+### Project history
 
-**Two separate builds, four years apart.**
+The original entry won **Smart India Hackathon 2023** (Ministry of Coal, judged by CMPDI) as a team prototype. **This repository is an independent, ground-up solo rebuild started in June 2025**—none of the 2023 hackathon code carried over.
 
-The original entry was built for **Smart India Hackathon 2023** (Nov–Dec 2023) against the
-Ministry of Coal problem statement, by a team, and **won at the national level**. CMPDI
-officials who judged the finals initiated follow-up discussions about deploying it at scale;
-those talks did not proceed. It was never deployed at CMPDI, and there is no ongoing
-institutional relationship.
+<details>
+<summary><b>Click to expand full Project History &amp; 2023 Prototype vs. Rebuild Comparison</b></summary>
 
-**This repository is not that codebase.** It is an independent, ground-up rebuild started in
-**June 2025** and developed solo since — a production system rather than a hackathon
-prototype. None of the 2023 code carried over, and that prototype was never under version
-control in a repository I can point to.
+**Two separate builds — hackathon prototype vs. independent ground-up rebuild.**
+
+The original entry was built for **Smart India Hackathon 2023** (Nov–Dec 2023) against the Ministry of Coal problem statement, by a team, and **won at the national level**. CMPDI officials who judged the finals initiated follow-up discussions about deploying it at scale; those talks did not proceed. It was never deployed at CMPDI, and there is no ongoing institutional relationship.
+
+**This repository is not that codebase.** It is an independent, ground-up rebuild started in **June 2025** and developed solo since — a production system rather than a hackathon prototype. None of the 2023 code carried over, and that prototype was never under version control in a repository I can point to.
 
 |  | Origin | This repository |
 |---|---|---|
@@ -63,294 +63,169 @@ control in a repository I can point to.
 | **Who** | Team (SIH 2023) | Sole developer |
 | **Status** | Hackathon prototype | Live, deployed, continuously integrated |
 
-### What changed
+#### What changed
 
-> **Note:** the *Origin* column is from recollection — that prototype predates this repository
-> and its code is not available to verify against. Every claim in the *This repository* column
-> is checkable in the code, and linked where it is not obvious.
+> **Note:** the *Origin* column is from recollection — that prototype predates this repository and its code is not available to verify against. Every claim in the *This repository* column is checkable in the code.
 
 |  | SIH 2023 prototype | This repository |
 |---|---|---|
 | **Architecture** | Single-pass RAG chatbot, built on LangChain | 5 specialized agents — 4 running concurrently on upload, plus an on-demand compliance auditor |
-| **Orchestration** | LangChain chains | No agent framework — orchestration is hand-written on `asyncio.gather` with per-agent error isolation, quota-aware provider failover and a content-addressed result cache |
-| **Retrieval** | FAISS vector search | Hybrid: pgvector cosine + PostgreSQL full-text, fused with Reciprocal Rank Fusion, then cross-encoder reranked (top-20 → top-5) |
+| **Orchestration** | LangChain chains | No agent framework — orchestration is hand-written on `asyncio.gather` with per-agent error isolation, quota-aware provider failover, and a content-addressed result cache |
+| **Retrieval** | FAISS vector search | Hybrid: `pgvector` cosine + PostgreSQL full-text, fused with Reciprocal Rank Fusion, then cross-encoder reranked (`top-20 → top-5`) |
 | **Models** | Open-source model with DPO, Gemini-backed | 3 LLM providers (Groq, Cerebras, Mistral) with quota-aware automatic failover; Gemini for embeddings |
-| **Evaluation** | — | Hit Rate@k / MRR / Recall@k / nDCG@k harness over a labelled golden set, running as a **blocking CI gate**; LangSmith tracing on the orchestrator, retrieval and chat |
+| **Evaluation** | — | Hit Rate@k / MRR / Recall@k / nDCG@k harness over a labelled golden set, running as a **blocking CI gate**; LangSmith tracing on the orchestrator, retrieval, and chat |
 | **Security** | — | Clerk JWT (RS256-pinned, JWKS caching, `azp` validation), prompt-injection guardrails, DNS-resolving SSRF guard, 120 req/min rate limiting |
-| **Tests** | — | 215 unit tests (274 collected, including integration and eval suites) |
-| **Stack** | Python backend, TypeScript frontend | FastAPI + PostgreSQL/pgvector · Next.js 16 / React 19 |
+| **Tests** | — | 316 unit tests (375 collected, including integration and eval suites) |
+| **Stack** | Python backend, TypeScript frontend | FastAPI + PostgreSQL/pgvector (Python 3.14, `uv`) · Next.js 16 / React 19 |
 | **Deployment** | Local | Live on free-tier infrastructure, auto-deployed from `main` |
+
+</details>
 
 ---
 
-## 🎥 Live Demo & Preview
+## Live Demo
 
+<sub>Frontend is hosted on Vercel and the FastAPI backend runs on a free-tier HuggingFace Docker Space (kept warm by a scheduled ping; cold starts after idle take ~30–60s). Every recording below was captured against the live deployment.</sub>
+
+### Multi-Agent Document Pipeline
 <div align="center">
 
-### [▶&nbsp; Try it live — miningniti.vercel.app](https://miningniti.vercel.app)
+![Uploading a document and watching the multi-agent pipeline classify, extract entities, and summarize it](docs/assets/multi-agent-demo.gif)
 
-<sub>The backend runs on a free HuggingFace Space, kept warm by a scheduled ping.<br/>
-If it has been idle, the first request may take up to a minute while the container wakes.</sub>
+<sub><i>Upload → Classifier runs first, then Safety Analyzer, Entity Extractor, and Summarizer execute in parallel with schema-validated output.</i></sub>
 
 </div>
 
-Every GIF below is a real, unedited interaction against the live deployment —
-same free-tier infrastructure, same documents, same AI providers a visitor
-gets. Nothing here is mocked.
-
-### 🤖 Multi-Agent Document Pipeline
-
-<div align="center">
-
-![Uploading a document and watching the multi-agent pipeline classify, extract entities and summarize it](docs/assets/multi-agent-demo.gif)
-
-<sub><i>Upload → the orchestrator classifies the document first, then runs safety analysis,
-entity extraction and summarization in parallel → the result: a categorized document with<br/>
-a real executive summary, key insights, and entities extracted and grouped by type
-(equipment, chemicals, locations, personnel, dates).</i></sub>
-
-</div>
-
-### 🛡️ Compliance Auto-Auditor
-
-<div align="center">
-
-![Creating a compliance audit and reviewing a clause-by-clause result with cited evidence](docs/assets/compliance-demo.gif)
-
-<sub><i>Trigger: pick a regulation and the operational documents to check it against, and run the audit.<br/>
-Result: a real audit already in progress — every clause assessed compliant, a gap, or missing,
-with pure definitions/boilerplate clauses correctly excluded rather than
-counted against the score, and every finding backed by cited evidence and
-specific, actionable recommendations.</i></sub>
-
-</div>
-
-### 💬 Chat — Dedicated Page
-
-<div align="center">
-
-![RAG chat answering a mining regulation question with page-level citations](docs/assets/rag-chat-demo.gif)
-
-<sub><i>A regulatory question, start to finish: hybrid search retrieves and reranks,<br/>
-the answer streams back token by token, and every claim carries its document and page.</i></sub>
-
-</div>
-
-> [!NOTE]
-> **About the answer in the recording.** The model states that a *manager's*
-> duties are not spelled out in the retrieved context, and offers the *owner's*
-> duties instead — with citations. That is the intended behaviour, not a miss:
-> the system prompt forbids answering beyond retrieved context, so a near-miss
-> is reported as a near-miss rather than confabulated into a confident answer.
-
-### 📄💬 Chat — Inside a Document
-
-<div align="center">
-
-![Asking a question inside an incident report and getting an answer scoped to that one document, with page citations](docs/assets/document-chat-demo.gif)
-
-<sub><i>The same retrieval pipeline, scoped to a single open document — "what actions are
-recommended?" pulls its answer only from that incident report, not the whole<br/>
-corpus, and still cites the page it came from.</i></sub>
-
-</div>
-
-### The interface
-
+### Compliance Auto-Auditor & Citation-Grounded RAG Chat
 <table>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/assets/dashboard.jpg" alt="Dashboard with KPI grid, recent documents and activity feed" />
-      <p align="center"><b>Dashboard</b><br/><sub>Corpus size, query volume, compliance score and live activity.</sub></p>
+      <img src="docs/assets/compliance-demo.gif" alt="Clause-by-clause compliance audit with cited evidence" />
+      <p align="center"><b>Compliance Auto-Auditor</b><br/><sub>Evaluates each clause as <code>compliant</code>, <code>gap</code>, or <code>missing</code> with cited evidence (excluding definitions via <code>not_applicable</code> and isolating quota/LLM faults as <code>error</code>).</sub></p>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/assets/documents.jpg" alt="Document registry table with category, safety score and status" />
-      <p align="center"><b>Document registry</b><br/><sub>Upload, track processing status and review AI analysis.</sub></p>
+      <img src="docs/assets/rag-chat-demo.gif" alt="Hybrid RAG streaming answer with document and page citations" />
+      <p align="center"><b>Hybrid RAG Chat (SSE)</b><br/><sub>Hybrid retrieval + Cross-Encoder reranking, token streaming, and strict <code>[FileName, Page X]</code> grounding (explicitly refuses unsupported claims).</sub></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/assets/document-chat-demo.gif" alt="In-document scoped AI chat with page citations" />
+      <p align="center"><b>Document-Scoped Chat</b><br/><sub>Runs the same retrieval pipeline filtered to a single open document inside the viewer.</sub></p>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/assets/dashboard.jpg" alt="Dashboard with KPI grid, safety score, and recent documents" />
+      <p align="center"><b>Analytics &amp; Registry</b><br/><sub>Real-time job polling, safety scores, entity breakdown, and audit trail (see also <a href="docs/assets/documents.jpg">documents view</a>).</sub></p>
     </td>
   </tr>
 </table>
 
 ---
 
-## Table of Contents
+## Key Engineering Decisions
 
-- [Project History](#project-history) · [Live Demo](#-live-demo--preview) · [Problem & Solution](#problem--solution) · [Key Features](#key-features)
-- [Architecture](#architecture) · [Tech Stack](#tech-stack) · [Quick Start](#quick-start) · [API Endpoints](#api-endpoints)
-- [Project Structure](#project-structure) · [Deployment](#deployment) · [Testing](#testing) · [MLOps & Eval](#mlops)
-- [Security](#security) · [Performance](#performance) · [Known Limitations](#known-limitations) · [Contributing](#contributing) · [License](#license)
+Real failure modes shaped every major choice in MiningNiti:
 
----
-
-## Problem & Solution
-
-Coal mining operations generate **thousands of critical documents** — MSHA regulations, equipment manuals, safety protocols, environmental impact assessments, and incident investigations. Information is scattered across PDFs, scanned forms, and siloed databases. Finding a specific clause across 500 pages of safety protocols takes hours, and missing a regulation update can mean violations, fines, or lives.
-
-MiningNiti deploys **5 specialized AI agents** across 3 LLM providers (Groq, Cerebras, Mistral) that understand mining domain context. Four run automatically on every upload (Classifier, Safety Analyzer, Entity Extractor, Summarizer); the Compliance Auditor runs on demand when you create an audit.
-
----
-
-## Key Features
-
-### Multi-Agent AI Pipeline
-
-The classifier runs first — its category feeds the others — then three agents run concurrently:
-
-```
-Document Upload
-       │
-       ▼
-  ┌─────────────┐
-  │ Orchestrator │──── Classifier first, then 3 concurrently
-  └──────┬──────┘
-         │
-         ▼
-    Classifier ──── category feeds the three below
-     (Groq)
-         │
-   ┌─────┴──────┬──────────────┐
-   ▼            ▼              ▼
- Safety       Entity       Summarizer
-Analyzer     Extractor       Agent
-(Mistral)   (Cerebras)     (Cerebras)
-   │            │              │
-   └─────┬──────┴──────────────┘
-         ▼
-  Chunks + Embeddings → pgvector (HNSW index)
-
-  Compliance Auditor (Groq) runs separately, on demand,
-  when you create an audit — not part of this pipeline.
-```
-
-Repeat analysis of identical content is served from a Redis cache keyed by
-content hash, so re-uploads cost zero LLM calls. Failed analyses are never
-cached, so re-analysing after a rate limit genuinely retries.
-
-The pipeline degrades loudly rather than silently. Groq and Cerebras fall
-back to one another when a provider returns a quota error, and when a section
-still cannot be produced the document completes with the other three intact:
-the failure is recorded on `Document.processing_error` and in
-`metadata.degraded_sections`, and surfaced in the UI, instead of being
-laundered into a plausible-looking empty result.
-
-### Production RAG Pipeline
-
-The retrieval system goes beyond basic vector search with a multi-stage pipeline:
-
-```
-Query → Embed → Hybrid Search (Vector + Full-Text) → RRF → Cross-Encoder Rerank → Top-5 → LLM
-```
-
-| Stage | What it does |
-|---|---|
-| **Hybrid Search** | pgvector cosine similarity + PostgreSQL full-text search (`ts_rank_cd` over a GIN-indexed `tsvector`) combined via Reciprocal Rank Fusion. Not BM25 — true BM25 needs an extension such as `pg_search`. |
-| **Cross-Encoder Reranking** | `ms-marco-MiniLM-L-6-v2` reranks top-20 candidates for precise relevance scoring |
-| **Similarity Threshold** | Filters irrelevant chunks before context formatting |
-| **System Role Prompt** | Proper LLM message structure for better instruction following |
-
-- Streaming responses token-by-token via Server-Sent Events (SSE)
-- Every answer cites `[Document, Page X]` — no hallucination without source
-- Multi-turn session management with full conversation history
-
-### Compliance Auto-Auditor
-
-- Cross-references operational documents against regulatory documents
-- Generates per-clause compliance matrices (Pass / Fail / Not Addressed)
-- Tracks audit status: Pending → In Progress → Completed
-- Frontend dashboard with audit detail views
-
-### Enterprise Dashboard
-
-- Real-time document processing status with background task tracking
-- Safety score visualizations and compliance trend analytics
-- Category distribution charts powered by Recharts
-- KPI grid, activity feed, and recent documents table
-
-### Document Management
-
-- Drag-and-drop upload with PDF, DOCX, TXT support
-- Direct file upload to backend (no third-party CDN dependency)
-- In-document AI chat — ask questions about a specific document
-- PDF viewer modal for inline document review
+- **Hand-written async orchestration instead of LangChain:** Heavy agent frameworks hide control flow and retry behavior. Running `ClassifierAgent` first (so document category informs downstream prompts) and then fanning out `SafetyAnalyzer`, `EntityExtractor`, and `Summarizer` concurrently via `asyncio.gather()` keeps latency low and isolation clean—while Pydantic v2 schemas (`_generate_structured`) coerce messy LLM string outputs into valid models instead of crashing API responses.
+- **Same-model failover across providers, with retries in one place:** Free-tier rate limits vary sharply (`Groq` caps around ~8K TPM; `Cerebras` returns `402` when quota runs out). Pairing `Groq ↔ Cerebras` around identical `gpt-oss-120b` weights prevents quality regressions on failover, and keeping retries strictly inside `BaseAgent._generate_json` eliminated a duplicate outer loop that used to multiply failures into up to `9` attempts per agent.
+- **Content-addressed caching that refuses to cache failures:** Keying Redis by `SHA-256(extracted_text) + PIPELINE_VERSION` lets duplicate uploads and restarted jobs skip all 4 LLM calls while automatically invalidating on prompt updates. `_is_cacheable()` checks every section and never stores degraded or rate-limited runs—so clicking *Re-analyze* genuinely retries rather than replaying a cached error for 7 days.
+- **Loud degradation instead of silent data corruption:** Re-analyzing skips re-extraction and re-embedding if chunk vectors already exist; partial agent failures save healthy sections alongside `processing_error` and `degraded_sections`; compliance quota errors are isolated as `status="error"` instead of inflating `missing` gaps; and `/api/v1/health` runs 60s-cached 1-token LLM pings rather than assuming `.env` keys work.
+- **Replacing silent `pg_trgm` zero-rows with `tsvector` + direct arm guards:** The original lexical arm matched `pg_trgm`'s `%` operator against 1,000-char chunks, scoring ~`0.13` below its `0.30` threshold and silently returning zero rows for months while cross-encoder reranking masked the gap on small test sets. Switching to a `STORED` `tsvector` GIN index (`ts_rank_cd`) plus direct CI guards on lookalike clauses (`30 CFR 75.323` vs `75.400`) proves both retrieval arms stay alive.
+- **Table-aware chunk splitting & locked 768-dim embeddings:** Mining regulations contain long tables without sentence periods—one 400-row table produced a `14,703`-char chunk that Gemini silently truncated. Splitting Markdown tables cleanly under `MAX_CHUNK_CHARS=4000` with repeated headers preserves every row, and setting `output_dimensionality=768` stops `gemini-embedding-001` (default `3072` dims) from failing `pgvector` inserts.
+- **One turn lifecycle for sync and streaming chat:** Routing both `/chat/send` and `/chat/stream` through `prepare_turn()` and `finalize_turn()` applies identical guardrails (`23` injection regexes, `1,500`-char cap), loads bounded history (`6` turns / `6,000` chars) *before* saving the incoming user turn to avoid SQLAlchemy autoflush prompt echo, and persists streamed replies before sending `done` + `session_id`.
+- **Advisory-lock crash recovery & hardened security edges:** Startup `scripts.migrate` runs Alembic + ensures HNSW/GIN indexes, then a PostgreSQL advisory lock (`pg_try_advisory_lock`) elects one worker to re-queue interrupted jobs cleanly across container restarts. Auth pins `PyJWT` to `RS256` + `azp` (avoiding `python-jose` CVEs), URL ingestion checks `ip.is_global` (blocking CGNAT `100.64/10` missed by legacy `is_private`), and config validators strip pasted newlines from API keys and fail fast on malformed `CLERK_JWKS_URL`s.
 
 ---
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          CLIENT LAYER                                │
-│     Next.js 16 · React 19 · Tailwind v4 · shadcn/ui · Vercel      │
-│        Clerk Auth · Framer Motion · Recharts · React-PDF            │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │ HTTPS
-┌──────────────────────────▼──────────────────────────────────────────┐
-│                        API GATEWAY                                   │
-│    FastAPI 0.128 · Clerk JWT Auth · slowapi Rate Limiter            │
-│    Pydantic v2 Validation · CORS · Audit Logging                    │
-│    Deployed on: HuggingFace Spaces (Docker)                         │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-         ┌─────────────────┼──────────────────┐
-         ▼                 ▼                  ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│  Documents   │  │  Chat (SSE)  │  │  Compliance  │
-│  Upload + AI │  │  RAG Pipeline│  │  Audit APIs  │
-└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-       │                 │                  │
-       └─────────────────┼──────────────────┘
-                         ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     RAG RETRIEVAL PIPELINE                           │
-│                                                                     │
-│   Query → Embed (Gemini) → Hybrid Search → RRF → Rerank → Top-5   │
-│                                                                     │
-│   ┌─────────────┐  ┌─────────────┐  ┌────────────────────────┐     │
-│   │  pgvector   │  │  full-text  │  │  Cross-Encoder Rerank  │     │
-│   │  (semantic) │  │ (keyword)   │  │  (ms-marco-MiniLM)     │     │
-│   └──────┬──────┘  └──────┬──────┘  └───────────┬────────────┘     │
-│          └────────┬───────┘                      │                  │
-│           Reciprocal Rank Fusion                 ▼                  │
-│                                    Precise Top-5 Chunks             │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                       AI AGENT LAYER                                 │
-│                                                                     │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐           │
-│  │Classifier │ │  Safety   │ │  Entity   │ │Summarizer │           │
-│  │  (Groq)   │ │ (Mistral) │ │(Cerebras) │ │(Cerebras) │           │
-│  └───────────┘ └───────────┘ └───────────┘ └───────────┘           │
-│                  ┌───────────┐ ┌───────────┐                        │
-│                  │Compliance │ │ Orchestrator│                       │
-│                  │  (Groq)   │ │ (parallel) │                       │
-│                  └───────────┘ └───────────┘                        │
-└──────────────────────────┬──────────────────────────────────────────┘
-                           │
-         ┌─────────────────┼──────────────────┐
-         ▼                 ▼                  ▼
-┌───────────────┐  ┌───────────────┐  ┌───────────────┐
-│  Supabase     │  │  Upstash      │  │  AI Providers │
-│  PostgreSQL   │  │  Redis        │  │               │
-│  + pgvector   │  │   (Cache)     │  │ Gemini · Groq │
-│  (HNSW index) │  │               │  │ Mistral       │
-│  (Free tier)  │  │  (Free tier)  │  │ Cerebras      │
-└───────────────┘  └───────────────┘  └───────────────┘
+### System Overview
+
+```mermaid
+flowchart LR
+    UI["Next.js 16 UI"] <-->|"JWT"| Clerk["Clerk RS256"]
+    UI -->|"HTTPS / SSE"| API["FastAPI Gateway"]
+    API --- Guard["JWKS · Rate Limit · SSRF · Lock Recovery"]
+
+    API -->|"/upload"| Ingest["Extract · OCR · Chunk"]
+    Ingest --> Clf["Classifier"]
+    Clf --> Agents["Safety · Entities · Summary"]
+    Ingest --> Blob[("Supabase Storage")]
+    Clf <-->|"SHA-256"| Redis[("Upstash Redis")]
+
+    API -->|"/chat/stream"| Prep["Guardrails + Query Embed"]
+    Prep --> Hyb["Hybrid Search + RRF"]
+    Hyb --> Rerank["MiniLM Rerank to SSE"]
+
+    API -->|"/compliance"| Filter["Clause Filter"]
+    Filter --> Auditor["Compliance Auditor"]
+
+    Ingest -->|"768d Vectors"| PG[("PostgreSQL 16 + pgvector + GIN")]
+    Hyb <-->|"Cosine + FTS"| PG
+    Auditor <-->|"Matrix"| PG
+
+    Agents --> AI["Groq · Cerebras · Mistral · Gemini"]
+    Rerank --> AI
+    Auditor --> AI
+    AI -.-> LS["LangSmith"]
 ```
 
----
+### Multi-Agent AI Pipeline
 
-## Tech Stack
+```mermaid
+flowchart LR
+    Up["Upload / URL (SSRF Guard)"] --> Ext["BaseExtractor + OCR (12K+3K window)"]
+    Ext --> Q["asyncio.Queue Worker"]
+    Q --> Cache{"Redis SHA-256 Cache"}
+    Cache -->|"Complete Hit"| Save["Return Stored Analysis (0 LLM calls)"]
+    Cache -->|"Miss / Degraded"| Clf["1. Classifier (Groq <-> Cerebras)"]
 
-| Layer | Technology | Version |
-|---|---|---|
-| **Frontend** | Next.js (App Router, Turbopack) · React · TypeScript · Tailwind CSS v4 · shadcn/ui · Clerk Auth · Zustand · TanStack React Query · Recharts | 16.x / 19.x / 5.x |
-| **Backend** | FastAPI · Python · SQLAlchemy (synchronous sessions) · Pydantic v2 · slowapi Rate Limiting · sentence-transformers CrossEncoder | 0.128 / 3.14+ / 2.0 |
-| **Database** | Supabase PostgreSQL + pgvector + pg_trgm (HNSW index) | 16+ |
-| **AI Agents** | Groq (GPT-OSS-120B — document agents *and* RAG chat generation) · Mistral (Magistral) · Cerebras (GPT-OSS-120B) | All free tiers |
-| **Embeddings & Eval** | Gemini `gemini-embedding-001` for chunk and query embeddings; `gemini-3.7-flash` as the judge in the on-demand generation eval — it generates no user-facing answers | All free tiers |
-| **Infrastructure** | Vercel (frontend) · HuggingFace Spaces (backend, Docker) · Supabase (DB) · Upstash (Redis) · Clerk (Auth) | All free tiers |
+    Clf -->|"Category"| Saf["2a. Safety (Mistral)"]
+    Clf -->|"Category"| Ent["2b. Entities (Cerebras <-> Groq)"]
+    Clf -->|"Category"| Sum["2c. Summary (Cerebras <-> Groq)"]
 
-> **Total infrastructure cost: $0/month**
+    Saf --> Val["Pydantic v2 Validation + Fault Isolation"]
+    Ent --> Val
+    Sum --> Val
+    Val -->|"Only Complete Runs"| Cache
+    Val --> DB[("PostgreSQL + degraded_sections")]
+
+    AuditReq["On-Demand Compliance Audit"] --> Filter["Clause Boilerplate Filter (not_applicable)"]
+    Filter --> Aud["5. Compliance Auditor (Groq <-> Cerebras)"]
+    Aud -->|"5-clause batch + error isolation"| DB
+```
+
+### Hybrid RAG Architecture
+
+```mermaid
+flowchart LR
+    Doc["PDF / DOCX / OCR + Tables"] --> Chk["Table-Safe Chunker (<=4000 chars)"]
+    Chk --> Emb["Gemini Batch Embed (100/call · 768d)"]
+    Emb --> Store[("pgvector HNSW + STORED tsvector GIN")]
+
+    Q["User Query (/chat/stream)"] --> Guard["Guardrails (<=1500 chars) + 6-Turn History"]
+    Guard --> QVec["Gemini Query Embed (768d)"]
+    QVec --> Vec["Vector Arm (pgvector Cosine >= 0.25)"]
+    QVec --> Lex["Lexical Arm (ts_rank_cd Full-Text)"]
+    Store --> Vec
+    Store --> Lex
+
+    Vec --> RRF["Reciprocal Rank Fusion (k=60)"]
+    Lex --> RRF
+    RRF -->|"Top-20"| Mini["Cross-Encoder (MiniLM-L-6-v2)"]
+    Mini -->|"Top-5"| LLM["Groq gpt-oss-120b SSE Stream"]
+    LLM --> Save["Save Turn Before done + [File, Page X]"]
+```
+
+### Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| **Backend** | Python 3.14+, `uv`, FastAPI, Pydantic v2, SQLAlchemy 2.0, Alembic, `slowapi`, Gunicorn/Uvicorn |
+| **AI & Retrieval** | Groq (`openai/gpt-oss-120b`), Cerebras (`gpt-oss-120b`), Mistral (`magistral-small-latest`), Google Gemini (`gemini-embedding-001`, eval judge `gemini-3.7-flash`), `sentence-transformers` (`ms-marco-MiniLM-L-6-v2`), LangSmith |
+| **Data & Auth** | Supabase PostgreSQL 16 (`pgvector`, `pg_trgm`), Upstash Redis, Supabase Storage, Clerk (RS256 JWKS) |
+| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack React Query, Zustand, Recharts, `react-pdf` |
+| **CI/CD** | GitHub Actions (`uv` lint/test/eval, `next build`, Docker build validation, auto-deploy to HuggingFace Spaces) + Vercel |
 
 ---
 
@@ -358,11 +233,11 @@ Query → Embed → Hybrid Search (Vector + Full-Text) → RRF → Cross-Encoder
 
 ### Prerequisites
 
-- **Python 3.14+** and **Node.js 24+** (pinned in `frontend/.nvmrc` and `frontend/package.json`)
-- **Docker & Docker Compose** (recommended for local development)
-- **Free accounts**: Supabase, Upstash, Clerk, Google AI Studio, Groq, Cerebras, Mistral
+- **Docker & Docker Compose** (easiest full-stack local setup), **or** for manual runs: **Python 3.14+**, [**uv**](https://docs.astral.sh/uv/), and **Node.js 24+** (`frontend/.nvmrc`).
+- For local OCR and MIME sniffing without Docker: `tesseract-ocr`, `poppler`, and `libmagic`.
+- Free API accounts: PostgreSQL with `pgvector` (or Supabase), Clerk, Gemini, Groq, and Mistral (plus optional Cerebras, Redis, and Supabase Storage).
 
-### 1. Clone & Configure
+### 1. Configure Environment
 
 ```bash
 git clone https://github.com/Iammilansoni/MiningNiti.git
@@ -370,338 +245,161 @@ cd MiningNiti
 
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
-# Edit both with your keys (see Environment Variables below).
-# backend/.env.example carries every backend variable, including the
-# SUPABASE_URL / SUPABASE_SERVICE_KEY / SUPABASE_STORAGE_BUCKET block —
-# copy those across too, or uploaded files are lost on every restart.
 ```
 
-### 2. Docker (Recommended)
+### 2. Run with Docker Compose (Recommended)
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-This starts PostgreSQL (with pgvector), Redis, backend, and frontend.
+Starts PostgreSQL (`pgvector/pgvector:pg16`), Redis, FastAPI backend (`http://localhost:8000`), and Next.js frontend (`http://localhost:3000`), automatically running migrations via `scripts.migrate`.
 
-### 3. Manual Setup
+### 3. Manual Setup (`uv` + Next.js)
 
-**Backend:**
 ```bash
+# Backend
 cd backend
 uv sync
+uv run python -m scripts.migrate     # applies Alembic migrations & creates HNSW/GIN indexes
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-**Frontend:**
 ```bash
+# Frontend
 cd frontend
 npm install
-npm run dev                     # http://localhost:3000
+npm run dev
 ```
 
-### Environment Variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | Supabase PostgreSQL connection string (use Transaction pooler, port 6543) |
-| `GEMINI_API_KEY` | Yes | Google Gemini API key from [aistudio.google.com](https://aistudio.google.com/apikey) |
-| `GROQ_API_KEY` | Yes | Groq API key from [console.groq.com](https://console.groq.com) |
-| `MISTRAL_API_KEY` | Yes | Mistral API key from [console.mistral.ai](https://console.mistral.ai) |
-| `CEREBRAS_API_KEY` | Yes | Cerebras API key from [cloud.cerebras.ai](https://cloud.cerebras.ai) |
-| `CLERK_JWKS_URL` | Yes | Clerk JWKS endpoint, used by the **backend** to verify session tokens |
-| `CLERK_AUTHORIZED_PARTIES` | Recommended | Backend. Allowed `azp` origins. Empty means any app on your Clerk instance is accepted |
-| `REDIS_URL` | No | Upstash Redis URL. Use the `rediss://` scheme for TLS — **not** `?tls=true`, which redis-py rejects with `unexpected keyword argument 'tls'`. |
-| `NEXT_PUBLIC_API_BASE_URL` | Yes | Backend URL for frontend (e.g. `https://your-space.hf.space`) |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key for frontend auth |
-| `CLERK_SECRET_KEY` | Yes | Clerk secret key — **frontend only** (Next.js server side). The backend never reads it |
-| `SUPABASE_URL` | Recommended | Supabase project URL. Enables durable upload storage — **without it, uploaded files are lost on every restart** |
-| `SUPABASE_SERVICE_KEY` | Recommended | Supabase service role key (the uploads bucket is private) |
-| `SUPABASE_STORAGE_BUCKET` | No | Bucket name, defaults to `documents` |
-
----
-
-## API Endpoints
-
-All endpoints are prefixed with `/api/v1`. Interactive documentation and OpenAPI schemas are available at [`/docs`](http://localhost:8000/docs) (Swagger UI) and [`/redoc`](http://localhost:8000/redoc).
-
 <details>
-<summary><b>Click to expand full REST Endpoints Reference (30+ routes)</b></summary>
+<summary><b>Environment Variables Reference</b> (full comments in <code>backend/.env.example</code> &amp; <code>frontend/.env.example</code>)</summary>
 
-### Health
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/` | Application info |
-| GET | `/health` | Cheap static liveness probe (no `/api/v1` prefix) — what the Docker `HEALTHCHECK` uses |
-| GET | `/api/v1/health` | Real health check: database, Redis, and a 1-token ping to each LLM provider. `healthy` and `degraded` both return 200; an unreachable database returns 503 |
-| GET | `/api/v1/health/providers` | Per-provider liveness detail. Add `?fresh=true` to bypass the 60s cache |
-
-### Documents
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/v1/documents` | List documents (paginated) |
-| POST | `/api/v1/documents` | Create document from URL |
-| POST | `/api/v1/upload` | Upload file directly (multipart) |
-| GET | `/api/v1/documents/{id}` | Get document detail |
-| DELETE | `/api/v1/documents/{id}` | Delete document |
-| GET | `/api/v1/documents/{id}/file` | Stream the stored file (local disk or Supabase Storage) |
-| GET | `/api/v1/documents/{id}/analysis` | Get AI analysis results |
-| POST | `/api/v1/documents/{id}/reanalyze` | Trigger re-analysis |
-
-### Chat (Streaming)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/v1/chat/sessions` | List chat sessions |
-| POST | `/api/v1/chat/sessions` | Create new session |
-| GET | `/api/v1/chat/sessions/{id}` | Get session with messages |
-| PATCH | `/api/v1/chat/sessions/{id}` | Update session |
-| DELETE | `/api/v1/chat/sessions/{id}` | Delete session |
-| POST | `/api/v1/chat/send` | Send message (synchronous RAG) |
-| POST | `/api/v1/chat/stream` | Stream response (SSE) |
-
-### Compliance Audit
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/v1/compliance/audits` | List audits |
-| POST | `/api/v1/compliance/audits` | Create compliance audit |
-| GET | `/api/v1/compliance/audits/{id}` | Get audit detail + matrix |
-| GET | `/api/v1/compliance/audits/{id}/export` | Export the audit report |
-| DELETE | `/api/v1/compliance/audits/{id}` | Delete an audit |
-
-### Search, Analytics & More
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/v1/search?q={query}` | Semantic vector search |
-| GET | `/api/v1/analytics/dashboard` | Dashboard statistics |
-| GET | `/api/v1/analytics/documents` | Document analytics |
-| GET | `/api/v1/analytics/safety` | Safety compliance analytics |
-| GET | `/api/v1/analytics/violations` | Detected compliance violations |
-| GET | `/api/v1/prompts` | List saved prompt templates |
-| POST | `/api/v1/prompts` | Save prompt template |
-| GET | `/api/v1/prompts/{id}` | Get a prompt template |
-| PUT | `/api/v1/prompts/{id}` | Update a prompt template |
-| DELETE | `/api/v1/prompts/{id}` | Delete a prompt template |
-| GET | `/api/v1/jobs` | List active background jobs |
-| GET | `/api/v1/jobs/{id}` | Get job status |
-| GET | `/api/v1/user/profile` | Get user profile |
-| PUT | `/api/v1/user/profile` | Update user profile |
+| Variable | Side | Required | Purpose |
+|---|---|---|---|
+| `DATABASE_URL` | Backend | Yes | PostgreSQL + `pgvector` URI (use Supabase Transaction Pooler port `6543` in prod) |
+| `GEMINI_API_KEY` | Backend | Yes | Gemini embeddings (`gemini-embedding-001`) and eval judge |
+| `GROQ_API_KEY` | Backend | Yes | Classifier, Compliance Auditor, and RAG chat generation |
+| `MISTRAL_API_KEY` | Backend | Yes | Safety Analyzer agent (`magistral-small-latest`) |
+| `CLERK_JWKS_URL` | Backend | Yes | Clerk JWKS endpoint for RS256 JWT verification |
+| `CEREBRAS_API_KEY` | Backend | Recommended | Entity Extractor, Summarizer, and Groq quota failover (app boots without it) |
+| `CLERK_AUTHORIZED_PARTIES` | Backend | Recommended | JSON list of allowed frontend `azp` origins |
+| `CORS_ORIGINS` / `CORS_ORIGIN_REGEX` | Backend | Recommended | Allowed browser origins for self-hosted deployments |
+| `REDIS_URL` | Backend | Optional | Content-addressed analysis cache (`rediss://` for Upstash TLS — no `?tls=true`) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_STORAGE_BUCKET` | Backend | Optional | Durable upload storage across container restarts (falls back to local disk) |
+| `NEXT_PUBLIC_API_BASE_URL` | Frontend | Yes | FastAPI base URL (no trailing slash) |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Frontend | Yes | Clerk frontend auth keys (`CLERK_SECRET_KEY` stays server-side only) |
 
 </details>
 
 ---
 
-## Project Structure
+## Evaluation & Testing
 
+The backend test suite spans **375 collected tests** across unit tests (SQLite in-memory + mocked providers), real PostgreSQL integration tests, retrieval quality metrics/harness, and Gemini-judged generation evals:
+
+```bash
+cd backend
+
+# Fast offline suite (unit + regression + 59 pillar architecture tests + metric math)
+uv run pytest tests/unit/ tests/eval/test_retrieval_metrics.py -v -m unit
+uv run python -m unittest discover -s tests/unit -p "test_pillar*.py" -v
+
+# Formatting & import checks
+uv run black --check app/ tests/
+uv run isort --check-only app/ tests/
+
+# Real PostgreSQL + pgvector suites (start postgres container first)
+docker compose up -d postgres
+uv run pytest tests/integration/ -v -m integration
+uv run pytest tests/eval/test_retrieval_eval.py -v -m retrieval
+
+# Gemini-judged generation eval (requires live GEMINI_API_KEY; live suite also needs Groq + DB)
+uv run pytest tests/eval/test_rag_eval.py -v -m synthetic
+uv run pytest tests/eval/test_rag_eval.py -v -m live
+```
+
+### Retrieval Quality Gate (CI-Enforced)
+
+Evaluated deterministically in CI against a labelled 130-chunk mining corpus (`12` queries) using `all-MiniLM-L6-v2` so retrieval regressions fail builds without external API keys:
+
+| Metric | What It Checks | CI Floor | Measured |
+|---|---|---|---|
+| **Hit Rate@5** | Any relevant chunk in top 5 | `0.90` | `1.000` |
+| **MRR** | Rank of first relevant hit | `0.75` | `1.000` |
+| **Recall@5** | Fraction of relevant chunks surfaced | `0.85` | `0.958` |
+| **nDCG@5** | Clustering relevant hits at top ranks | `0.75` | `0.968` |
+
+> **Why direct arm guards matter:** During hardening, stubbing the lexical search arm to return `[]` left all four aggregate metrics unchanged because dense vector over-fetch + cross-encoder reranking compensated on a 130-chunk corpus. Direct assertions (`test_lexical_arm_returns_rows`, `test_citation_lookalikes_are_distinguished` for `30 CFR 75.323` vs `75.400`) verify the full-text arm stays functional.
+
+**CI/CD gates (`.github/workflows/ci.yml`, `deploy.yml`):** Formatting (`black`, `isort`), Alembic migration bootstrap, unit tests, PostgreSQL integration tests, the retrieval quality gate, frontend `eslint` + `next build`, and Docker image builds (on `main`/`develop`) are blocking. `mypy` (crashes on Torch internals) and `bandit` (3 medium `B104`/`B608` findings pending triage) run non-blocking. Pushes to `main` touching `backend/**` auto-deploy to HuggingFace Spaces.
+
+---
+
+## Trade-offs & Known Limitations
+
+- **Sync SQLAlchemy inside async endpoints:** Database calls use synchronous sessions, capping per-worker concurrency under heavy I/O (an unused async engine skeleton exists in `app/db/session.py` as the next refactor step).
+- **In-process background queue:** Document and compliance jobs run on an in-process `asyncio.Queue` rather than Redis/Celery workers—simple to deploy on single-instance free tiers, though queued jobs don't span multiple Gunicorn replicas (interrupted rows recover on restart via Postgres advisory locks).
+- **Document context windowing:** Upload agents classify/summarize from the document head + tail (`~15K` chars); full-document lookup relies on chunked RAG retrieval.
+- **Lexical scoring & corpus scale:** Full-text ranking uses PostgreSQL `ts_rank_cd`, not true BM25 (`pg_search`), and the CI golden set is a directional 130-chunk corpus.
+- **No frontend unit/E2E suite yet:** Backend coverage is extensive, while the Next.js frontend currently relies on TypeScript compilation, ESLint, and manual/live checks.
+- **Supported formats:** PDF, DOCX, TXT, and images (PNG, JPEG, WEBP — plus TIFF/BMP when added to `ALLOWED_FILE_TYPES`) up to 50 MB.
+
+---
+
+## API & Project Structure
+
+Interactive Swagger & ReDoc schemas are served at `/docs` and `/redoc`. See [ARCHITECTURE.md](ARCHITECTURE.md) for deeper system notes.
+
+<details>
+<summary><b>Click to expand REST Endpoints (<code>/api/v1</code>) &amp; Repository Layout</b></summary>
+
+### Endpoints
+- **Root / Health:** `GET /`, `GET /health` (static probe), `GET /api/v1/`, `GET /api/v1/health` (DB, Redis, 1-token LLM probes), `GET /api/v1/health/providers`
+- **Documents & Upload:** `POST /api/v1/upload`, `GET /api/v1/documents`, `POST /api/v1/documents`, `GET /api/v1/documents/{id}`, `GET /api/v1/documents/{id}/file`, `GET /api/v1/documents/{id}/analysis`, `POST /api/v1/documents/{id}/reanalyze`, `DELETE /api/v1/documents/{id}`
+- **Chat & RAG:** `GET/POST /api/v1/chat/sessions`, `GET/PATCH/DELETE /api/v1/chat/sessions/{id}`, `POST /api/v1/chat/send`, `POST /api/v1/chat/stream` (SSE)
+- **Compliance Audits:** `GET/POST /api/v1/compliance/audits`, `GET/DELETE /api/v1/compliance/audits/{id}`, `GET /api/v1/compliance/audits/{id}/export`
+- **Search, Analytics, Prompts, Jobs & Profile:** `GET /api/v1/search?q=`, `GET /api/v1/analytics/{dashboard,documents,safety,violations}`, `GET/POST /api/v1/prompts`, `GET/PUT/DELETE /api/v1/prompts/{id}`, `GET /api/v1/jobs`, `GET /api/v1/jobs/{id}`, `GET/PUT /api/v1/user/profile`
+
+### Repository Layout
 ```
 MiningNiti/
 ├── backend/
 │   ├── app/
-│   │   ├── api/v1/          # API endpoints (documents, chat, compliance, analytics, search)
-│   │   ├── agents/          # 5 agents + orchestrator (4 on upload, compliance on demand)
-│   │   ├── models/          # SQLAlchemy models (documents, chat, compliance, audit)
-│   │   ├── schemas/         # Pydantic request/response schemas
-│   │   ├── services/        # Business logic (RAG, hybrid search, reranker, compliance)
-│   │   ├── core/            # Security, exceptions, config
-│   │   └── db/              # SQLAlchemy engine + pgvector init
-│   ├── tests/unit/          # 203 unit tests (SQLite, every provider mocked)
-│   ├── tests/integration/   # 27 API tests against a real PostgreSQL
-│   ├── tests/eval/          # 32 retrieval + generation evaluation tests
-│   └── Dockerfile           # Docker build for HuggingFace Spaces
+│   │   ├── agents/          # Orchestrator + 5 specialized Pydantic-validated agents
+│   │   ├── api/v1/          # FastAPI routers (documents, upload, chat, compliance, search, analytics, jobs, prompts, user, health)
+│   │   ├── core/            # Config, Clerk JWKS auth, SSRF guard, exceptions, sanitization
+│   │   ├── db/              # SQLAlchemy session + pgvector/GIN index bootstrap
+│   │   ├── models/          # ORM models (Document, DocumentEmbedding, ChatSession, ComplianceAudit, CustomPrompt, AuditLog, User)
+│   │   ├── schemas/         # Pydantic v2 schemas
+│   │   └── services/        # Hybrid search, reranker, extractors, chunker, cache, storage, queue, compliance
+│   ├── alembic/             # Database migrations
+│   ├── scripts/             # Startup migration & helper scripts
+│   ├── tests/               # unit/ (316), integration/ (27), eval/ (32)
+│   ├── pyproject.toml       # uv project config, CPU PyTorch index, lint settings
+│   ├── uv.lock              # Locked Python 3.14 dependency graph
+│   ├── Dockerfile           # Multi-stage production container
+│   └── Dockerfile.hf        # HuggingFace Spaces container
 ├── frontend/
-│   ├── src/
-│   │   ├── app/             # Next.js App Router (auth, dashboard, chat, documents, compliance, analytics)
-│   │   ├── components/      # Landing (15 components), chat, documents, dashboard, analytics, prompts, product, layout, settings, ui
-│   │   ├── hooks/           # SSE streaming, typed API client
-│   │   └── lib/             # API client with auth headers
-│   └── package.json
-├── docker-compose.yml
-├── docker-compose.prod.yml
-└── ARCHITECTURE.md
+│   └── src/                 # Next.js 16 App Router (app/, components/, hooks/, lib/, providers/, stores/, styles/)
+├── .github/workflows/       # CI (ci.yml) & HuggingFace Spaces CD (deploy.yml)
+├── docker-compose.yml       # Local full-stack dev orchestration
+├── docker-compose.prod.yml  # Self-hosted production stack
+└── ARCHITECTURE.md          # Architectural deep dive
 ```
 
----
-
-## Deployment
-
-The entire application runs on **free-tier services** with zero infrastructure cost.
-
-```
-┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
-│   Frontend   │────▶│     Backend      │────▶│   Database   │
-│   Vercel     │     │ HuggingFace      │     │  Supabase    │
-│              │     │ Spaces (Docker)  │     │  + pgvector  │
-└──────────────┘     └──────────────────┘     └──────────────┘
-                              │
-                              ▼
-                       ┌──────────────┐
-                       │    Redis     │
-                       │   Upstash    │
-                       └──────────────┘
-```
-
-### Setup Steps
-
-1. **Database** (Supabase): Create project, copy Transaction pooler connection string (port 6543), run `CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pg_trgm;`
-2. **Redis** (Upstash, optional): Create Redis database, copy the `rediss://` URL (TLS is implied by the scheme; do not append `?tls=true`)
-3. **Auth** (Clerk): Create app, copy Publishable Key, Secret Key, and JWKS URL
-4. **AI Keys** (all free): [Gemini](https://aistudio.google.com/apikey), [Groq](https://console.groq.com), [Cerebras](https://cloud.cerebras.ai), [Mistral](https://console.mistral.ai)
-5. **Backend** (HuggingFace Spaces): Create Docker space, clone, copy `backend/` files, push, add env vars in Settings
-6. **Frontend** (Vercel): Import repo, add `NEXT_PUBLIC_API_BASE_URL` (HF space URL) + Clerk keys, deploy
-
-For the complete list of environment variables required for deployment, see the [Environment Variables](#environment-variables) section above or [backend/.env.example](backend/.env.example).
+</details>
 
 ---
 
-## Testing
+## Contributing & License
 
-```bash
-cd backend
-docker compose up -d postgres                            # integration + retrieval tests need it
+PRs are welcome: run `uv run black --check app/ tests/`, `uv run isort --check-only app/ tests/`, and `uv run pytest tests/unit/ -v -m unit` on `backend/`, plus `npm run lint` on `frontend/`.
 
-# 5-Pillar Architectural Verification Suite (59 tests, instant, ~1.1s)
-python -m unittest discover -s tests/unit -p "test_pillar*.py" -v
-
-pytest tests/unit/ -v -m unit                           # Unit tests (SQLite, providers mocked)
-pytest tests/integration/ -v -m integration              # Tests against real PostgreSQL
-pytest tests/eval/test_rag_eval.py -v -m synthetic       # Generation eval (no DB, instant)
-pytest tests/eval/test_rag_eval.py -v -m live            # Generation eval (needs Gemini quota)
-pytest tests/unit/ --cov=app --cov-report=html           # With coverage
-```
-
-**Comprehensive Test Coverage** — Includes 59 dedicated architectural unit tests (`tests/unit/test_pillar*.py`) verifying schema enforcement, dual-path chat unification, dead code pruning, polymorphic document extraction with image OCR, and environment validation. Every unit test runs against an isolated SQLite in-memory database with fully mocked providers.
-
-Not all 262 run in every environment, and that is deliberate:
-
-- The **integration** suite runs against a real PostgreSQL — the `pgvector/pgvector:pg16` service container CI starts, or `docker compose up -d postgres` locally. SQLite could not bind the PostgreSQL `UUID` columns, enforce the foreign keys, or run `to_tsvector` at all. With no server reachable, the package skips with an explanatory message rather than failing.
-- The **6 live tests** in `tests/eval/test_rag_eval.py` are Gemini-judged and need real API quota, so they are not run in CI. The other 2 tests in that file are synthetic and run anywhere.
-
-**CI gates.** Unit tests, integration tests, the retrieval-quality gate, the frontend `npm run lint` and the Docker build are all **blocking**. `mypy`, `bandit` and `npm audit` stay non-blocking, each with the concrete reason written beside it in `.github/workflows/ci.yml`.
-
-**Linting:** `isort` + `black` (backend), `npm run lint` (frontend).
-
----
-
-## MLOps
-
-### Guardrails
-
-Input validation protecting the RAG pipeline from prompt injection and abuse. 20+ regex patterns cover instruction override, system prompt extraction, jailbreak, and role-play attacks. Queries exceeding 1500 characters or containing injection patterns are rejected (422/403).
-
-### Observability
-
-LangSmith tracing for end-to-end AI pipeline visibility — traces `AgentOrchestrator.analyze_document()`, `hybrid_search()`, and `ChatService.generate_response()` (sync + streaming). Falls back to no-op when langsmith is not installed.
-
-### RAG Evaluation
-
-RAG fails in two distinct ways and they are measured separately, because a
-blended score hides which one happened:
-
-**Retrieval quality** — was the right chunk ever in the context?
-Scored against a labelled golden set of 12 queries over a 130-chunk mining
-corpus. Runs in CI as a **blocking gate**, using a local sentence-transformers
-model so it needs no API keys and is deterministic.
-
-| Metric | What it measures | Floor | Current |
-|---|---|---|---|
-| Hit Rate@5 | Any relevant chunk in the top 5 | 0.90 | 1.000 |
-| MRR | How high the first relevant chunk lands | 0.75 | 1.000 |
-| Recall@5 | Share of relevant chunks retrieved | 0.85 | 0.958 |
-| nDCG@5 | Rewards clustering relevant chunks high | 0.75 | 0.968 |
-
-**Generation quality** — given good context, was the answer faithful?
-Gemini-judged, run on demand rather than in CI (needs an API key).
-
-| Metric | What it measures | Threshold |
-|---|---|---|
-| Faithfulness | Are all claims grounded in retrieved context? | 0.70 |
-| Relevancy | Does the answer actually address the question? | 0.70 |
-
-```bash
-pytest tests/eval/test_retrieval_eval.py -v -m retrieval   # Retrieval gate (needs Postgres)
-pytest tests/eval/test_rag_eval.py -v -m synthetic         # Generation, no DB
-pytest tests/eval/test_rag_eval.py -v -m live              # Generation, full pipeline
-```
-
-> **A finding worth stating.** Stubbing the lexical arm to return nothing leaves
-> every aggregate metric unchanged — the cross-encoder reranker fully
-> compensates on a corpus this size. Aggregate scores therefore cannot prove an
-> arm is alive, which is why the suite also carries direct guards asserting the
-> lexical index returns rows and can distinguish near-identical citations
-> (`30 CFR 75.323` vs `75.400`). Those are the tests that actually fail when it
-> breaks.
-
----
-
-## Security
-
-Clerk JWT auth (JWKS) with user-scoped resource access. Rate limiting (120 req/min per IP), Pydantic v2 validation on all inputs, prompt injection guardrails, SQLAlchemy parameterized queries, audit logging on all mutations, configurable CORS, and secrets stored as environment variables (never committed).
-
----
-
-## Performance
-
-Hybrid search (pgvector + PostgreSQL full-text) with Reciprocal Rank Fusion, cross-encoder reranking (`ms-marco-MiniLM-L-6-v2`), HNSW approximate nearest-neighbour search, 3 agents running concurrently via `asyncio.gather()` after classification, an analysis cache that skips repeat work entirely, batched embedding (100 chunks per API call), SSE streaming, and crash recovery that resets *and requeues* interrupted documents.
-
----
-
-## Known limitations
-
-Stated plainly, because a system's real shape is in what it does *not* do yet.
-
-**Architecture**
-- Database access is **synchronous SQLAlchemy inside `async` endpoints**, so every query blocks the event loop and per-worker throughput is bounded. An async layer exists in `app/db/session.py` but no endpoint uses it yet — cutting over is the next significant piece of work.
-- The background queue is an in-process **`asyncio.Queue`**: no persistence, no retries, no backpressure. Queued work does not survive a restart, and it does not fan out across replicas — with two Gunicorn workers, work enqueued in one is invisible to the other. Redis is already a dependency and is the obvious promotion path.
-- Agents see the document **head and tail (~15K characters)**, not the full text. Long documents are summarized from their edges.
-
-**Retrieval**
-- The lexical arm is PostgreSQL full-text ranking (`ts_rank_cd` over a GIN-indexed `tsvector`) — **not BM25**. True BM25 needs an extension such as `pg_search`. The naming here is deliberate.
-- The retrieval evaluation runs against a **130-chunk golden corpus**. Metrics at that scale are directional, not a claim about production-scale behaviour.
-
-**Operations**
-- Deployed entirely on **free tiers**. The API sleeps when idle; the first request after a quiet period can take up to a minute. Provider quota exhaustion degrades individual agents (surfaced via `/api/v1/health` and the document's `processing_error`) rather than failing the pipeline.
-- **No frontend test suite.** The 215 unit tests are all backend.
-- `mypy` and `bandit` run in CI but are **non-blocking** — `mypy` currently crashes on a Torch internal, and `bandit`'s 3 medium findings are reviewed false positives. Unit tests, integration tests, formatting, the retrieval gate, and the frontend build/lint *are* blocking.
-
-**Product**
-- No packaged connectors — no SharePoint, S3, SAP, Oracle, or Microsoft 365 integration, and no webhooks. Upload is direct; everything else goes through the REST API.
-- No air-gapped or on-premise model deployment. The stack self-hosts, but model calls still leave your network.
-- Supported uploads are **PDF, DOCX, TXT, and Images (PNG, JPEG, WEBP)** up to 50MB. Spreadsheets and email archives are not handled.
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/amazing-feature`
-3. Make changes following code style: `isort` + `black` (backend), `npm run lint` (frontend)
-4. Add tests, ensure unit tests pass: `pytest tests/unit/ -v -m unit`
-5. Commit: `feat(backend): add amazing feature`
-6. Push and open a Pull Request
-
----
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
+Licensed under the **MIT License** — see [LICENSE](LICENSE).
 
 <div align="center">
 
-**Built for the Mining Industry** · **Powered by 4 AI Providers** · **$0/month Infrastructure**
-
-<br/>
-
-[![Twitter](https://img.shields.io/badge/Twitter-@Iammilansoni-1DA1F2?style=flat-square&logo=twitter&logoColor=white)](https://twitter.com/Iammilansoni)
-[![GitHub](https://img.shields.io/badge/GitHub-Iammilansoni-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Iammilansoni)
-
-Smart India Hackathon 2023 — National Winner · Ministry of Coal · Recognized by Coal India Limited & CMPDI
-
-<sub>The 2023 winning entry was a separate team prototype. See <a href="#project-history">Project history</a>.</sub>
+Built by [**Milan Soni**](https://github.com/Iammilansoni) · [![LinkedIn](https://img.shields.io/badge/LinkedIn-sonimilan-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sonimilan/) · [![Twitter](https://img.shields.io/badge/@Iammilansoni-1DA1F2?style=flat-square&logo=twitter&logoColor=white)](https://twitter.com/Iammilansoni)
 
 </div>
