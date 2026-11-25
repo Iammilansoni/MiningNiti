@@ -13,6 +13,7 @@ Pipeline:
 
 import asyncio
 import logging
+import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -117,81 +118,121 @@ class DocumentService:
         """
         logger.info(f"Starting document processing: {document_id}")
 
+        try:
+            resolved_id = (
+                uuid.UUID(str(document_id))
+                if not isinstance(document_id, uuid.UUID)
+                else document_id
+            )
+        except (ValueError, AttributeError):
+            logger.error(f"Invalid document ID: {document_id}")
+            return False
+
         with get_db_context() as db:
-            document = db.query(Document).filter(Document.id == document_id).first()
+            document = db.query(Document).filter(Document.id == resolved_id).first()
 
             if not document:
                 logger.error(f"Document not found: {document_id}")
                 return False
 
             try:
-                # ── Step 1: Mark as processing ──────────────────────────────
-                document.status = DocumentStatus.PROCESSING
-                db.commit()
-
-                # ── Step 2: Download and extract text with page tracking ────
-                logger.info(f"Extracting text from: {document.file_url}")
-                extracted: ExtractedDocument = await download_and_extract(
-                    file_url=document.file_url,
-                    file_type=document.file_type,
+                has_existing_content = bool(
+                    document.content and document.content.strip()
+                )
+                has_existing_embeddings = (
+                    db.query(DocumentEmbedding.id)
+                    .filter(DocumentEmbedding.document_id == document.id)
+                    .first()
+                    is not None
                 )
 
-                if not extracted.full_text.strip():
-                    raise ValueError("No text content extracted from document")
+                if has_existing_content and has_existing_embeddings:
+                    # Re-analyze / restart recovery when text and vectors are
+                    # already persisted: skip re-OCR and Gemini embedding calls
+                    # and avoid colliding on idx_embeddings_doc_chunk.
+                    logger.info(
+                        f"Reusing existing content and embeddings for document {document_id}"
+                    )
+                    extracted_text = document.content
+                else:
+                    # ── Step 1: Mark as processing ──────────────────────────────
+                    document.status = DocumentStatus.PROCESSING
+                    db.commit()
 
-                document.content = extracted.full_text
-                document.word_count = extracted.word_count
-                document.total_pages = extracted.total_pages
-                document.page_count = extracted.total_pages  # keep backward compat
-                db.commit()
+                    # ── Step 2: Download and extract text with page tracking ────
+                    logger.info(f"Extracting text from: {document.file_url}")
+                    extracted: ExtractedDocument = await download_and_extract(
+                        file_url=document.file_url,
+                        file_type=document.file_type,
+                    )
 
-                # ── Step 3: Smart sentence-aware chunking with page tracking
-                logger.info(f"Chunking document ({extracted.total_pages} pages)...")
-                chunks: List[DocumentChunk] = _chunker.chunk_document(
-                    full_text=extracted.full_text,
-                    pages=extracted.pages,
-                )
-                logger.info(f"Created {len(chunks)} chunks")
+                    if not extracted.full_text.strip():
+                        raise ValueError("No text content extracted from document")
 
-                # ── Step 4: Generate embeddings and persist ─────────────────
-                logger.info(f"Generating embeddings for {len(chunks)} chunks...")
-                vectors = await self._embed_batch([c.text for c in chunks])
+                    document.content = extracted.full_text
+                    document.word_count = extracted.word_count
+                    document.total_pages = extracted.total_pages
+                    document.page_count = extracted.total_pages  # keep backward compat
+                    db.commit()
 
-                embedded = 0
-                for chunk, embedding_values in zip(chunks, vectors):
-                    if embedding_values is None:
-                        logger.warning(
-                            f"Skipping chunk {chunk.chunk_index} — embedding failed"
+                    # ── Step 3: Smart sentence-aware chunking with page tracking
+                    logger.info(f"Chunking document ({extracted.total_pages} pages)...")
+                    chunks: List[DocumentChunk] = _chunker.chunk_document(
+                        full_text=extracted.full_text,
+                        pages=extracted.pages,
+                    )
+                    logger.info(f"Created {len(chunks)} chunks")
+
+                    # Clear partial embeddings from an interrupted run before inserting
+                    if has_existing_embeddings:
+                        db.query(DocumentEmbedding).filter(
+                            DocumentEmbedding.document_id == document.id
+                        ).delete(synchronize_session=False)
+                        db.commit()
+
+                    # ── Step 4: Generate embeddings and persist ─────────────────
+                    logger.info(f"Generating embeddings for {len(chunks)} chunks...")
+                    vectors = await self._embed_batch([c.text for c in chunks])
+
+                    embedded = 0
+                    for chunk, embedding_values in zip(chunks, vectors):
+                        if embedding_values is None:
+                            logger.warning(
+                                f"Skipping chunk {chunk.chunk_index} — embedding failed"
+                            )
+                            continue
+
+                        embedded += 1
+                        doc_embedding = DocumentEmbedding(
+                            document_id=document.id,
+                            chunk_index=chunk.chunk_index,
+                            chunk_text=chunk.text,
+                            embedding=embedding_values,  # stored as vector(768)
+                            page_numbers=chunk.page_numbers,  # e.g. [12, 13]
+                            section_title=chunk.section_title,  # e.g. "Safety Procedures"
+                            start_page=(
+                                chunk.page_numbers[0] if chunk.page_numbers else None
+                            ),
+                            end_page=(
+                                chunk.page_numbers[-1] if chunk.page_numbers else None
+                            ),
+                            embedding_model=self.embedding_model,
                         )
-                        continue
+                        db.add(doc_embedding)
 
-                    embedded += 1
-                    doc_embedding = DocumentEmbedding(
-                        document_id=document.id,
-                        chunk_index=chunk.chunk_index,
-                        chunk_text=chunk.text,
-                        embedding=embedding_values,  # stored as vector(768)
-                        page_numbers=chunk.page_numbers,  # e.g. [12, 13]
-                        section_title=chunk.section_title,  # e.g. "Safety Procedures"
-                        start_page=(
-                            chunk.page_numbers[0] if chunk.page_numbers else None
-                        ),
-                        end_page=chunk.page_numbers[-1] if chunk.page_numbers else None,
-                        embedding_model=self.embedding_model,
-                    )
-                    db.add(doc_embedding)
+                    db.commit()
+                    logger.info(f"Persisted {embedded}/{len(chunks)} chunk embeddings")
 
-                db.commit()
-                logger.info(f"Persisted {embedded}/{len(chunks)} chunk embeddings")
+                    # Without embeddings the document is invisible to retrieval.
+                    # Marking it COMPLETED would hide a total failure behind a
+                    # green status in the UI.
+                    if chunks and embedded == 0:
+                        raise ValueError(
+                            "All chunk embeddings failed — document would not be "
+                            "searchable"
+                        )
 
-                # Without embeddings the document is invisible to retrieval.
-                # Marking it COMPLETED would hide a total failure behind a
-                # green status in the UI.
-                if chunks and embedded == 0:
-                    raise ValueError(
-                        "All chunk embeddings failed — document would not be "
-                        "searchable"
-                    )
+                    extracted_text = extracted.full_text
 
                 # ── Step 5: Run multi-agent analysis via orchestrator ────────
                 document.status = DocumentStatus.ANALYZING
@@ -199,8 +240,7 @@ class DocumentService:
 
                 logger.info("Running AgentOrchestrator (4 agents)...")
                 results = await _orchestrator.analyze_document(
-                    text=extracted.full_text,
-                    pages=extracted.pages,
+                    text=extracted_text,
                 )
 
                 # ── Step 6: Map orchestrator results to document fields ──────

@@ -18,6 +18,8 @@ JSONB = JSON().with_variant(PG_JSONB, "postgresql")
 try:
     from pgvector.sqlalchemy import Vector
 except (ImportError, Exception):
+    import json as _json
+
     from sqlalchemy.types import UserDefinedType
 
     class Vector(UserDefinedType):  # type: ignore[no-redef]
@@ -26,6 +28,22 @@ except (ImportError, Exception):
 
         def get_col_spec(self, **kw):
             return f"vector({self.dim})" if self.dim else "vector"
+
+        def bind_processor(self, dialect):
+            def process(value):
+                if isinstance(value, (list, tuple)):
+                    return _json.dumps(value)
+                return value
+
+            return process
+
+        def result_processor(self, dialect, coltype):
+            def process(value):
+                if isinstance(value, str):
+                    return _json.loads(value)
+                return value
+
+            return process
 
 
 from sqlalchemy.orm import relationship
@@ -179,6 +197,7 @@ class Document(Base, UUIDMixin, TimestampMixin):
             "file_type": self.file_type,
             "file_url": self.file_url,
             "status": self.status.value if self.status else None,
+            "processing_error": self.processing_error,
             "category": self.category.value if self.category else None,
             "subcategory": self.subcategory,
             "classification_confidence": self.classification_confidence,
@@ -189,11 +208,13 @@ class Document(Base, UUIDMixin, TimestampMixin):
                 self.compliance_status.value if self.compliance_status else None
             ),
             "hazards_detected": self.hazards_detected,
+            "safety_recommendations": self.safety_recommendations,
             "entities": {
                 k: v if isinstance(v, list) else []
                 for k, v in (self.entities or {}).items()
             }
             or None,
+            "tags": self.tags or [],
             "page_count": self.page_count,
             "word_count": self.word_count,
             "created_at": (

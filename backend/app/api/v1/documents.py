@@ -4,6 +4,7 @@ Document upload, management, and analysis
 """
 
 import logging
+import os
 import uuid
 from datetime import datetime
 from typing import List, Optional
@@ -227,6 +228,32 @@ async def get_document_file(
     )
 
 
+async def _cleanup_stored_file(file_url: str) -> None:
+    """Best-effort removal of locally cached and durable object storage files."""
+    from app.core.url_guard import (
+        UnsafeURLError,
+        is_internal_storage_url,
+        resolve_storage_path,
+        storage_key_from_url,
+    )
+    from app.services import object_storage
+
+    if not file_url or not is_internal_storage_url(file_url):
+        return
+
+    try:
+        key = storage_key_from_url(file_url)
+        await object_storage.delete_object(key)
+    except UnsafeURLError as exc:
+        logger.debug("Skipping durable cleanup for %s: %s", file_url, exc)
+
+    try:
+        local_path = resolve_storage_path(file_url)
+        os.unlink(local_path)
+    except (UnsafeURLError, OSError):
+        pass
+
+
 @router.delete("/{document_id}")
 async def delete_document(
     document_id: uuid.UUID,
@@ -245,6 +272,8 @@ async def delete_document(
     if not document:
         raise NotFoundError("Document", document_id)
 
+    file_url = document.file_url
+
     # Create audit log before deletion
     audit = create_audit_log(
         action=AuditAction.DOCUMENT_DELETE.value,
@@ -258,6 +287,8 @@ async def delete_document(
     # Delete document (cascade will handle embeddings)
     db.delete(document)
     db.commit()
+
+    await _cleanup_stored_file(file_url)
 
     logger.info(f"Document deleted: {document_id}")
 
@@ -326,8 +357,9 @@ async def reanalyze_document(
     if not document:
         raise NotFoundError("Document", document_id)
 
-    # Reset status
+    # Reset status and clear stale errors before re-queuing
     document.status = DocumentStatus.PENDING
+    document.processing_error = None
     db.commit()
 
     # Trigger reprocessing
