@@ -75,7 +75,7 @@ The original entry was built for **Smart India Hackathon 2023** (Nov–Dec 2023)
 | **Models** | Open-source model with DPO, Gemini-backed | 3 LLM providers (Groq, NVIDIA NIM, Mistral) with quota-aware automatic failover; Gemini for embeddings |
 | **Evaluation** | — | Hit Rate@k / MRR / Recall@k / nDCG@k harness over a labelled golden set, running as a **blocking CI gate**; LangSmith tracing on the orchestrator, retrieval, and chat |
 | **Security** | — | Clerk JWT (RS256-pinned, JWKS caching, `azp` validation), prompt-injection guardrails, DNS-resolving SSRF guard, 120 req/min rate limiting |
-| **Tests** | — | 316 unit tests (375 collected, including integration and eval suites) |
+| **Tests** | — | 321 unit tests (380 collected, including integration and eval suites) |
 | **Stack** | Python backend, TypeScript frontend | FastAPI + PostgreSQL/pgvector (Python 3.14, `uv`) · Next.js 16 / React 19 |
 | **Deployment** | Local | Live on free-tier infrastructure, auto-deployed from `main` |
 
@@ -375,7 +375,7 @@ MiningNiti/
 │   │   └── services/        # Hybrid search, reranker, extractors, chunker, cache, storage, queue, compliance
 │   ├── alembic/             # Database migrations
 │   ├── scripts/             # Startup migration & helper scripts
-│   ├── tests/               # unit/ (316), integration/ (27), eval/ (32)
+│   ├── tests/               # unit/ (321), integration/ (27), eval/ (32)
 │   ├── pyproject.toml       # uv project config, CPU PyTorch index, lint settings
 │   ├── uv.lock              # Locked Python 3.14 dependency graph
 │   ├── Dockerfile           # Multi-stage production container
